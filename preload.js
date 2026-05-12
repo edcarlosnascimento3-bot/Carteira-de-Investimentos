@@ -6,4 +6,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   fetchData: (url) => ipcRenderer.invoke('fetch-data', url),
   getAppVersion: () => ipcRenderer.invoke('get-app-version'),
   onMenuAction: (callback) => ipcRenderer.on('menu-action', (event, data) => callback(data)),
+  // Banco de dados persistente em disco
+  db: {
+    read: (name) => ipcRenderer.invoke('db:read', name),
+    write: (name, data) => ipcRenderer.invoke('db:write', name, data),
+  },
 });

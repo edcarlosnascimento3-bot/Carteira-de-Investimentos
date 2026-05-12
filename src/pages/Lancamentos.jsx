@@ -339,7 +339,7 @@ function Lancamentos() {
             onMouseOver={e => e.target.style.background = '#E8D844'}
             onMouseOut={e => e.target.style.background = '#C8B800'}
           >
-            LANÇAMENTO EM MASSA
+            IMPORTAR PLANILHA
           </button>
         </div>
         <input

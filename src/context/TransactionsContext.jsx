@@ -1,8 +1,9 @@
 import { createContext, useContext, useState, useEffect } from 'react';
+import db from '../services/storage';
 
 const TransactionsContext = createContext(null);
 
-const STORAGE_KEY = 'investimento_transactions';
+const STORAGE_NAME = 'transactions';
 
 const initialData = [
   {
@@ -37,28 +38,24 @@ const initialData = [
   },
 ];
 
-function loadFromStorage() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
-  } catch {}
-  return null;
-}
-
-function saveToStorage(data) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-  } catch {}
-}
-
 export function TransactionsProvider({ children }) {
-  const [transactions, setTransactions] = useState(() => {
-    return loadFromStorage() ?? initialData;
-  });
+  const [transactions, setTransactions] = useState(initialData);
+  const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    saveToStorage(transactions);
-  }, [transactions]);
+    db.read(STORAGE_NAME).then((data) => {
+      if (data && Array.isArray(data) && data.length > 0) {
+        setTransactions(data);
+      }
+      setLoaded(true);
+    });
+  }, []);
+
+  useEffect(() => {
+    if (loaded) {
+      db.write(STORAGE_NAME, transactions);
+    }
+  }, [transactions, loaded]);
 
   const addTransaction = (entry) => {
     setTransactions((prev) => [

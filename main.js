@@ -1,7 +1,44 @@
-const { app, BrowserWindow } = require('electron');
+const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
+const fs = require('fs');
 
 let mainWindow;
+
+const DATA_DIR = path.join(app.getPath('userData'), 'db');
+
+function ensureDataDir() {
+  if (!fs.existsSync(DATA_DIR)) {
+    fs.mkdirSync(DATA_DIR, { recursive: true });
+  }
+}
+
+function getFilePath(name) {
+  return path.join(DATA_DIR, `${name}.json`);
+}
+
+ipcMain.handle('db:read', (_event, name) => {
+  ensureDataDir();
+  const fp = getFilePath(name);
+  try {
+    if (fs.existsSync(fp)) {
+      return JSON.parse(fs.readFileSync(fp, 'utf-8'));
+    }
+  } catch (e) {
+    console.error('Erro ao ler', name, e.message);
+  }
+  return null;
+});
+
+ipcMain.handle('db:write', (_event, name, data) => {
+  ensureDataDir();
+  try {
+    fs.writeFileSync(getFilePath(name), JSON.stringify(data, null, 2), 'utf-8');
+    return true;
+  } catch (e) {
+    console.error('Erro ao escrever', name, e.message);
+    return false;
+  }
+});
 
 function createWindow() {
   mainWindow = new BrowserWindow({
