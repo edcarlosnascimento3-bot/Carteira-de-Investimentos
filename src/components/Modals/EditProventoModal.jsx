@@ -1,3 +1,4 @@
+import { formatCurrency } from '../../services/format';
 import { useState } from 'react';
 
 const tipos = ['Ação', 'FII', 'Renda Fixa'];
@@ -186,7 +187,7 @@ function EditProventoModal({ data, onSave, onClose }) {
               fontWeight: 'bold',
               fontFamily: 'Consolas, monospace',
             }}>
-              R$ {(Number(form.dividendos) + Number(form.jcp) + Number(form.rendimento) + Number(form.reembolso)).toFixed(2).replace('.', ',')}
+              {formatCurrency(Number(form.dividendos) + Number(form.jcp) + Number(form.rendimento) + Number(form.reembolso))}
             </span>
           </div>
         </div>

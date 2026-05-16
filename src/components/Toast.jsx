@@ -8,8 +8,8 @@ function Toast({ message, visible, onClose, color = '#00CC66', direction = 'left
     setExiting(false);
     const timer = setTimeout(() => {
       setExiting(true);
-      setTimeout(onClose, 2500);
-    }, 2000);
+      setTimeout(onClose, 3000);
+    }, 4000);
     return () => clearTimeout(timer);
   }, [visible, onClose]);
 

@@ -1,3 +1,4 @@
+import { formatCurrency } from '../services/format';
 import { useState, useCallback } from 'react';
 import { useTransactions } from '../context/TransactionsContext';
 import { useUser } from '../context/UserContext';
@@ -249,7 +250,7 @@ function Bonificacao() {
         <div style={rowStyle}>
           <label style={labelStyle}>Total</label>
           <div className="bonificacao-total">
-            R$ {total.toFixed(2).replace('.', ',')}
+            {formatCurrency(total)}
           </div>
         </div>
 

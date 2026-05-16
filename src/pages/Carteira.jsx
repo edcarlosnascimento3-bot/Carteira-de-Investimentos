@@ -1,4 +1,5 @@
 import { useMemo, useState, useEffect } from 'react';
+import { formatCurrency, formatNumber } from '../services/format';
 import { useTransactions } from '../context/TransactionsContext';
 import { usePrices } from '../hooks/usePrices';
 import LogoImage from '../components/LogoImage';
@@ -106,8 +107,7 @@ function Carteira() {
     }).filter((g) => g.quantidade > 0);
   }, [transactions, prices, changes, manualAtual]);
 
-  const formatCurrency = (v) =>
-    `R$ ${v.toFixed(2).replace('.', ',')}`;
+
 
   const formatNumber = (v) =>
     v.toLocaleString('pt-BR');
@@ -182,7 +182,7 @@ function Carteira() {
                   <td className="td-valor">
                     {row.cotacao != null ? (
                       <>
-                        <span>{currencySymbols[row.tipo] || 'R$'} {row.cotacao.toFixed(2).replace('.', ',')}</span>
+                        <span>{currencySymbols[row.tipo] || 'R$'} {formatNumber(row.cotacao)}</span>
                         {row.variacao !== 0 && row.tipo !== 'Renda Fixa' && (
                           <span style={{
                             color: row.variacao >= 0 ? '#00CC66' : '#FF5555',
@@ -200,7 +200,7 @@ function Carteira() {
                   <td className="td-valor">{formatCurrency(row.investido)}</td>
                   <td className="td-valor">{formatCurrency(row.atual)}</td>
                   <td className="td-valor" style={{ color: row.rendimento >= 0 ? '#00CC66' : '#FF5555' }}>
-                    {row.rendimento >= 0 ? '+' : ''}{row.rendimento.toFixed(2).replace('.', ',')}%
+                    {row.rendimento >= 0 ? '+' : ''}{formatNumber(row.rendimento)}%
                   </td>
                   <td className="td-valor" style={{ color: row.resultado >= 0 ? '#00CC66' : '#FF5555' }}>
                     {row.resultado >= 0 ? '+' : ''}{formatCurrency(row.resultado)}

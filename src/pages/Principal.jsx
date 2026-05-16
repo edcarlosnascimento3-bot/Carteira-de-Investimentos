@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { formatCurrency, formatNumber } from '../services/format';
 import { useTransactions } from '../context/TransactionsContext';
 import { usePrices } from '../hooks/usePrices';
 import LogoImage from '../components/LogoImage';
@@ -100,8 +101,7 @@ function Principal() {
     return { patrimonio, investido, diferenca, rendimentoPct, totalTax };
   }, [portfolio, transactions]);
 
-  const formatCurrency = (v) =>
-    `R$ ${v.toFixed(2).replace('.', ',')}`;
+
 
   const formatNumber = (v) =>
     v.toLocaleString('pt-BR');
@@ -177,7 +177,7 @@ function Principal() {
           <div className="card-content">
             <div className="label" style={{ color: '#C8B800' }}>RENDIMENTO</div>
             <div className="value">
-              {totals.diferenca >= 0 ? '+' : ''}{totals.rendimentoPct.toFixed(2).replace('.', ',')}%
+              {totals.diferenca >= 0 ? '+' : ''}{formatNumber(totals.rendimentoPct)}%
             </div>
           </div>
           <div className="card-icon icon-pulse">📊</div>

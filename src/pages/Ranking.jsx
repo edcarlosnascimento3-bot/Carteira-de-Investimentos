@@ -1,3 +1,4 @@
+import { formatCurrency } from '../services/format';
 import { useState } from 'react';
 
 const tabs = [
@@ -42,8 +43,7 @@ function Ranking() {
   const [activeTab, setActiveTab] = useState('geral');
   const data = mockRankings[activeTab] || [];
 
-  const formatCurrency = (v) =>
-    `R$ ${v.toFixed(2).replace('.', ',')}`;
+
 
   return (
     <div>

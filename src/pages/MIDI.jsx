@@ -52,8 +52,7 @@ function MIDI() {
     return Object.values(map).sort((a, b) => a.ticker.localeCompare(b.ticker));
   }, [proventos, anoFiltro]);
 
-  const formatCurrency = (v) =>
-    `R$ ${v.toFixed(2).replace('.', ',')}`;
+
 
   return (
     <div style={{ marginTop: '-65px' }}>

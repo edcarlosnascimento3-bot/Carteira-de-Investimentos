@@ -1,4 +1,5 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
+import { formatCurrency } from '../services/format';
 import { useTransactions } from '../context/TransactionsContext';
 import { useUser } from '../context/UserContext';
 import EditTransactionModal from '../components/Modals/EditTransactionModal';
@@ -114,8 +115,7 @@ function Lancamentos() {
     });
   }, [transactions, filterTicker, filterTipo, filterOperacao, filterAno]);
 
-  const formatCurrency = (v) =>
-    `R$ ${v.toFixed(2).replace('.', ',')}`;
+
 
   const formatNumber = (v) =>
     v.toLocaleString('pt-BR');
@@ -264,7 +264,6 @@ function Lancamentos() {
     });
     setMassModal(null);
     setMassStatus({ type: 'success', msg: `${added} lançamento(s) importado(s) com sucesso!` });
-    setTimeout(() => setMassStatus(null), 4000);
   };
 
   const actionBtnStyle = {

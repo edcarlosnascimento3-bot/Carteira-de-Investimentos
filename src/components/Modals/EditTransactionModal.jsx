@@ -1,3 +1,4 @@
+import { formatCurrency } from '../../services/format';
 import { useState } from 'react';
 
 const tipos = ['Ação', 'FII', 'Renda Fixa'];
@@ -237,7 +238,7 @@ function EditTransactionModal({ data, transactions, onSave, onUpdateMultiple, on
               fontWeight: 'bold',
               fontFamily: 'Consolas, monospace',
             }}>
-              R$ {investido.toFixed(2).replace('.', ',')}
+              {formatCurrency(investido)}
             </span>
           </div>
         </div>

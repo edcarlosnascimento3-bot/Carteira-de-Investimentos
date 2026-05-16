@@ -1,3 +1,4 @@
+import { formatCurrency } from '../services/format';
 import { useState, useMemo, useRef } from 'react';
 import { useProventos } from '../context/ProventosContext';
 import { useUser } from '../context/UserContext';
@@ -119,8 +120,7 @@ function Proventos() {
     });
   }, [proventos, filterTicker, filterAno, filterDividendos, filterJcp, filterRendimento, filterReembolso]);
 
-  const formatCurrency = (v) =>
-    `R$ ${v.toFixed(2).replace('.', ',')}`;
+
 
   const calcMontante = (row) =>
     (row.dividendos || 0) + (row.jcp || 0) + (row.rendimento || 0) + (row.reembolso || 0);
@@ -253,7 +253,6 @@ function Proventos() {
     });
     setMassModal(null);
     setMassStatus({ type: 'success', msg: `${added} provento(s) importado(s) com sucesso!` });
-    setTimeout(() => setMassStatus(null), 4000);
   };
 
   const actionBtnStyle = {
