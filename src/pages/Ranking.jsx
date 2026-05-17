@@ -1,5 +1,8 @@
+import { useMemo, useState, useEffect } from 'react';
+import { useTransactions } from '../context/TransactionsContext';
+import { useProventos } from '../context/ProventosContext';
 import { formatCurrency } from '../services/format';
-import { useState } from 'react';
+import LogoImage from '../components/LogoImage';
 
 const tabs = [
   { id: 'geral', label: 'Ranking Geral' },
@@ -8,42 +11,144 @@ const tabs = [
   { id: 'dy', label: 'Ranking DY' },
 ];
 
-const mockRankings = {
-  geral: [
-    { ativo: 'PETR4', retorno: 32.5, dy: 8.2 },
-    { ativo: 'VALE3', retorno: 28.1, dy: 6.5 },
-    { ativo: 'ITUB4', retorno: 22.8, dy: 7.1 },
-    { ativo: 'BBAS3', retorno: 18.4, dy: 5.9 },
-    { ativo: 'HGLG11', retorno: 15.2, dy: 9.3 },
-  ],
-  anual: [
-    { ativo: 'PETR4', retorno: 32.5, dy: 8.2 },
-    { ativo: 'EMBR3', retorno: 27.3, dy: 2.1 },
-    { ativo: 'VALE3', retorno: 22.1, dy: 6.5 },
-    { ativo: 'ITUB4', retorno: 18.9, dy: 7.1 },
-    { ativo: 'WEGE3', retorno: 16.4, dy: 3.8 },
-  ],
-  retorno: [
-    { ativo: 'PETR4', retorno: 32.5, dy: 8.2, investido: 5000, atual: 6625 },
-    { ativo: 'VALE3', retorno: 28.1, dy: 6.5, investido: 8000, atual: 10248 },
-    { ativo: 'ITUB4', retorno: 22.8, dy: 7.1, investido: 3000, atual: 3684 },
-    { ativo: 'BBAS3', retorno: 18.4, dy: 5.9, investido: 6000, atual: 7104 },
-    { ativo: 'HGLG11', retorno: 15.2, dy: 9.3, investido: 10000, atual: 11520 },
-  ],
-  dy: [
-    { ativo: 'HGLG11', dy: 9.3, setor: 'FII' },
-    { ativo: 'PETR4', dy: 8.2, setor: 'Óleo e Gás' },
-    { ativo: 'ITUB4', dy: 7.1, setor: 'Financeiro' },
-    { ativo: 'VALE3', dy: 6.5, setor: 'Mineração' },
-    { ativo: 'TAEE11', dy: 6.1, setor: 'Energia' },
-  ],
+const thStyle = {
+  padding: '10px 14px',
+  textAlign: 'left',
+  color: '#666666',
+  fontWeight: 500,
+  fontSize: '0.8em',
+  textTransform: 'uppercase',
+  letterSpacing: '1px',
+  borderBottom: '1px solid #2A2A2A',
+};
+
+const tdStyle = {
+  padding: '10px 14px',
+  borderBottom: '1px solid #1A1A1A',
 };
 
 function Ranking() {
+  const { transactions } = useTransactions();
+  const { proventos } = useProventos();
   const [activeTab, setActiveTab] = useState('geral');
-  const data = mockRankings[activeTab] || [];
+  const [selectedAno, setSelectedAno] = useState(null);
 
+  const anos = useMemo(() => {
+    return [...new Set(proventos.map(p => p.ano))].sort((a, b) => b - a);
+  }, [proventos]);
 
+  useEffect(() => {
+    if (anos.length > 0 && selectedAno === null) {
+      setSelectedAno(anos[0]);
+    }
+  }, [anos, selectedAno]);
+
+  const geralData = useMemo(() => {
+    const map = {};
+    proventos.forEach(p => {
+      const t = p.ticker;
+      if (!map[t]) map[t] = 0;
+      map[t] += (p.dividendos || 0) + (p.jcp || 0) + (p.rendimento || 0) + (p.reembolso || 0);
+    });
+    return Object.entries(map)
+      .map(([ticker, total]) => ({ ticker, total: Math.round(total * 100) / 100 }))
+      .sort((a, b) => b.total - a.total);
+  }, [proventos]);
+
+  const anualData = useMemo(() => {
+    if (!selectedAno) return [];
+    const map = {};
+    proventos.filter(p => p.ano === selectedAno).forEach(p => {
+      const t = p.ticker;
+      if (!map[t]) map[t] = 0;
+      map[t] += (p.dividendos || 0) + (p.jcp || 0) + (p.rendimento || 0) + (p.reembolso || 0);
+    });
+    return Object.entries(map)
+      .map(([ticker, total]) => ({ ticker, total: Math.round(total * 100) / 100 }))
+      .sort((a, b) => b.total - a.total);
+  }, [proventos, selectedAno]);
+
+  const investedMap = useMemo(() => {
+    const map = {};
+    transactions.forEach(t => {
+      if (!map[t.ticker]) map[t.ticker] = 0;
+      map[t.ticker] += t.operacao === 'Compra' ? t.investido : -t.investido;
+    });
+    return map;
+  }, [transactions]);
+
+  const proventosTotalMap = useMemo(() => {
+    const map = {};
+    proventos.forEach(p => {
+      const t = p.ticker;
+      if (!map[t]) map[t] = 0;
+      map[t] += (p.dividendos || 0) + (p.jcp || 0) + (p.rendimento || 0) + (p.reembolso || 0);
+    });
+    return map;
+  }, [proventos]);
+
+  const retornoData = useMemo(() => {
+    const result = [];
+    Object.entries(proventosTotalMap).forEach(([ticker, proventosTotal]) => {
+      const invested = investedMap[ticker] || 0;
+      if (invested > 0) {
+        result.push({
+          ticker,
+          total: Math.round((proventosTotal / invested) * 10000) / 100,
+        });
+      }
+    });
+    return result.sort((a, b) => b.total - a.total);
+  }, [proventosTotalMap, investedMap]);
+
+  const dyData = useMemo(() => {
+    if (!selectedAno) return [];
+    const proventosAnoMap = {};
+    proventos.filter(p => p.ano === selectedAno).forEach(p => {
+      const t = p.ticker;
+      if (!proventosAnoMap[t]) proventosAnoMap[t] = 0;
+      proventosAnoMap[t] += (p.dividendos || 0) + (p.jcp || 0) + (p.rendimento || 0) + (p.reembolso || 0);
+    });
+    const result = [];
+    Object.entries(proventosAnoMap).forEach(([ticker, proventosTotal]) => {
+      const invested = investedMap[ticker] || 0;
+      if (invested > 0) {
+        result.push({
+          ticker,
+          total: Math.round((proventosTotal / invested) * 10000) / 100,
+        });
+      }
+    });
+    return result.sort((a, b) => b.total - a.total);
+  }, [proventos, investedMap, selectedAno]);
+
+  const currentData = useMemo(() => {
+    switch (activeTab) {
+      case 'geral': return geralData;
+      case 'anual': return anualData;
+      case 'retorno': return retornoData;
+      case 'dy': return dyData;
+      default: return [];
+    }
+  }, [activeTab, geralData, anualData, retornoData, dyData]);
+
+  const isAnualOrDy = activeTab === 'anual' || activeTab === 'dy';
+
+  const valueHeader = activeTab === 'retorno' ? 'Retorno (%)' : activeTab === 'dy' ? 'DY (%)' : 'Valor Acumulado';
+
+  function formatValue(item) {
+    if (activeTab === 'retorno' || activeTab === 'dy') {
+      return `${item.total.toFixed(2)}%`;
+    }
+    return formatCurrency(item.total);
+  }
+
+  function valueColor(item) {
+    if (activeTab === 'retorno' || activeTab === 'dy') {
+      return '#00CC66';
+    }
+    return '#E0E0E0';
+  }
 
   return (
     <div>
@@ -52,7 +157,6 @@ function Ranking() {
         Compare a performance dos seus investimentos
       </p>
 
-      {/* Abas do Ranking */}
       <div style={{
         display: 'flex',
         gap: '4px',
@@ -83,12 +187,33 @@ function Ranking() {
         ))}
       </div>
 
-      {/* Tabela do Ranking */}
+      {isAnualOrDy && anos.length > 0 && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+          <span style={{ color: '#E0E0E0', fontSize: '0.95em', fontWeight: 600 }}>
+            Selecione o ano
+          </span>
+          <span style={{ color: '#FF0000', fontSize: '2em', lineHeight: 1 }}>➡</span>
+          <select
+            value={selectedAno || ''}
+            onChange={e => setSelectedAno(Number(e.target.value))}
+            style={{
+              background: '#0D0D0D', color: '#E0E0E0', border: '1px solid #2A2A2A', borderRadius: 6,
+              padding: '6px 12px', fontSize: '1em', cursor: 'pointer', fontFamily: 'inherit',
+            }}
+          >
+            {anos.map(a => (
+              <option key={a} value={a}>{a}</option>
+            ))}
+          </select>
+        </div>
+      )}
+
       <div style={{
         background: '#151515',
         border: '1px solid #2A2A2A',
-        borderRadius: '12px',
+        borderRadius: 12,
         overflow: 'hidden',
+        maxWidth: 520,
       }}>
         <table style={{
           width: '100%',
@@ -96,22 +221,25 @@ function Ranking() {
           fontSize: '0.9em',
         }}>
           <thead>
-            <tr style={{ borderBottom: '1px solid #2A2A2A' }}>
+            <tr>
               <th style={thStyle}>#</th>
-              <th style={thStyle}>Ativo</th>
-              {activeTab === 'retorno' && <th style={thStyle}>Valor Investido</th>}
-              {activeTab === 'retorno' && <th style={thStyle}>Valor Atual</th>}
-              {activeTab === 'dy' && <th style={thStyle}>Setor</th>}
-              <th style={{ ...thStyle, textAlign: 'right' }}>Retorno (%)</th>
-              <th style={{ ...thStyle, textAlign: 'right' }}>DY (%)</th>
+              <th style={thStyle}></th>
+              <th style={thStyle}>Ticker</th>
+              <th style={{ ...thStyle, textAlign: 'right' }}>{valueHeader}</th>
             </tr>
           </thead>
           <tbody>
-            {data.map((item, i) => (
+            {currentData.length === 0 && (
+              <tr>
+                <td colSpan={4} style={{ ...tdStyle, textAlign: 'center', color: '#666', padding: 30 }}>
+                  Nenhum dado disponível
+                </td>
+              </tr>
+            )}
+            {currentData.map((item, i) => (
               <tr
-                key={item.ativo}
+                key={item.ticker}
                 style={{
-                  borderBottom: i < data.length - 1 ? '1px solid #1A1A1A' : 'none',
                   transition: 'background 0.2s ease',
                 }}
                 onMouseEnter={(e) => e.currentTarget.style.background = '#1A1A00'}
@@ -120,34 +248,25 @@ function Ranking() {
                 <td style={tdStyle}>
                   <span style={{
                     display: 'inline-flex',
-                    width: '24px',
-                    height: '24px',
+                    width: '22px',
+                    height: '22px',
                     borderRadius: '50%',
                     background: i < 3 ? '#C8B80022' : 'transparent',
                     color: i < 3 ? '#FFFFFF' : '#999999',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    fontSize: '0.85em',
+                    fontSize: '0.8em',
                     fontWeight: 'bold',
                   }}>
                     {i + 1}
                   </span>
                 </td>
-                <td style={{ ...tdStyle, fontWeight: 600, color: '#FFFFFF' }}>{item.ativo}</td>
-                {activeTab === 'retorno' && 'investido' in item && (
-                  <td style={tdStyle}>{formatCurrency(item.investido)}</td>
-                )}
-                {activeTab === 'retorno' && 'atual' in item && (
-                  <td style={{ ...tdStyle, color: '#FFFFFF' }}>{formatCurrency(item.atual)}</td>
-                )}
-                {activeTab === 'dy' && 'setor' in item && (
-                  <td style={{ ...tdStyle, color: '#999999' }}>{item.setor}</td>
-                )}
-                <td style={{ ...tdStyle, textAlign: 'right', color: '#00CC66' }}>
-                  +{item.retorno}%
+                <td style={tdStyle}>
+                  <LogoImage ticker={item.ticker} size={28} />
                 </td>
-                <td style={{ ...tdStyle, textAlign: 'right', color: '#E0E0E0' }}>
-                  {item.dy}%
+                <td style={{ ...tdStyle, fontWeight: 600, color: '#FFFFFF' }}>{item.ticker}</td>
+                <td style={{ ...tdStyle, textAlign: 'right', color: valueColor(item), fontWeight: 600 }}>
+                  {formatValue(item)}
                 </td>
               </tr>
             ))}
@@ -157,19 +276,5 @@ function Ranking() {
     </div>
   );
 }
-
-const thStyle = {
-  padding: '12px 16px',
-  textAlign: 'left',
-  color: '#666666',
-  fontWeight: 500,
-  fontSize: '0.85em',
-  textTransform: 'uppercase',
-  letterSpacing: '1px',
-};
-
-const tdStyle = {
-  padding: '12px 16px',
-};
 
 export default Ranking;

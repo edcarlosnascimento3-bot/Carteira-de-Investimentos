@@ -1201,3 +1201,168 @@ body {
   opacity: 1 !important;
   stroke: none !important;
 }
+
+/* ============================================================
+   CALENDÁRIO DE RENDIMENTOS
+   ============================================================ */
+.calendario-container {
+  background: #151515;
+  border: 1px solid #2A2A2A;
+  border-radius: 12px;
+  padding: 24px;
+  max-width: 900px;
+  margin: 0 auto;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  display: flex;
+  gap: 30px;
+  align-items: flex-start;
+}
+
+.calendario-main {
+  flex: 1;
+}
+
+.calendario-header {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.calendario-header h3 {
+  font-size: 1.5em;
+  color: #C8B800;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+.calendario-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.calendario-dia-semana {
+  text-align: center;
+  font-size: 0.8em;
+  color: #888;
+  font-weight: bold;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.calendario-celula {
+  aspect-ratio: 1;
+  background: #1A1A1A;
+  border: 1px solid #2A2A2A;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 4px;
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.calendario-celula.dia-vazio {
+  background: transparent;
+  border: none;
+}
+
+.calendario-celula.dia-ativo:hover {
+  background: #252525;
+  border-color: #444;
+}
+
+.calendario-celula.tem-evento {
+  border-color: #C8B80055;
+  background: #1A1A00;
+}
+
+.dia-numero {
+  font-size: 1em;
+  font-weight: bold;
+  color: #E0E0E0;
+  margin-bottom: 4px;
+}
+
+.eventos-badges {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+}
+
+.evento-badge {
+  font-size: 0.55em;
+  padding: 2px 4px;
+  border-radius: 4px;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: bold;
+  background: #333333;
+  color: white;
+}
+
+.evento-badge.itub4 { background: #E63946; color: white; }
+.evento-badge.hglg11 { background: #2A9D8F; color: white; }
+.evento-badge.petr4 { background: #0077B6; color: white; }
+.evento-badge.bbas3 { background: #FCE116; color: #111; }
+
+.eventos-lista {
+  width: 300px;
+  border-left: 1px solid #2A2A2A;
+  padding-left: 24px;
+  flex-shrink: 0;
+}
+
+.eventos-lista h4 {
+  font-size: 1.1em;
+  color: #CCC;
+  margin-bottom: 12px;
+}
+
+.eventos-lista ul {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.eventos-lista li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #1A1A1A;
+  padding: 10px 16px;
+  border-radius: 8px;
+  border: 1px solid #2A2A2A;
+}
+
+.evento-data {
+  font-family: 'Consolas', monospace;
+  color: #C8B800;
+  font-weight: bold;
+}
+
+.evento-ativo {
+  font-size: 0.8em;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-weight: bold;
+  background: #333333;
+  color: white;
+  border: 1px solid #444444;
+}
+
+.evento-ativo.itub4 { background: #E6394633; color: #E63946; border: 1px solid #E63946; }
+.evento-ativo.hglg11 { background: #2A9D8F33; color: #2A9D8F; border: 1px solid #2A9D8F; }
+.evento-ativo.petr4 { background: #0077B633; color: #0077B6; border: 1px solid #0077B6; }
+
+.evento-tipo {
+  color: #E0E0E0;
+  font-size: 0.9em;
+}

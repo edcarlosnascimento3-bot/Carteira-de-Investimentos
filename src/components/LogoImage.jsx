@@ -21,22 +21,43 @@ function isCrypto(t) {
   return !/[0-9]/.test(t) && t === t.toUpperCase() && t.length <= 5;
 }
 
+const customLogos = {
+  BBAS3: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/cc/Banco_do_Brasil_logo_2015.svg/512px-Banco_do_Brasil_logo_2015.svg.png',
+  TAEE3: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7b/Taesa_logo.svg/512px-Taesa_logo.svg.png',
+  TAEE4: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7b/Taesa_logo.svg/512px-Taesa_logo.svg.png',
+  TAEE11: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7b/Taesa_logo.svg/512px-Taesa_logo.svg.png',
+  ITSA3: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/91/Itausa_logo.svg/512px-Itausa_logo.svg.png',
+  ITSA4: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/91/Itausa_logo.svg/512px-Itausa_logo.svg.png',
+  ITUB3: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c0/Itau_logo.svg/512px-Itau_logo.svg.png',
+  ITUB4: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c0/Itau_logo.svg/512px-Itau_logo.svg.png',
+};
+
 function getLogoSources(ticker) {
   if (!ticker) return [];
   const t = ticker.toUpperCase();
   const domain = domains[t];
   const sources = [];
 
+  if (customLogos[t]) {
+    sources.push(customLogos[t]);
+  }
+
   if (domain) {
+    // Clearbit fornece logos grandes e de alta qualidade (melhor opção)
+    sources.push(`https://logo.clearbit.com/${domain}`);
+    // Google Favicons como fallback seguro (tamanho 128px para não ficar borrado)
+    sources.push(`https://www.google.com/s2/favicons?domain=${domain}&sz=128`);
+    // DuckDuckGo como último recurso
     sources.push(`https://icons.duckduckgo.com/ip3/${domain}.ico`);
-    sources.push(`https://www.google.com/s2/favicons?domain=${domain}&sz=64`);
   }
 
   if (/[0-9]/.test(t)) {
+    // Fallbacks para B3 caso não tenha domínio mapeado
+    // Tenta carregar do statusinvest (pode ter proteção, mas vale a pena tentar)
+    sources.push(`https://statusinvest.com.br/img/company/avatar/${t.toLowerCase()}.jpeg`);
+    sources.push(`https://statusinvest.com.br/assets/img/logo/${t.toLowerCase()}.svg`);
+    // Fallback TradingView
     sources.push(`https://s3-symbol-logo.tradingview.com/${t}.SA.svg`);
-    sources.push(`https://s3-symbol-logo.tradingview.com/${t}.SVG`);
-    sources.push(`https://www.statusinvest.com.br/assets/img/logo/${t}.png`);
-    sources.push(`https://statusinvest.com.br/assets/img/logo/${t}.svg`);
   }
 
   if (isCrypto(t)) {

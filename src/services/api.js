@@ -39,9 +39,18 @@ async function fetchYahoo(ticker) {
       const json = await res.json();
       const meta = json?.chart?.result?.[0]?.meta;
       if (meta?.regularMarketPrice) {
+        let change = meta.regularMarketChangePercent;
+        if (change === undefined || change === null) {
+          const prevClose = meta.chartPreviousClose || meta.previousClose;
+          if (prevClose) {
+            change = ((meta.regularMarketPrice - prevClose) / prevClose) * 100;
+          } else {
+            change = 0;
+          }
+        }
         return {
           price: meta.regularMarketPrice,
-          change: meta.regularMarketChangePercent ?? 0,
+          change: change,
         };
       }
     } catch {}
@@ -58,9 +67,18 @@ async function fetchYahooViaProxy(ticker) {
     const json = await res.json();
     const meta = json?.chart?.result?.[0]?.meta;
     if (meta?.regularMarketPrice) {
+      let change = meta.regularMarketChangePercent;
+      if (change === undefined || change === null) {
+        const prevClose = meta.chartPreviousClose || meta.previousClose;
+        if (prevClose) {
+          change = ((meta.regularMarketPrice - prevClose) / prevClose) * 100;
+        } else {
+          change = 0;
+        }
+      }
       return {
         price: meta.regularMarketPrice,
-        change: meta.regularMarketChangePercent ?? 0,
+        change: change,
       };
     }
   } catch {}

@@ -104,7 +104,7 @@ function Lancamentos() {
       if (filterTicker && t.ticker !== filterTicker) return false;
       if (filterTipo && t.tipo !== filterTipo) return false;
       if (filterOperacao && t.operacao !== filterOperacao) return false;
-      if (filterAno && t.ano !== filterAno) return false;
+      if (filterAno && Number(t.ano) !== Number(filterAno)) return false;
       return true;
     }).sort((a, b) => {
       const [da, ma, ya] = a.data.split('/').map(Number);
@@ -340,6 +340,7 @@ function Lancamentos() {
           >
             IMPORTAR PLANILHA
           </button>
+
         </div>
         <input
           ref={fileInputRef}

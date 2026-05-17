@@ -16,6 +16,13 @@ const typeColors = {
 
 const CHART_COLORS = ['#C8B800','#CC8800','#0099CC','#CC44CC','#00BB66','#FF5555','#3399FF','#FF8800','#66CC00','#9933FF','#FFD700','#00CCCC'];
 
+const INDEX_HISTORY = {
+  IBOVESPA: { cor: '#3399FF', dados: { 2018: 15.0, 2019: 31.6, 2020: 2.9, 2021: -11.9, 2022: 4.7, 2023: 22.3, 2024: -10.4, 2025: 8.0 } },
+  IFIX: { cor: '#00CC66', dados: { 2018: 8.2, 2019: 15.7, 2020: 0.8, 2021: -4.9, 2022: 8.2, 2023: 18.5, 2024: 12.0, 2025: 5.0 } },
+  IPCA: { cor: '#C8B800', dados: { 2018: 3.75, 2019: 4.31, 2020: 4.52, 2021: 10.06, 2022: 5.79, 2023: 4.62, 2024: 4.83, 2025: 5.0 } },
+  CDI: { cor: '#9933FF', dados: { 2018: 6.42, 2019: 5.96, 2020: 2.76, 2021: 4.43, 2022: 12.38, 2023: 13.04, 2024: 10.80, 2025: 8.0 } },
+};
+
 const tooltipStyle = {
   background: '#151515', border: '1px solid #2A2A2A', borderRadius: 8,
   fontSize: '0.85em', color: '#E0E0E0',
@@ -55,6 +62,7 @@ function Graficos() {
   const [selectedProventosAno, setSelectedProventosAno] = useState(null);
   const [selectedProventosAnoTipo, setSelectedProventosAnoTipo] = useState(null);
   const [selectedProventosTipos, setSelectedProventosTipos] = useState([]);
+  const [selectedIndices, setSelectedIndices] = useState(['IBOVESPA', 'IFIX', 'IPCA', 'CDI']);
 
   const monthNames = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
   const normalizeTipo = (tipo) => tipo === 'FII Agro' ? 'FII' : tipo;
@@ -332,6 +340,74 @@ function Graficos() {
   }, [portfolioBase, selectedTicker, selectedType]);
 
   const hasFilter = selectedType || selectedTicker;
+
+  const portfolioYearlyReturn = useMemo(() => {
+    const yearlyNet = {};
+    transactions.forEach(t => {
+      yearlyNet[t.ano] = (yearlyNet[t.ano] || 0) + (t.operacao === 'Compra' ? t.investido : -t.investido);
+    });
+    const years = Object.keys(yearlyNet).map(Number).sort((a, b) => a - b);
+    const result = {};
+    let cum = 0;
+    years.forEach(year => {
+      const startCapital = cum;
+      const dividends = proventos
+        .filter(p => p.ano === year)
+        .reduce((sum, p) => sum + (p.dividendos || 0) + (p.jcp || 0) + (p.rendimento || 0) + (p.reembolso || 0), 0);
+      result[year] = startCapital > 0 ? Math.round((dividends / startCapital) * 10000) / 100 : null;
+      cum += yearlyNet[year];
+    });
+    return result;
+  }, [transactions, proventos]);
+
+  const comparisonChartData = useMemo(() => {
+    const portfolioYears = new Set();
+    transactions.forEach(t => portfolioYears.add(t.ano));
+    proventos.forEach(p => portfolioYears.add(p.ano));
+    if (portfolioYears.size === 0) return [];
+    const minPortfolioYear = Math.min(...portfolioYears);
+    const maxPortfolioYear = Math.max(...portfolioYears);
+    const allYears = new Set();
+    Object.values(INDEX_HISTORY).forEach(idx => Object.keys(idx.dados).forEach(y => allYears.add(Number(y))));
+    const sorted = [...allYears].sort((a, b) => a - b).filter(y => y >= minPortfolioYear && y <= maxPortfolioYear);
+    return sorted.map(year => {
+      const entry = { year: String(year) };
+      const pfReturn = portfolioYearlyReturn[year];
+      if (pfReturn !== undefined && pfReturn !== null) entry['Carteira'] = pfReturn;
+      Object.entries(INDEX_HISTORY).forEach(([key, idx]) => {
+        if (idx.dados[year] !== undefined) entry[key] = idx.dados[year];
+      });
+      const hasData = entry['Carteira'] !== undefined || selectedIndices.some(idx => entry[idx] !== undefined);
+      return hasData ? entry : null;
+    }).filter(Boolean);
+  }, [portfolioYearlyReturn, selectedIndices, transactions, proventos]);
+
+  const comparisonAccumulatedData = useMemo(() => {
+    if (comparisonChartData.length === 0) return [];
+    let portfolioAcc = 100;
+    const indexAcc = {};
+    Object.keys(INDEX_HISTORY).forEach(key => { indexAcc[key] = 100; });
+    return comparisonChartData.map(entry => {
+      const accEntry = { year: entry.year };
+      if (entry.Carteira !== undefined) {
+        portfolioAcc *= (1 + entry.Carteira / 100);
+        accEntry.Carteira = Math.round(portfolioAcc * 100) / 100;
+      }
+      selectedIndices.forEach(idx => {
+        if (entry[idx] !== undefined) {
+          indexAcc[idx] *= (1 + entry[idx] / 100);
+          accEntry[idx] = Math.round(indexAcc[idx] * 100) / 100;
+        }
+      });
+      return accEntry;
+    });
+  }, [comparisonChartData, selectedIndices]);
+
+  const handleIndexCheckbox = useCallback((index) => {
+    setSelectedIndices(prev =>
+      prev.includes(index) ? prev.filter(i => i !== index) : [...prev, index]
+    );
+  }, []);
 
   return (
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }}>
@@ -658,6 +734,92 @@ function Graficos() {
                 Selecione ao menos um tipo de ativo
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {comparisonChartData.length > 1 && (
+        <div className="chart-card" style={{ display: 'flex', flexDirection: 'column', position: 'relative', gridColumn: '1 / -1' }}>
+          <h2 style={{ textAlign: 'center' }}>Comparativo Carteira vs Índices (% anual)</h2>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '8px 0', flexWrap: 'wrap' }}>
+            <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.9em', color: '#FF3333', fontWeight: 700 }}>
+              <span style={{ width: 16, height: 3, background: '#FF3333', borderRadius: 2, display: 'inline-block' }} />
+              Carteira
+            </span>
+            {Object.entries(INDEX_HISTORY).map(([key, val]) => (
+              <label key={key} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.9em', cursor: 'pointer', color: val.cor, fontWeight: 700 }}>
+                <input
+                  type="checkbox"
+                  checked={selectedIndices.includes(key)}
+                  onChange={() => handleIndexCheckbox(key)}
+                  style={{ accentColor: val.cor }}
+                />
+                <span style={{ width: 12, height: 3, background: val.cor, borderRadius: 2, display: 'inline-block' }} />
+                {key}
+              </label>
+            ))}
+          </div>
+          <div style={{ flex: 1, minHeight: 0 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={comparisonChartData} margin={{ left: 30, right: 30, top: 30, bottom: 10 }}>
+                <defs>
+                  <filter id="lineShadow" x="-20%" y="-20%" width="140%" height="140%">
+                    <feDropShadow dx="2" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.5" />
+                  </filter>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#2A2A2A" />
+                <XAxis dataKey="year" tick={{ fill: '#FFD700', fontSize: 13, fontWeight: 700 }} axisLine={{ stroke: '#2A2A2A' }} tickLine={false} />
+                <YAxis tick={{ fill: '#999', fontSize: 11 }} axisLine={{ stroke: '#2A2A2A' }} tickLine={false} tickFormatter={(v) => `${v}%`} />
+                <Tooltip contentStyle={tooltipStyle} formatter={(v) => [`${v.toFixed(2)}%`]} />
+                <Line type="monotone" dataKey="Carteira" stroke="#FF3333" strokeWidth={3} dot={{ r: 5, fill: '#FF3333', strokeWidth: 0 }} filter="url(#lineShadow)" animationDuration={2000} />
+                {selectedIndices.map(idx => (
+                  <Line key={idx} type="monotone" dataKey={idx} stroke={INDEX_HISTORY[idx]?.cor || '#666'} strokeWidth={2} dot={{ r: 4, fill: INDEX_HISTORY[idx]?.cor || '#666', strokeWidth: 0 }} filter="url(#lineShadow)" animationDuration={2000} />
+                ))}
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
+
+      {comparisonAccumulatedData.length > 1 && (
+        <div className="chart-card" style={{ display: 'flex', flexDirection: 'column', position: 'relative', gridColumn: '1 / -1' }}>
+          <h2 style={{ textAlign: 'center' }}>Rentabilidade Acumulada (base 100)</h2>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '8px 0', flexWrap: 'wrap' }}>
+            <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.9em', color: '#FF3333', fontWeight: 700 }}>
+              <span style={{ width: 16, height: 3, background: '#FF3333', borderRadius: 2, display: 'inline-block' }} />
+              Carteira
+            </span>
+            {Object.entries(INDEX_HISTORY).map(([key, val]) => (
+              <label key={key} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.9em', cursor: 'pointer', color: val.cor, fontWeight: 700 }}>
+                <input
+                  type="checkbox"
+                  checked={selectedIndices.includes(key)}
+                  onChange={() => handleIndexCheckbox(key)}
+                  style={{ accentColor: val.cor }}
+                />
+                <span style={{ width: 12, height: 3, background: val.cor, borderRadius: 2, display: 'inline-block' }} />
+                {key}
+              </label>
+            ))}
+          </div>
+          <div style={{ flex: 1, minHeight: 0 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={comparisonAccumulatedData} margin={{ left: 30, right: 30, top: 30, bottom: 10 }}>
+                <defs>
+                  <filter id="accShadow" x="-20%" y="-20%" width="140%" height="140%">
+                    <feDropShadow dx="2" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.5" />
+                  </filter>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#2A2A2A" />
+                <XAxis dataKey="year" tick={{ fill: '#FFD700', fontSize: 13, fontWeight: 700 }} axisLine={{ stroke: '#2A2A2A' }} tickLine={false} />
+                <YAxis tick={{ fill: '#999', fontSize: 11 }} axisLine={{ stroke: '#2A2A2A' }} tickLine={false} domain={['auto', 'auto']} />
+                <Tooltip contentStyle={tooltipStyle} formatter={(v) => [v.toFixed(2), 'Valor']} />
+                <Line type="monotone" dataKey="Carteira" stroke="#FF3333" strokeWidth={3} dot={{ r: 5, fill: '#FF3333', strokeWidth: 0 }} filter="url(#accShadow)" animationDuration={2000} />
+                {selectedIndices.map(idx => (
+                  <Line key={idx} type="monotone" dataKey={idx} stroke={INDEX_HISTORY[idx]?.cor || '#666'} strokeWidth={2} dot={{ r: 4, fill: INDEX_HISTORY[idx]?.cor || '#666', strokeWidth: 0 }} filter="url(#accShadow)" animationDuration={2000} />
+                ))}
+              </LineChart>
+            </ResponsiveContainer>
           </div>
         </div>
       )}

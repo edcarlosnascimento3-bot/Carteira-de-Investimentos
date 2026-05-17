@@ -23,7 +23,7 @@ const menuItems = [
   { id: 'lancamentos', label: 'Lançamentos', icon: '📝' },
   { id: 'carteira', label: 'Carteira', icon: '💼' },
   { id: 'recebiveis', label: 'Proventos', icon: '💰' },
-  { id: 'rendimentos', label: 'Rendimentos', icon: '📈' },
+  { id: 'rendimentos', label: 'Calendário', icon: '📅' },
   { id: 'ranking', label: 'Ranking', icon: '🏆' },
   { id: 'graficos', label: 'Gráficos', icon: '📊' },
   { id: 'irrf', label: 'IRRF', icon: '🧾' },

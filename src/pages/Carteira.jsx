@@ -3,6 +3,8 @@ import { formatCurrency, formatNumber } from '../services/format';
 import { useTransactions } from '../context/TransactionsContext';
 import { usePrices } from '../hooks/usePrices';
 import LogoImage from '../components/LogoImage';
+import Toast from '../components/Toast';
+import GraficoInvestidoPorTipo3D from '../components/GraficoInvestidoPorTipo3D';
 
 const typeIcons = {
   'Ação': '📈',
@@ -37,7 +39,7 @@ const currencySymbols = {
 };
 
 function Carteira() {
-  const { transactions } = useTransactions();
+  const { transactions, updateTransaction } = useTransactions();
   const [editRf, setEditRf] = useState(null);
   const [editRfValue, setEditRfValue] = useState('');
 
@@ -48,6 +50,14 @@ function Carteira() {
   useEffect(() => {
     localStorage.setItem('investimento_rf_manual', JSON.stringify(manualAtual));
   }, [manualAtual]);
+
+  const [restructureType, setRestructureType] = useState(null);
+  const [restructureTicker, setRestructureTicker] = useState('');
+  const [restructureFactor, setRestructureFactor] = useState(1);
+  const [showRestructureConfirm, setShowRestructureConfirm] = useState(false);
+  const [massStatus, setMassStatus] = useState(null);
+
+  const uniqueTickers = useMemo(() => [...new Set(transactions.map(t => t.ticker))].sort(), [transactions]);
 
   const tickers = useMemo(() => {
     const base = [...new Set(transactions.map((t) => t.ticker))];
@@ -126,6 +136,30 @@ function Carteira() {
     setEditRf(null);
   };
 
+  const applyRestructure = () => {
+    const factor = restructureFactor;
+    const ticker = restructureTicker;
+    let count = 0;
+    transactions.forEach(t => {
+      if (t.ticker !== ticker) return;
+      const newQuantidade = restructureType === 'agrupamento'
+        ? t.quantidade / factor
+        : t.quantidade * factor;
+      const newValor = restructureType === 'agrupamento'
+        ? t.valor * factor
+        : t.valor / factor;
+      updateTransaction(t.id, {
+        quantidade: Math.round(newQuantidade * 100) / 100,
+        valor: Math.round(newValor * 100) / 100,
+        investido: Math.round(newQuantidade * newValor * 100) / 100,
+      });
+      count++;
+    });
+    setRestructureType(null);
+    setShowRestructureConfirm(false);
+    setMassStatus({ type: 'success', msg: `${count} registro(s) atualizado(s) para ${ticker}!` });
+  };
+
   const actionBtnStyle = {
     background: 'transparent', border: 'none', cursor: 'pointer',
     padding: '6px', borderRadius: '6px', transition: 'all 0.2s ease',
@@ -135,15 +169,55 @@ function Carteira() {
   return (
     <div>
       <h1>Carteira</h1>
-      <p className="subtitle">
-        Posição consolidada por ativo
-        {portfolio.length > 0 && (
-          <span style={{ color: '#666666', marginLeft: '8px' }}>
-            — {portfolio.length} ativo(s)
-            {loading && <span style={{ color: '#C8B800', marginLeft: '8px' }}>atualizando...</span>}
-          </span>
-        )}
-      </p>
+      <div style={{ display: 'flex', alignItems: 'flex-end', marginBottom: 20 }}>
+        <p className="subtitle" style={{ margin: 0, flex: 1 }}>
+          Posição consolidada por ativo
+          {portfolio.length > 0 && (
+            <span style={{ color: '#666666', marginLeft: '8px' }}>
+              — {portfolio.length} ativo(s)
+              {loading && <span style={{ color: '#C8B800', marginLeft: '8px' }}>atualizando...</span>}
+            </span>
+          )}
+        </p>
+        <div style={{ display: 'flex', gap: 10 }}>
+          <button
+          onClick={() => {
+            setRestructureType('agrupamento');
+            setRestructureTicker('');
+            setRestructureFactor(1);
+            setShowRestructureConfirm(false);
+          }}
+          style={{
+            background: '#2A7A3A', color: '#FFFFFF', border: 'none', borderRadius: 8,
+            padding: '10px 22px', fontSize: '0.85em', fontWeight: 700, fontFamily: 'inherit',
+            cursor: 'pointer', letterSpacing: '1px', whiteSpace: 'nowrap',
+            transition: 'all 0.2s ease',
+          }}
+          onMouseOver={e => e.target.style.background = '#3A9A4A'}
+          onMouseOut={e => e.target.style.background = '#2A7A3A'}
+        >
+          AGRUPAMENTO
+        </button>
+        <button
+          onClick={() => {
+            setRestructureType('desdobramento');
+            setRestructureTicker('');
+            setRestructureFactor(1);
+            setShowRestructureConfirm(false);
+          }}
+          style={{
+            background: '#7A5A2A', color: '#FFFFFF', border: 'none', borderRadius: 8,
+            padding: '10px 22px', fontSize: '0.85em', fontWeight: 700, fontFamily: 'inherit',
+            cursor: 'pointer', letterSpacing: '1px', whiteSpace: 'nowrap',
+            transition: 'all 0.2s ease',
+          }}
+          onMouseOver={e => e.target.style.background = '#9A7A3A'}
+          onMouseOut={e => e.target.style.background = '#7A5A2A'}
+        >
+          DESDOBRAMENTO
+        </button>
+        </div>
+      </div>
 
       <div className="table-wrapper">
         <table className="data-table">
@@ -239,6 +313,136 @@ function Carteira() {
           </>
         )}
       </div>
+
+      <GraficoInvestidoPorTipo3D portfolio={portfolio} />
+
+      {restructureType && !showRestructureConfirm && (
+        <div className="modal-overlay">
+          <div className="modal-content modal-edit" style={{ maxWidth: 500 }}>
+            <div className="modal-header">
+              <h2>{restructureType === 'agrupamento' ? 'Agrupamento' : 'Desdobramento'}</h2>
+              <button className="modal-close" onClick={() => setRestructureType(null)}>✕</button>
+            </div>
+            <div className="modal-body">
+              <div style={{ marginBottom: 16 }}>
+                <label style={{ display: 'block', color: '#999999', fontSize: '0.8em', marginBottom: 4 }}>
+                  Selecione o ativo
+                </label>
+                <select
+                  value={restructureTicker}
+                  onChange={e => setRestructureTicker(e.target.value)}
+                  style={{
+                    width: '100%', padding: '10px 12px', background: '#0A0A0A',
+                    border: '1px solid #2A2A2A', borderRadius: 6, color: '#E0E0E0',
+                    fontSize: '0.9em', fontFamily: 'inherit', outline: 'none', cursor: 'pointer',
+                  }}
+                >
+                  <option value="">Selecione um ativo</option>
+                  {uniqueTickers.map(t => <option key={t} value={t}>{t}</option>)}
+                </select>
+              </div>
+
+              {restructureType === 'agrupamento' ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
+                  <span style={{ color: '#E0E0E0', fontWeight: 600 }}>Converter</span>
+                  <input
+                    type="number"
+                    min="1"
+                    step="1"
+                    value={restructureFactor}
+                    onChange={e => setRestructureFactor(Number(e.target.value) || 1)}
+                    style={{
+                      width: 80, padding: '8px 10px', background: '#0A0A0A',
+                      border: '1px solid #C8B800AA', borderRadius: 6, color: '#E0E0E0',
+                      fontSize: '1em', fontFamily: 'inherit', textAlign: 'center', outline: 'none',
+                    }}
+                  />
+                  <span style={{ color: '#E0E0E0', fontWeight: 600 }}>ativos em</span>
+                  <input
+                    type="number"
+                    value={1}
+                    disabled
+                    style={{
+                      width: 60, padding: '8px 10px', background: '#1A1A1A',
+                      border: '1px solid #2A2A2A', borderRadius: 6, color: '#666666',
+                      fontSize: '1em', fontFamily: 'inherit', textAlign: 'center', outline: 'none',
+                    }}
+                  />
+                </div>
+              ) : (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
+                  <span style={{ color: '#E0E0E0', fontWeight: 600 }}>Converter</span>
+                  <input
+                    type="number"
+                    value={1}
+                    disabled
+                    style={{
+                      width: 60, padding: '8px 10px', background: '#1A1A1A',
+                      border: '1px solid #2A2A2A', borderRadius: 6, color: '#666666',
+                      fontSize: '1em', fontFamily: 'inherit', textAlign: 'center', outline: 'none',
+                    }}
+                  />
+                  <span style={{ color: '#E0E0E0', fontWeight: 600 }}>ativo em</span>
+                  <input
+                    type="number"
+                    min="1"
+                    step="1"
+                    value={restructureFactor}
+                    onChange={e => setRestructureFactor(Number(e.target.value) || 1)}
+                    style={{
+                      width: 80, padding: '8px 10px', background: '#0A0A0A',
+                      border: '1px solid #C8B800AA', borderRadius: 6, color: '#E0E0E0',
+                      fontSize: '1em', fontFamily: 'inherit', textAlign: 'center', outline: 'none',
+                    }}
+                  />
+                </div>
+              )}
+
+              <p style={{ color: '#E0E0E0', fontSize: '0.9em', lineHeight: 1.6, background: '#0D0D0D', borderRadius: 8, padding: 12 }}>
+                {restructureType === 'agrupamento' ? (
+                  <>Você está agrupando <strong style={{ color: '#C8B800' }}>{restructureFactor}</strong> cotas do ativo <strong style={{ color: '#C8B800' }}>{restructureTicker}</strong> em apenas <strong style={{ color: '#C8B800' }}>1</strong> cota. Todos os lançamentos anteriores serão convertidos para essa nova condição.</>
+                ) : (
+                  <>Você está desdobrando <strong style={{ color: '#C8B800' }}>1</strong> cota do ativo <strong style={{ color: '#C8B800' }}>{restructureTicker}</strong> em <strong style={{ color: '#C8B800' }}>{restructureFactor}</strong> cotas. Todos os lançamentos anteriores serão convertidos para essa nova condição.</>
+                )}
+              </p>
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-cancel" onClick={() => setRestructureType(null)}>Cancelar</button>
+              <button className="btn btn-save" onClick={() => setShowRestructureConfirm(true)}>Salvar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showRestructureConfirm && (
+        <div className="modal-overlay">
+          <div className="modal-content modal-confirm">
+            <div className="modal-header">
+              <h2>Confirmar {restructureType === 'agrupamento' ? 'Agrupamento' : 'Desdobramento'}</h2>
+              <button className="modal-close" onClick={() => { setShowRestructureConfirm(false); setRestructureType(null); }}>✕</button>
+            </div>
+            <div className="modal-body">
+              <p style={{ color: '#E0E0E0', lineHeight: 1.6 }}>
+                {restructureType === 'agrupamento'
+                  ? `Deseja realmente agrupar ${restructureFactor} cotas de ${restructureTicker} em 1 cota?`
+                  : `Deseja realmente desdobrar 1 cota de ${restructureTicker} em ${restructureFactor} cotas?`}
+              </p>
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-cancel" onClick={() => { setShowRestructureConfirm(false); setRestructureType(null); }}>Não, cancelar</button>
+              <button className="btn btn-save" onClick={applyRestructure}>Sim, salvar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <Toast
+        message={massStatus?.msg || ''}
+        visible={!!massStatus}
+        onClose={() => setMassStatus(null)}
+        color={massStatus?.type === 'success' ? '#00CC66' : '#FF5555'}
+        direction="right"
+      />
 
       {editRf && (
         <div className="modal-overlay" onClick={() => setEditRf(null)}>

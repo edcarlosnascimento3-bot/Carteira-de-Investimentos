@@ -34,16 +34,18 @@ function Principal() {
   const tickers = useMemo(() => {
     const groups = {};
     transactions.forEach(t => {
-      if (!groups[t.ticker]) groups[t.ticker] = { qtdCompra: 0, qtdVenda: 0 };
+      if (!groups[t.ticker]) groups[t.ticker] = { qtdCompra: 0, qtdVenda: 0, tipo: t.tipo };
       if (t.operacao === 'Compra') groups[t.ticker].qtdCompra += t.quantidade;
       else groups[t.ticker].qtdVenda += t.quantidade;
     });
     const portfolioTickers = Object.entries(groups)
-      .filter(([, g]) => g.qtdCompra - g.qtdVenda > 0)
+      .filter(([, g]) => g.qtdCompra - g.qtdVenda > 0 && !['Renda Fixa', 'Dólar', 'Euro'].includes(g.tipo))
       .map(([ticker]) => ticker);
+    
     const tipos = new Set(transactions.map((t) => t.tipo.replace(/Fii/g, 'FII')));
     if (tipos.has('Dólar') && !portfolioTickers.includes('USDBRL')) portfolioTickers.push('USDBRL');
     if (tipos.has('Euro') && !portfolioTickers.includes('EURBRL')) portfolioTickers.push('EURBRL');
+    
     return [...new Set([...defaultTickers, ...portfolioTickers])];
   }, [transactions]);
 
@@ -116,24 +118,30 @@ function Principal() {
     <div>
       <div className="ticker-tape">
         <div className="ticker-track">
-          {tickerItems.map((item, i) => (
-            <span key={i} className="ticker-item">
-              <span className="ticker-symbol">{item.ticker}</span>
-              <span className="ticker-price">{formatCurrency(item.price)}</span>
-              <span className={`ticker-change ${item.change >= 0 ? 'positive' : 'negative'}`}>
-                {item.change >= 0 ? '▲' : '▼'} {Math.abs(item.change).toFixed(2)}%
+          {tickerItems.map((item, i) => {
+            const color = item.change >= 0 ? '#00CC66' : '#FF5555';
+            return (
+              <span key={i} className="ticker-item">
+                <span className="ticker-symbol">{item.ticker}</span>
+                <span className="ticker-price">{formatCurrency(item.price)}</span>
+                <span className="ticker-change" style={{ color }}>
+                  {item.change >= 0 ? '▲' : '▼'} {Math.abs(item.change).toFixed(2)}%
+                </span>
               </span>
-            </span>
-          ))}
-          {tickerItems.map((item, i) => (
-            <span key={`dup-${i}`} className="ticker-item">
-              <span className="ticker-symbol">{item.ticker}</span>
-              <span className="ticker-price">{formatCurrency(item.price)}</span>
-              <span className={`ticker-change ${item.change >= 0 ? 'positive' : 'negative'}`}>
-                {item.change >= 0 ? '▲' : '▼'} {Math.abs(item.change).toFixed(2)}%
+            );
+          })}
+          {tickerItems.map((item, i) => {
+            const color = item.change >= 0 ? '#00CC66' : '#FF5555';
+            return (
+              <span key={`dup-${i}`} className="ticker-item">
+                <span className="ticker-symbol">{item.ticker}</span>
+                <span className="ticker-price">{formatCurrency(item.price)}</span>
+                <span className="ticker-change" style={{ color }}>
+                  {item.change >= 0 ? '▲' : '▼'} {Math.abs(item.change).toFixed(2)}%
+                </span>
               </span>
-            </span>
-          ))}
+            );
+          })}
         </div>
       </div>
 

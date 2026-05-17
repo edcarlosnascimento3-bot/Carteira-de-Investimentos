@@ -101,7 +101,7 @@ function Proventos() {
   const filtered = useMemo(() => {
     return proventos.filter(p => {
       if (filterTicker && p.ticker !== filterTicker) return false;
-      if (filterAno && p.ano !== Number(filterAno)) return false;
+      if (filterAno && Number(p.ano) !== Number(filterAno)) return false;
       if (filterDividendos === 'sim' && (!p.dividendos || p.dividendos <= 0)) return false;
       if (filterDividendos === 'nao' && p.dividendos && p.dividendos > 0) return false;
       if (filterJcp === 'sim' && (!p.jcp || p.jcp <= 0)) return false;

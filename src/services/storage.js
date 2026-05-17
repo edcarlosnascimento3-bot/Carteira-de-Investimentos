@@ -22,6 +22,19 @@ const db = {
         return await window.electronAPI.db.read(name);
       } catch {}
     }
+    
+    // Tenta ler do arquivo local (via Vite dev server plugin)
+    try {
+      const res = await fetch(`/api/db/${name}`);
+      if (res.ok) {
+        const data = await res.json();
+        // Sincroniza com IndexedDB para backup
+        this.write(name, data, true);
+        return data;
+      }
+    } catch {}
+
+    // Fallback: IndexedDB
     try {
       const conn = await openDB();
       return new Promise((resolve, reject) => {
@@ -38,11 +51,12 @@ const db = {
         };
       });
     } catch {}
+    
+    // Fallback final: LocalStorage
     try {
       const raw = localStorage.getItem(`investimento_${name}`);
       if (raw) {
         const data = JSON.parse(raw);
-        this.write(name, data);
         return data;
       }
       return null;
@@ -51,12 +65,25 @@ const db = {
     }
   },
 
-  async write(name, data) {
+  async write(name, data, skipFileWrite = false) {
     if (window.electronAPI?.db) {
       try {
         return await window.electronAPI.db.write(name, data);
       } catch {}
     }
+
+    // Salva no arquivo local para persistência real no diretório do projeto
+    if (!skipFileWrite) {
+      try {
+        fetch(`/api/db/${name}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        }).catch(() => {});
+      } catch {}
+    }
+
+    // Backup no IndexedDB
     try {
       const conn = await openDB();
       return new Promise((resolve, reject) => {
@@ -73,6 +100,8 @@ const db = {
         };
       });
     } catch {}
+    
+    // Backup no LocalStorage
     try {
       localStorage.setItem(`investimento_${name}`, JSON.stringify(data));
       return true;

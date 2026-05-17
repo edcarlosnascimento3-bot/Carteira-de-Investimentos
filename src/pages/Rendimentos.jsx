@@ -1,9 +1,11 @@
+import CalendarioRendimentos from '../components/CalendarioRendimentos';
+
 function Rendimentos() {
   return (
-    <div className="page-placeholder">
-      <div className="icon">📈</div>
-      <h2>Rendimentos</h2>
-      <p>Histórico de rendimentos e performance por período</p>
+    <div>
+      <h1>📅 Calendário</h1>
+      <p className="subtitle">Acompanhe as datas de pagamento dos seus ativos</p>
+      <CalendarioRendimentos />
     </div>
   );
 }
