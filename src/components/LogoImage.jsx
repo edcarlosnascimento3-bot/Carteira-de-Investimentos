@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import domains from '../data/companyDomains';
 
 const indexMap = {};
@@ -21,53 +21,64 @@ function isCrypto(t) {
   return !/[0-9]/.test(t) && t === t.toUpperCase() && t.length <= 5;
 }
 
-const customLogos = {
-  BBAS3: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/cc/Banco_do_Brasil_logo_2015.svg/512px-Banco_do_Brasil_logo_2015.svg.png',
-  TAEE3: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7b/Taesa_logo.svg/512px-Taesa_logo.svg.png',
-  TAEE4: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7b/Taesa_logo.svg/512px-Taesa_logo.svg.png',
-  TAEE11: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7b/Taesa_logo.svg/512px-Taesa_logo.svg.png',
-  ITSA3: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/91/Itausa_logo.svg/512px-Itausa_logo.svg.png',
-  ITSA4: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/91/Itausa_logo.svg/512px-Itausa_logo.svg.png',
-  ITUB3: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c0/Itau_logo.svg/512px-Itau_logo.svg.png',
-  ITUB4: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c0/Itau_logo.svg/512px-Itau_logo.svg.png',
-};
+let ativosCache = null;
+let cachePromise = null;
+function loadAtivos() {
+  if (ativosCache) return Promise.resolve(ativosCache);
+  if (cachePromise) return cachePromise;
+  cachePromise = fetch('/api/db/ativos')
+    .then(r => r.ok ? r.json() : [])
+    .then(data => {
+      const map = {};
+      data.forEach(a => { if (a.TICKER) map[a.TICKER.toUpperCase()] = a.IMAGEM; });
+      ativosCache = map;
+      return map;
+    })
+    .catch(() => (ativosCache = {}));
+  return cachePromise;
+}
 
-function getLogoSources(ticker) {
+if (typeof window !== 'undefined') {
+  window.addEventListener('ticker-logo-updated', (e) => {
+    if (ativosCache && e.detail) {
+      ativosCache[e.detail.ticker.toUpperCase()] = e.detail.url;
+    }
+  });
+}
+
+const customLogos = {};
+
+function getLogoSources(ticker, imagemUrl) {
   if (!ticker) return [];
   const t = ticker.toUpperCase();
   const domain = domains[t];
   const sources = [];
 
-  if (customLogos[t]) {
-    sources.push(customLogos[t]);
+  if (imagemUrl) {
+    sources.push(imagemUrl);
   }
 
   if (domain) {
-    // Clearbit fornece logos grandes e de alta qualidade (melhor opção)
-    sources.push(`https://logo.clearbit.com/${domain}`);
-    // Google Favicons como fallback seguro (tamanho 128px para não ficar borrado)
-    sources.push(`https://www.google.com/s2/favicons?domain=${domain}&sz=128`);
-    // DuckDuckGo como último recurso
-    sources.push(`https://icons.duckduckgo.com/ip3/${domain}.ico`);
+    const clearbitUrl = `https://logo.clearbit.com/${domain}`;
+    if (!sources.includes(clearbitUrl)) sources.push(clearbitUrl);
   }
 
   if (/[0-9]/.test(t)) {
-    // Fallbacks para B3 caso não tenha domínio mapeado
-    // Tenta carregar do statusinvest (pode ter proteção, mas vale a pena tentar)
+    sources.push(`https://s3-symbol-logo.tradingview.com/brazil/${t}--big.svg`);
     sources.push(`https://statusinvest.com.br/img/company/avatar/${t.toLowerCase()}.jpeg`);
-    sources.push(`https://statusinvest.com.br/assets/img/logo/${t.toLowerCase()}.svg`);
-    // Fallback TradingView
-    sources.push(`https://s3-symbol-logo.tradingview.com/${t}.SA.svg`);
   }
 
   if (isCrypto(t)) {
     const lc = t.toLowerCase();
-    sources.push(`https://cryptoicons.org/api/icon/${lc}/200`);
+    sources.push(`https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/${lc}.png`);
     if (cryptoNameMap[t]) {
       const name = cryptoNameMap[t];
-      sources.push(`https://cryptologos.cc/logos/${name}-${lc}-logo.png`);
-      sources.push(`https://cryptologos.cc/logos/${name}-${lc}-logo.svg`);
+      sources.push(`https://cryptologos.cc/logos/${name}-${lc}-logo.png?v=040`);
     }
+  }
+
+  if (domain) {
+    sources.push(`https://www.google.com/s2/favicons?domain=${domain}&sz=64`);
   }
 
   return sources;
@@ -75,47 +86,69 @@ function getLogoSources(ticker) {
 
 function LogoImage({ ticker, fallback, style, size }) {
   const [srcIdx, setSrcIdx] = useState(0);
+  const [imagemUrl, setImagemUrl] = useState(null);
   const s = size || 32;
   const bg = hashColor(ticker || '');
 
+  useEffect(() => {
+    if (!ticker) return;
+    loadAtivos().then(map => {
+      const url = map[ticker.toUpperCase()];
+      setImagemUrl(url || null);
+    });
+
+    const handleUpdate = (e) => {
+      if (e.detail && e.detail.ticker.toUpperCase() === ticker.toUpperCase()) {
+        setImagemUrl(e.detail.url || null);
+        setSrcIdx(0);
+      }
+    };
+
+    window.addEventListener('ticker-logo-updated', handleUpdate);
+    return () => {
+      window.removeEventListener('ticker-logo-updated', handleUpdate);
+    };
+  }, [ticker]);
+
+  const containerStyle = {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: s,
+    height: s,
+    borderRadius: 8,
+    flexShrink: 0,
+    overflow: 'hidden',
+    backgroundColor: '#FFFFFF',
+    ...style,
+  };
+
   if (!ticker) {
     return (
-      <span style={{
-        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-        width: s, height: s, borderRadius: 8, background: bg, fontSize: s * 0.45,
-        fontWeight: 700, color: '#FFFFFF', flexShrink: 0, ...style,
-      }}>
+      <span style={{ ...containerStyle, background: bg, fontSize: s * 0.45, fontWeight: 700, color: '#FFFFFF' }}>
         {fallback || '?'}
       </span>
     );
   }
 
-  const sources = getLogoSources(ticker);
+  const sources = getLogoSources(ticker, imagemUrl);
 
   if (srcIdx >= sources.length) {
     return (
-      <span style={{
-        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-        width: s, height: s, borderRadius: 8, background: bg, fontSize: s * 0.45,
-        fontWeight: 700, color: '#FFFFFF', flexShrink: 0, ...style,
-      }}>
+      <span style={{ ...containerStyle, background: bg, fontSize: s * 0.45, fontWeight: 700, color: '#FFFFFF' }}>
         {fallback || ticker[0]}
       </span>
     );
   }
 
   return (
-    <span style={{
-      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-      width: s, height: s, borderRadius: 8, background: bg, flexShrink: 0,
-      position: 'relative', overflow: 'hidden', ...style,
-    }}>
+    <span style={containerStyle}>
       <img
         key={srcIdx}
         src={sources[srcIdx]}
         alt={ticker}
         referrerPolicy="no-referrer"
-        style={{ width: '100%', height: '100%', objectFit: 'contain', position: 'relative', zIndex: 1 }}
+        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
         onError={() => setSrcIdx((i) => i + 1)}
       />
     </span>

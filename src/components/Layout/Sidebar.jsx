@@ -27,6 +27,15 @@ const menuItems = [
   { id: 'ranking', label: 'Ranking', icon: '🏆' },
   { id: 'graficos', label: 'Gráficos', icon: '📊' },
   { id: 'irrf', label: 'IRRF', icon: '🧾' },
+  {
+    id: 'analitico',
+    label: 'Analítico',
+    icon: '🔍',
+    submenu: [
+      { id: 'analitico-acoes', label: 'Analisar Ações', target: 'analisar-acoes' },
+      { id: 'analitico-fiis', label: 'Analisar FIIs', target: 'analisar-fiis' },
+    ],
+  },
   { id: 'relatorios', label: 'Relatórios', icon: '📄' },
   { id: 'midi', label: 'MIDI', icon: '🔗' },
   { id: 'meta', label: 'Meta', icon: '🎯' },
@@ -46,7 +55,7 @@ function Sidebar({ activePage, onNavigate }) {
             {/* Item principal do menu */}
             <button
               className={`menu-item ${activePage === item.id ? 'active' : ''}`}
-              onClick={() => onNavigate(item.id)}
+              onClick={() => { if (!item.submenu) onNavigate(item.id); }}
               title={item.label}
             >
               <span className="menu-item-icon">{item.icon}</span>

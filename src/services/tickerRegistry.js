@@ -1,18 +1,9 @@
 const STORAGE_KEY = 'investimento_ticker_registry';
 
-const knownTickers = {
-  PETR4: { nome: 'Petrobras PN', cnpj: '33.000.167/0001-01', tipo: 'Ação' },
-  VALE3: { nome: 'Vale ON', cnpj: '33.592.510/0001-54', tipo: 'Ação' },
-  ITUB4: { nome: 'Itaú Unibanco PN', cnpj: '60.872.504/0001-23', tipo: 'Ação' },
-  ABEV3: { nome: 'Ambev ON', cnpj: '07.526.557/0001-00', tipo: 'Ação' },
-  BBAS3: { nome: 'Banco do Brasil ON', cnpj: '00.000.000/0001-91', tipo: 'Ação' },
-  WEGE3: { nome: 'WEG ON', cnpj: '84.429.695/0001-11', tipo: 'Ação' },
-  HGLG11: { nome: 'CSHG Logística FII', cnpj: '10.287.354/0001-36', tipo: 'FII' },
-  KNRI11: { nome: 'Kinea Renda Imobiliária FII', cnpj: '10.295.227/0001-09', tipo: 'FII' },
-  MXRF11: { nome: 'Maxi Renda FII', cnpj: '11.061.557/0001-93', tipo: 'FII' },
-  BTC: { nome: 'Bitcoin', cnpj: '', tipo: 'Cripto' },
-  ETH: { nome: 'Ethereum', cnpj: '', tipo: 'Cripto' },
-};
+let knownTickers = {};
+
+let cache = null;
+let ativosLoaded = false;
 
 function load() {
   try {
@@ -28,11 +19,33 @@ function save(data) {
   } catch {}
 }
 
-let cache = null;
-
 function getRegistry() {
   if (!cache) cache = load();
   return cache;
+}
+
+export async function loadAtivosRegistry() {
+  if (ativosLoaded) return;
+  try {
+    const res = await fetch('/api/db/ativos');
+    if (!res.ok) return;
+    const list = await res.json();
+    const map = {};
+    list.forEach(a => {
+      if (!a.TICKER) return;
+      const key = a.TICKER.toUpperCase().trim();
+      map[key] = {
+        nome: a.NOME || '',
+        cnpj: a.CNPJ || '',
+        tipo: a.TIPO || '',
+        imagem: a.IMAGEM || '',
+        link: a.LINK || ''
+      };
+    });
+    knownTickers = map;
+    cache = { ...map, ...load() };
+    ativosLoaded = true;
+  } catch {}
 }
 
 export function getTickerInfo(ticker) {
@@ -40,11 +53,41 @@ export function getTickerInfo(ticker) {
   return reg[ticker] || null;
 }
 
-export function saveTickerInfo(ticker, info) {
+export async function saveTickerInfo(ticker, info) {
   const reg = getRegistry();
-  reg[ticker] = info;
+  const existing = reg[ticker];
+  reg[ticker] = {
+    nome: info.nome || existing?.nome || '',
+    cnpj: info.cnpj || existing?.cnpj || '',
+    tipo: info.tipo || existing?.tipo || '',
+    imagem: info.imagem !== undefined ? info.imagem : existing?.imagem || '',
+    link: info.link !== undefined ? info.link : existing?.link || '',
+  };
   cache = reg;
   save(reg);
+
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('ticker-logo-updated', {
+      detail: { ticker: ticker.toUpperCase(), url: reg[ticker].imagem }
+    }));
+  }
+
+  try {
+    await fetch('/api/db/ativos', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(
+        Array.from(
+          new Map(
+            Object.entries(cache).map(([t, v]) => [
+              t,
+              { TICKER: t, NOME: v.nome, CNPJ: v.cnpj || '', TIPO: v.tipo, SEGMENTO: '', IMAGEM: v.imagem || '', LINK: v.link || '' }
+            ])
+          ).values()
+        )
+      ),
+    });
+  } catch {}
 }
 
 export function buildRegistryFromTransactions(transactions) {

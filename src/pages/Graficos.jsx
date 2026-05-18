@@ -350,7 +350,10 @@ function Graficos() {
     const result = {};
     let cum = 0;
     years.forEach(year => {
-      const startCapital = cum;
+      // Se cum > 0, usamos o acumulado inicial dos anos anteriores.
+      // Se cum === 0 (primeiro ano), usamos o aporte do próprio ano como base para evitar nulo
+      // e refletir a rentabilidade inicial sobre o custo do primeiro ano.
+      const startCapital = cum > 0 ? cum : (yearlyNet[year] || 0);
       const dividends = proventos
         .filter(p => p.ano === year)
         .reduce((sum, p) => sum + (p.dividendos || 0) + (p.jcp || 0) + (p.rendimento || 0) + (p.reembolso || 0), 0);
@@ -514,7 +517,7 @@ function Graficos() {
               <BarChart data={qtdData} layout="vertical" margin={{ left: 30, right: 50, top: 4, bottom: 4 }} barSize={48} barCategoryGap="60%">
                 <XAxis type="number" tick={{ fill: '#999', fontSize: 11 }} axisLine={{ stroke: '#2A2A2A' }} tickLine={false} />
                 <YAxis type="category" dataKey="name" tick={{ fill: '#E0E0E0', fontSize: 11 }} axisLine={false} tickLine={false} width={30} />
-                <Tooltip contentStyle={tooltipStyle} formatter={(v) => [v.toLocaleString('pt-BR'), 'Quantidade']} />
+                <Tooltip cursor={false} contentStyle={tooltipStyle} formatter={(v) => [v.toLocaleString('pt-BR'), 'Quantidade']} />
                 <Bar dataKey="quantidade" radius={[0, 50, 50, 0]} cursor="pointer" activeBar={false}>
                   {qtdData.map((entry) => (
                     <Cell
@@ -549,7 +552,7 @@ function Graficos() {
               <BarChart data={proventosEvolData} margin={{ left: 30, right: 30, top: 30, bottom: 10 }} barSize={60}>
                 <XAxis dataKey="name" tick={{ fill: '#E0E0E0', fontSize: 12 }} axisLine={{ stroke: '#2A2A2A' }} tickLine={false} />
                 <YAxis tick={{ fill: '#999', fontSize: 11 }} axisLine={{ stroke: '#2A2A2A' }} tickLine={false} />
-                <Tooltip contentStyle={tooltipStyle} formatter={(v) => formatCurrency(v)} />
+                <Tooltip cursor={false} contentStyle={tooltipStyle} formatter={(v) => formatCurrency(v)} />
                 <Bar dataKey="value" radius={[8, 8, 0, 0]} fill="#66B2FF" activeBar={false}>
                   <LabelList dataKey="value" content={renderEvolLabel} />
                 </Bar>
@@ -567,7 +570,7 @@ function Graficos() {
               <BarChart data={proventosMediaData} layout="vertical" margin={{ left: 30, right: 80, top: 10, bottom: 10 }} barSize={30} barCategoryGap="40%">
                 <XAxis type="number" tick={{ fill: '#999', fontSize: 11 }} axisLine={{ stroke: '#2A2A2A' }} tickLine={false} />
                 <YAxis type="category" dataKey="name" tick={{ fill: '#E0E0E0', fontSize: 12 }} axisLine={false} tickLine={false} width={30} />
-                <Tooltip contentStyle={tooltipStyle} formatter={(v) => formatCurrency(v)} />
+                <Tooltip cursor={false} contentStyle={tooltipStyle} formatter={(v) => formatCurrency(v)} />
                 <Bar dataKey="value" radius={[0, 50, 50, 0]} fill="#FFD700" activeBar={false}>
                   <LabelList dataKey="value" content={renderEvolLabelRight} />
                 </Bar>
@@ -604,7 +607,7 @@ function Graficos() {
                 <CartesianGrid strokeDasharray="3 3" stroke="#2A2A2A" />
                 <XAxis dataKey="nome" tick={{ fill: '#E0E0E0', fontSize: 11 }} axisLine={{ stroke: '#2A2A2A' }} tickLine={false} />
                 <YAxis tick={{ fill: '#999', fontSize: 11 }} axisLine={{ stroke: '#2A2A2A' }} tickLine={false} />
-                <Tooltip contentStyle={tooltipStyle} formatter={(v) => formatCurrency(v)} />
+                <Tooltip cursor={false} contentStyle={tooltipStyle} formatter={(v) => formatCurrency(v)} />
                 <Line type="monotone" dataKey="value" stroke="#FF3333" strokeWidth={3} dot={{ r: 6, fill: '#FF3333', strokeWidth: 2, stroke: '#FF3333' }} activeDot={false}>
                   <LabelList dataKey="value" content={renderMonthLabel} />
                 </Line>
@@ -622,7 +625,7 @@ function Graficos() {
               <BarChart data={evolData} margin={{ left: 30, right: 30, top: 30, bottom: 10 }} barSize={60}>
                 <XAxis dataKey="name" tick={{ fill: '#FFD700', fontSize: 13, fontWeight: 700 }} axisLine={{ stroke: '#2A2A2A' }} tickLine={false} />
                 <YAxis tick={{ fill: '#999', fontSize: 11 }} axisLine={{ stroke: '#2A2A2A' }} tickLine={false} />
-                <Tooltip contentStyle={tooltipStyle} formatter={(v) => formatCurrency(v)} />
+                <Tooltip cursor={false} contentStyle={tooltipStyle} formatter={(v) => formatCurrency(v)} />
                 <Bar dataKey="value" radius={[8, 8, 0, 0]} fill="#990000" activeBar={false}>
                   <LabelList dataKey="value" content={renderEvolLabel} />
                 </Bar>
@@ -659,7 +662,7 @@ function Graficos() {
                 <CartesianGrid strokeDasharray="3 3" stroke="#2A2A2A" />
                 <XAxis dataKey="nome" tick={{ fill: '#FFD700', fontSize: 13, fontWeight: 700 }} axisLine={{ stroke: '#2A2A2A' }} tickLine={false} />
                 <YAxis tick={{ fill: '#999', fontSize: 11 }} axisLine={{ stroke: '#2A2A2A' }} tickLine={false} />
-                <Tooltip contentStyle={tooltipStyle} formatter={(v) => formatCurrency(v)} />
+                <Tooltip cursor={false} contentStyle={tooltipStyle} formatter={(v) => formatCurrency(v)} />
                 <Bar dataKey="value" radius={[8, 8, 0, 0]} activeBar={false} animationDuration={2000}>
                   {proventosMonthData.map((entry, idx) => (
                     <Cell key={idx} fill={entry.isTotal ? '#FF0000' : '#4285F4'} />
@@ -720,7 +723,7 @@ function Graficos() {
                     <CartesianGrid strokeDasharray="3 3" stroke="#2A2A2A" />
                     <XAxis dataKey="nome" tick={{ fill: '#FFD700', fontSize: 13, fontWeight: 700 }} axisLine={{ stroke: '#2A2A2A' }} tickLine={false} />
                     <YAxis tick={{ fill: '#999', fontSize: 11 }} axisLine={{ stroke: '#2A2A2A' }} tickLine={false} />
-                    <Tooltip contentStyle={tooltipStyle} />
+                    <Tooltip cursor={false} contentStyle={tooltipStyle} />
                     {selectedProventosTipos.map(tipo => (
                       <Bar key={tipo} dataKey={tipo} fill={typeColors[tipo] || '#666'} animationDuration={2000} filter="url(#bar3dShadow)">
                         <LabelList dataKey={tipo} position="top" content={renderProventosLabelInclinado} />
@@ -770,7 +773,7 @@ function Graficos() {
                 <CartesianGrid strokeDasharray="3 3" stroke="#2A2A2A" />
                 <XAxis dataKey="year" tick={{ fill: '#FFD700', fontSize: 13, fontWeight: 700 }} axisLine={{ stroke: '#2A2A2A' }} tickLine={false} />
                 <YAxis tick={{ fill: '#999', fontSize: 11 }} axisLine={{ stroke: '#2A2A2A' }} tickLine={false} tickFormatter={(v) => `${v}%`} />
-                <Tooltip contentStyle={tooltipStyle} formatter={(v) => [`${v.toFixed(2)}%`]} />
+                <Tooltip cursor={false} contentStyle={tooltipStyle} formatter={(v) => [`${v.toFixed(2)}%`]} />
                 <Line type="monotone" dataKey="Carteira" stroke="#FF3333" strokeWidth={3} dot={{ r: 5, fill: '#FF3333', strokeWidth: 0 }} filter="url(#lineShadow)" animationDuration={2000} />
                 {selectedIndices.map(idx => (
                   <Line key={idx} type="monotone" dataKey={idx} stroke={INDEX_HISTORY[idx]?.cor || '#666'} strokeWidth={2} dot={{ r: 4, fill: INDEX_HISTORY[idx]?.cor || '#666', strokeWidth: 0 }} filter="url(#lineShadow)" animationDuration={2000} />
@@ -813,7 +816,7 @@ function Graficos() {
                 <CartesianGrid strokeDasharray="3 3" stroke="#2A2A2A" />
                 <XAxis dataKey="year" tick={{ fill: '#FFD700', fontSize: 13, fontWeight: 700 }} axisLine={{ stroke: '#2A2A2A' }} tickLine={false} />
                 <YAxis tick={{ fill: '#999', fontSize: 11 }} axisLine={{ stroke: '#2A2A2A' }} tickLine={false} domain={['auto', 'auto']} />
-                <Tooltip contentStyle={tooltipStyle} formatter={(v) => [v.toFixed(2), 'Valor']} />
+                <Tooltip cursor={false} contentStyle={tooltipStyle} formatter={(v) => [v.toFixed(2), 'Valor']} />
                 <Line type="monotone" dataKey="Carteira" stroke="#FF3333" strokeWidth={3} dot={{ r: 5, fill: '#FF3333', strokeWidth: 0 }} filter="url(#accShadow)" animationDuration={2000} />
                 {selectedIndices.map(idx => (
                   <Line key={idx} type="monotone" dataKey={idx} stroke={INDEX_HISTORY[idx]?.cor || '#666'} strokeWidth={2} dot={{ r: 4, fill: INDEX_HISTORY[idx]?.cor || '#666', strokeWidth: 0 }} filter="url(#accShadow)" animationDuration={2000} />

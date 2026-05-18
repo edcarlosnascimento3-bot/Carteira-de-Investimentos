@@ -26,31 +26,49 @@ export function ProventosProvider({ children }) {
     });
   }, []);
 
+  // Failsafe beforeunload para garantir salvamento imediato síncrono no localStorage
   useEffect(() => {
-    if (loaded) {
-      db.write(STORAGE_NAME, proventos);
-    }
+    const handleBeforeUnload = () => {
+      if (loaded) {
+        localStorage.setItem(`investimento_${STORAGE_NAME}`, JSON.stringify(proventos));
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [proventos, loaded]);
 
   const addProvento = (entry) => {
-    setProventos((prev) => [
-      { id: Date.now(), ...entry },
-      ...prev,
-    ]);
+    const newProv = { id: Date.now(), ...entry };
+    setProventos((prev) => {
+      const next = [newProv, ...prev];
+      localStorage.setItem(`investimento_${STORAGE_NAME}`, JSON.stringify(next));
+      db.write(STORAGE_NAME, next);
+      return next;
+    });
   };
 
   const updateProvento = (id, data) => {
-    setProventos((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, ...data, id } : t))
-    );
+    setProventos((prev) => {
+      const next = prev.map((t) => (t.id === id ? { ...t, ...data, id } : t));
+      localStorage.setItem(`investimento_${STORAGE_NAME}`, JSON.stringify(next));
+      db.write(STORAGE_NAME, next);
+      return next;
+    });
   };
 
   const removeProvento = (id) => {
-    setProventos((prev) => prev.filter((t) => t.id !== id));
+    setProventos((prev) => {
+      const next = prev.filter((t) => t.id !== id);
+      localStorage.setItem(`investimento_${STORAGE_NAME}`, JSON.stringify(next));
+      db.write(STORAGE_NAME, next);
+      return next;
+    });
   };
 
   const clearProventos = () => {
     setProventos([]);
+    localStorage.setItem(`investimento_${STORAGE_NAME}`, JSON.stringify([]));
+    db.write(STORAGE_NAME, []);
   };
 
   return (

@@ -4,7 +4,7 @@ import { useTransactions } from '../context/TransactionsContext';
 import { usePrices } from '../hooks/usePrices';
 import LogoImage from '../components/LogoImage';
 import Toast from '../components/Toast';
-import GraficoInvestidoPorTipo3D from '../components/GraficoInvestidoPorTipo3D';
+import { getTickerInfo, saveTickerInfo } from '../services/tickerRegistry';
 
 const typeIcons = {
   'Ação': '📈',
@@ -42,6 +42,9 @@ function Carteira() {
   const { transactions, updateTransaction } = useTransactions();
   const [editRf, setEditRf] = useState(null);
   const [editRfValue, setEditRfValue] = useState('');
+  const [linkAsset, setLinkAsset] = useState(null);
+  const [linkValue, setLinkValue] = useState('');
+  const [imageValue, setImageValue] = useState('');
 
   const [manualAtual, setManualAtual] = useState(() => {
     try { return JSON.parse(localStorage.getItem('investimento_rf_manual')) || {}; } catch { return {}; }
@@ -106,14 +109,15 @@ function Carteira() {
           : g.tipo === 'Euro'
             ? prices['EURBRL']
             : prices[g.ticker];
-      const variacao = changes[g.ticker] ?? 0;
+      const changeKey = g.tipo === 'Dólar' ? 'USDBRL' : g.tipo === 'Euro' ? 'EURBRL' : g.ticker;
+      const variacao = changes[changeKey] ?? 0;
       const atual = cotacao != null ? quantidade * cotacao : 0;
       const rendimento = investido !== 0
         ? ((atual - investido) / Math.abs(investido)) * 100
         : 0;
       const resultado = atual - investido;
 
-      return { ...g, quantidade, investido, precoMedio, cotacao, variacao, atual, rendimento, resultado };
+      return { ...g, quantidade, investido, precoMedio, cotacao, variacao, changeKey, atual, rendimento, resultado };
     }).filter((g) => g.quantidade > 0);
   }, [transactions, prices, changes, manualAtual]);
 
@@ -132,8 +136,45 @@ function Carteira() {
     const raw = editRfValue.replace(/[R$\s.]/g, '').replace(',', '.');
     const val = parseFloat(raw);
     if (isNaN(val) || val < 0) return;
-    setManualAtual(prev => ({ ...prev, [editRf.ticker]: val }));
+    setManualAtual(prev => {
+      const next = { ...prev, [editRf.ticker]: val };
+      localStorage.setItem('investimento_rf_manual', JSON.stringify(next));
+      return next;
+    });
     setEditRf(null);
+  };
+
+  const handleOpenLinkAsset = (row) => {
+    const info = getTickerInfo(row.ticker);
+    setLinkAsset(row);
+    setLinkValue(info?.link || '');
+    setImageValue(info?.imagem || '');
+  };
+
+  const handleSaveLink = async () => {
+    if (!linkAsset) return;
+    try {
+      const tickerUpper = linkAsset.ticker.toUpperCase().trim();
+      await saveTickerInfo(tickerUpper, {
+        nome: linkAsset.ativo,
+        tipo: linkAsset.tipo,
+        link: linkValue.trim(),
+        imagem: imageValue.trim()
+      });
+      setLinkAsset(null);
+      setMassStatus({ type: 'success', msg: `Informações de ${linkAsset.ticker} salvas com sucesso!` });
+    } catch (e) {
+      setMassStatus({ type: 'error', msg: 'Erro ao salvar as informações!' });
+    }
+  };
+
+  const handleVisitLink = () => {
+    if (!linkValue) return;
+    let url = linkValue.trim();
+    if (!/^https?:\/\//i.test(url)) {
+      url = `https://${url}`;
+    }
+    window.open(url, '_blank');
   };
 
   const applyRestructure = () => {
@@ -257,13 +298,13 @@ function Carteira() {
                     {row.cotacao != null ? (
                       <>
                         <span>{currencySymbols[row.tipo] || 'R$'} {formatNumber(row.cotacao)}</span>
-                        {row.variacao !== 0 && row.tipo !== 'Renda Fixa' && (
+                        {row.tipo !== 'Renda Fixa' && (
                           <span style={{
                             color: row.variacao >= 0 ? '#00CC66' : '#FF5555',
                             fontSize: '0.8em',
                             marginLeft: '6px',
                           }}>
-                            {row.variacao >= 0 ? '▲' : '▼'} {Math.abs(row.variacao).toFixed(2)}%
+                            {row.variacao > 0 ? '▲' : row.variacao < 0 ? '▼' : '•'} {Math.abs(row.variacao).toFixed(2)}%
                           </span>
                         )}
                       </>
@@ -279,7 +320,19 @@ function Carteira() {
                   <td className="td-valor" style={{ color: row.resultado >= 0 ? '#00CC66' : '#FF5555' }}>
                     {row.resultado >= 0 ? '+' : ''}{formatCurrency(row.resultado)}
                   </td>
-                  <td className="td-acoes">
+                  <td className="td-acoes" style={{ display: 'flex', gap: '6px', justifyContent: 'center', alignItems: 'center' }}>
+                    <button
+                      style={{
+                        ...actionBtnStyle,
+                        color: getTickerInfo(row.ticker)?.link ? '#00E5FF' : '#888899',
+                        filter: getTickerInfo(row.ticker)?.link ? 'drop-shadow(0 0 4px rgba(0,229,255,0.4))' : 'none'
+                      }}
+                      onClick={() => handleOpenLinkAsset(row)}
+                      title={getTickerInfo(row.ticker)?.link ? "Ver/Editar Link (Ativo)" : "Adicionar Link de Internet"}
+                      className="btn-action link"
+                    >
+                      🔗
+                    </button>
                     {(row.tipo === 'Renda Fixa' || row.tipo === 'Dólar' || row.tipo === 'Euro') && (
                       <button
                         style={actionBtnStyle}
@@ -313,8 +366,6 @@ function Carteira() {
           </>
         )}
       </div>
-
-      <GraficoInvestidoPorTipo3D portfolio={portfolio} />
 
       {restructureType && !showRestructureConfirm && (
         <div className="modal-overlay">
@@ -487,6 +538,125 @@ function Carteira() {
             <div className="modal-footer">
               <button className="btn btn-cancel" onClick={() => setEditRf(null)}>Cancelar</button>
               <button className="btn btn-save" onClick={handleSaveRf}>Salvar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {linkAsset && (
+        <div className="modal-overlay" onClick={() => setLinkAsset(null)}>
+          <div className="modal-content modal-edit" onClick={e => e.stopPropagation()} style={{ maxWidth: 650 }}>
+            <div className="modal-header">
+              <h2>Link e Detalhes do Ativo - {linkAsset.ticker}</h2>
+              <button className="modal-close" onClick={() => setLinkAsset(null)}>✕</button>
+            </div>
+            <div className="modal-body">
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 20 }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.75em', color: '#888', marginBottom: 4 }}>Ticker</label>
+                  <input type="text" value={linkAsset.ticker} disabled style={{ width: '100%', padding: '8px 12px', background: '#070707', border: '1px solid #1a1a1a', borderRadius: 6, color: '#777', fontFamily: 'inherit', fontSize: '0.85em' }} />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.75em', color: '#888', marginBottom: 4 }}>Nome</label>
+                  <input type="text" value={linkAsset.ativo} disabled style={{ width: '100%', padding: '8px 12px', background: '#070707', border: '1px solid #1a1a1a', borderRadius: 6, color: '#777', fontFamily: 'inherit', fontSize: '0.85em' }} />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.75em', color: '#888', marginBottom: 4 }}>Tipo</label>
+                  <input type="text" value={linkAsset.tipo} disabled style={{ width: '100%', padding: '8px 12px', background: '#070707', border: '1px solid #1a1a1a', borderRadius: 6, color: '#777', fontFamily: 'inherit', fontSize: '0.85em' }} />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.75em', color: '#888', marginBottom: 4 }}>Quantidade</label>
+                  <input type="text" value={formatNumber(linkAsset.quantidade)} disabled style={{ width: '100%', padding: '8px 12px', background: '#070707', border: '1px solid #1a1a1a', borderRadius: 6, color: '#777', fontFamily: 'inherit', fontSize: '0.85em' }} />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.75em', color: '#888', marginBottom: 4 }}>Preço Médio</label>
+                  <input type="text" value={formatCurrency(linkAsset.precoMedio)} disabled style={{ width: '100%', padding: '8px 12px', background: '#070707', border: '1px solid #1a1a1a', borderRadius: 6, color: '#777', fontFamily: 'inherit', fontSize: '0.85em' }} />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.75em', color: '#888', marginBottom: 4 }}>Investido</label>
+                  <input type="text" value={formatCurrency(linkAsset.investido)} disabled style={{ width: '100%', padding: '8px 12px', background: '#070707', border: '1px solid #1a1a1a', borderRadius: 6, color: '#777', fontFamily: 'inherit', fontSize: '0.85em' }} />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.75em', color: '#888', marginBottom: 4 }}>Atual</label>
+                  <input type="text" value={formatCurrency(linkAsset.atual)} disabled style={{ width: '100%', padding: '8px 12px', background: '#070707', border: '1px solid #1a1a1a', borderRadius: 6, color: '#777', fontFamily: 'inherit', fontSize: '0.85em' }} />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.75em', color: '#888', marginBottom: 4 }}>Rendimento</label>
+                  <input type="text" value={`${linkAsset.rendimento >= 0 ? '+' : ''}${formatNumber(linkAsset.rendimento)}%`} disabled style={{ width: '100%', padding: '8px 12px', background: '#070707', border: '1px solid #1a1a1a', borderRadius: 6, color: linkAsset.rendimento >= 0 ? '#00CC66' : '#FF5555', fontFamily: 'inherit', fontSize: '0.85em', fontWeight: 600 }} />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.75em', color: '#888', marginBottom: 4 }}>Resultado</label>
+                  <input type="text" value={`${linkAsset.resultado >= 0 ? '+' : ''}${formatCurrency(linkAsset.resultado)}`} disabled style={{ width: '100%', padding: '8px 12px', background: '#070707', border: '1px solid #1a1a1a', borderRadius: 6, color: linkAsset.resultado >= 0 ? '#00CC66' : '#FF5555', fontFamily: 'inherit', fontSize: '0.85em', fontWeight: 600 }} />
+                </div>
+              </div>
+
+              <div style={{ background: '#0A0A0A', border: '1px solid #222', borderRadius: 8, padding: 16 }}>
+                <label style={{ display: 'block', fontSize: '0.85em', color: '#00E5FF', fontWeight: 700, marginBottom: 8, letterSpacing: '0.5px' }}>
+                  Link da Internet para o Ativo (Editável)
+                </label>
+                <div style={{ display: 'flex', gap: 10 }}>
+                  <input
+                    type="text"
+                    placeholder="Ex: https://statusinvest.com.br/acoes/petr4"
+                    value={linkValue}
+                    onChange={e => setLinkValue(e.target.value)}
+                    style={{
+                      flex: 1, padding: '10px 14px', background: '#121212',
+                      border: '1px solid #00E5FF33', borderRadius: 6, color: '#FFF',
+                      fontFamily: 'inherit', fontSize: '0.9em', outline: 'none'
+                    }}
+                    onFocus={e => e.target.style.borderColor = '#00E5FF'}
+                    onBlur={e => e.target.style.borderColor = '#00E5FF33'}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleVisitLink}
+                    disabled={!linkValue}
+                    style={{
+                      padding: '10px 16px', background: linkValue ? '#00E5FF' : '#222',
+                      color: linkValue ? '#000' : '#555', border: 'none', borderRadius: 6,
+                      fontSize: '0.85em', fontWeight: 700, cursor: linkValue ? 'pointer' : 'default',
+                      transition: 'all 0.2s ease', display: 'flex', alignItems: 'center', gap: 4
+                    }}
+                  >
+                    🔗 Acessar
+                  </button>
+                </div>
+                <small style={{ display: 'block', marginTop: 6, color: '#555566', fontSize: '0.75em' }}>
+                  Adicione o link do site do ativo, StatusInvest, Fundamentus ou qualquer outra fonte para abrir com 1 clique.
+                </small>
+              </div>
+
+              <div style={{ background: '#0A0A0A', border: '1px solid #222', borderRadius: 8, padding: 16, marginTop: 14 }}>
+                <label style={{ display: 'block', fontSize: '0.85em', color: '#C8B800', fontWeight: 700, marginBottom: 8, letterSpacing: '0.5px' }}>
+                  Link da Imagem / Logo do Ativo (Editável)
+                </label>
+                <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                  <input
+                    type="text"
+                    placeholder="Ex: https://dominio.com/logo.png"
+                    value={imageValue}
+                    onChange={e => setImageValue(e.target.value)}
+                    style={{
+                      flex: 1, padding: '10px 14px', background: '#121212',
+                      border: '1px solid #C8B80033', borderRadius: 6, color: '#FFF',
+                      fontFamily: 'inherit', fontSize: '0.9em', outline: 'none'
+                    }}
+                    onFocus={e => e.target.style.borderColor = '#C8B800'}
+                    onBlur={e => e.target.style.borderColor = '#C8B80033'}
+                  />
+                  {imageValue && (
+                    <LogoImage ticker={linkAsset.ticker} size={36} fallback={linkAsset.ticker[0]} style={{ border: '1px solid #444', borderRadius: 6, background: '#111', flexShrink: 0 }} />
+                  )}
+                </div>
+                <small style={{ display: 'block', marginTop: 6, color: '#555566', fontSize: '0.75em' }}>
+                  Cole o link de uma imagem da internet para personalizar o logotipo do ativo. A visualização atualizará instantaneamente.
+                </small>
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-cancel" onClick={() => setLinkAsset(null)}>Cancelar</button>
+              <button className="btn btn-save" onClick={handleSaveLink} style={{ background: '#00E5FF', color: '#000' }}>Salvar</button>
             </div>
           </div>
         </div>

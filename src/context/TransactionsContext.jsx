@@ -51,31 +51,49 @@ export function TransactionsProvider({ children }) {
     });
   }, []);
 
+  // Failsafe beforeunload para garantir salvamento imediato síncrono no localStorage
   useEffect(() => {
-    if (loaded) {
-      db.write(STORAGE_NAME, transactions);
-    }
+    const handleBeforeUnload = () => {
+      if (loaded) {
+        localStorage.setItem(`investimento_${STORAGE_NAME}`, JSON.stringify(transactions));
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [transactions, loaded]);
 
   const addTransaction = (entry) => {
-    setTransactions((prev) => [
-      { id: Date.now(), ...entry },
-      ...prev,
-    ]);
+    const newTx = { id: Date.now(), ...entry };
+    setTransactions((prev) => {
+      const next = [newTx, ...prev];
+      localStorage.setItem(`investimento_${STORAGE_NAME}`, JSON.stringify(next));
+      db.write(STORAGE_NAME, next);
+      return next;
+    });
   };
 
   const updateTransaction = (id, data) => {
-    setTransactions((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, ...data, id } : t))
-    );
+    setTransactions((prev) => {
+      const next = prev.map((t) => (t.id === id ? { ...t, ...data, id } : t));
+      localStorage.setItem(`investimento_${STORAGE_NAME}`, JSON.stringify(next));
+      db.write(STORAGE_NAME, next);
+      return next;
+    });
   };
 
   const removeTransaction = (id) => {
-    setTransactions((prev) => prev.filter((t) => t.id !== id));
+    setTransactions((prev) => {
+      const next = prev.filter((t) => t.id !== id);
+      localStorage.setItem(`investimento_${STORAGE_NAME}`, JSON.stringify(next));
+      db.write(STORAGE_NAME, next);
+      return next;
+    });
   };
 
   const clearTransactions = () => {
     setTransactions([]);
+    localStorage.setItem(`investimento_${STORAGE_NAME}`, JSON.stringify([]));
+    db.write(STORAGE_NAME, []);
   };
 
   return (

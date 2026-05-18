@@ -10,8 +10,11 @@ const mockData = {
   BBAS3: { price: 52.30, change: 0.89 },
   WEGE3: { price: 42.15, change: 1.23 },
   KNRI11: { price: 145.20, change: -0.42 },
+  MXRF11: { price: 9.87, change: 0.35 },
   BTC: { price: 425000.00, change: 3.15 },
   ETH: { price: 28500.00, change: 2.78 },
+  USDBRL: { price: 5.87, change: -0.18 },
+  EURBRL: { price: 6.42, change: 0.25 },
 };
 
 export function usePrices(tickers = []) {

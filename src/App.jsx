@@ -1,5 +1,6 @@
-import { useRef } from 'react';
+import { useRef, useEffect } from 'react';
 import { useUser } from './context/UserContext';
+import { loadAtivosRegistry } from './services/tickerRegistry';
 import Sidebar from './components/Layout/Sidebar';
 import Principal from './pages/Principal';
 import Ordens from './pages/Ordens';
@@ -16,6 +17,9 @@ import IRRF from './pages/IRRF';
 import Relatorios from './pages/Relatorios';
 import MIDI from './pages/MIDI';
 import Meta from './pages/Meta';
+import Analitico from './pages/Analitico';
+import AnalisarAcoes from './pages/AnalisarAcoes';
+import AnalisarFIIs from './pages/AnalisarFIIs';
 import { useState } from 'react';
 
 const pages = {
@@ -34,6 +38,9 @@ const pages = {
   relatorios: Relatorios,
   midi: MIDI,
   meta: Meta,
+  analitico: Analitico,
+  'analisar-acoes': AnalisarAcoes,
+  'analisar-fiis': AnalisarFIIs,
 };
 
 function App() {
@@ -41,6 +48,8 @@ function App() {
   const { userName, setUserName, avatar, setAvatar } = useUser();
   const [editing, setEditing] = useState(false);
   const inputRef = useRef(null);
+
+  useEffect(() => { loadAtivosRegistry(); }, []);
 
   const PageComponent = pages[activePage] || Principal;
 

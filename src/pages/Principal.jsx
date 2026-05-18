@@ -19,13 +19,15 @@ const typeColors = {
 };
 
 const borderColors = {
-  'Ação': '#FF3333',
-  'FII': '#00CC66',
-  'Renda Fixa': '#C8B800',
-  'Dólar': '#008844',
-  'Criptoativo': '#333333',
+  'Ação': '#FF3333',         // Vermelho
+  'FII': '#00CC66',          // Verde
+  'Renda Fixa': '#FFD700',   // Amarelo
+  'Dólar': '#D485FF',        // Lilás
+  'Euro': '#D485FF',         // Lilás
+  'Criptoativo': '#3399FF',  // Azul
+  'Cripto': '#3399FF',       // Azul
+  'Criptoativos': '#3399FF', // Azul
   'Ouro': '#FFD700',
-  'Euro': '#9933FF',
 };
 
 function Principal() {
@@ -151,112 +153,122 @@ function Principal() {
             <div className="label" style={{ color: '#C8B800' }}>PATRIMÔNIO</div>
             <div className="value">{formatCurrency(totals.patrimonio)}</div>
           </div>
-          <div className="card-icon icon-pulse">💰</div>
+          <div className="card-icon icon-pulse" style={{ fontSize: 36 }}>🏦</div>
         </div>
 
         <div className="widget-card">
           <div className="card-content">
-            <div className="label" style={{ color: '#C8B800' }}>INVESTIDO</div>
+            <div className="label">INVESTIDO</div>
             <div className="value">{formatCurrency(totals.investido)}</div>
           </div>
-          <div className="card-icon icon-float">📈</div>
+          <div className="card-icon icon-float" style={{ fontSize: 36 }}>💰</div>
         </div>
 
         <div className="widget-card">
           <div className="card-content">
-            <div className="label" style={{ color: '#C8B800' }}>{totals.diferenca >= 0 ? 'LUCRO' : 'PERDA'}</div>
-            <div className="value" style={{ color: totals.diferenca >= 0 ? '#00CC66' : '#FF5555' }}>
+            <div className="label">{totals.diferenca >= 0 ? 'LUCRO' : 'PERDA'}</div>
+            <div className="value" style={{ color: totals.diferenca >= 0 ? '#00E676' : '#FF3D71' }}>
               {totals.diferenca >= 0 ? '' : '-'}{formatCurrency(Math.abs(totals.diferenca))}
             </div>
           </div>
-          <div className="card-icon icon-spin">📅</div>
+          <div className="card-icon icon-pulse" style={{ fontSize: 36 }}>📈</div>
         </div>
 
         <div className="widget-card">
           <div className="card-content">
-            <div className="label">Dividendos Recebidos</div>
+            <div className="label">DIVIDENDOS</div>
             <div className="value">R$ 320,40</div>
             <div className="change positive">último mês</div>
           </div>
-          <div className="card-icon icon-bounce">💵</div>
+          <div className="card-icon icon-bounce" style={{ fontSize: 36 }}>💵</div>
         </div>
 
         <div className="widget-card">
           <div className="card-content">
-            <div className="label" style={{ color: '#C8B800' }}>RENDIMENTO</div>
-            <div className="value">
+            <div className="label">RENDIMENTO</div>
+            <div className="value" style={{ color: totals.diferenca >= 0 ? '#00E676' : '#FF3D71' }}>
               {totals.diferenca >= 0 ? '+' : ''}{formatNumber(totals.rendimentoPct)}%
             </div>
           </div>
-          <div className="card-icon icon-pulse">📊</div>
+          <div className="card-icon icon-float" style={{ fontSize: 36 }}>📊</div>
         </div>
 
-        <div className="widget-card" style={{ background: '#441111', borderColor: '#FF333366' }}>
+        <div className="widget-card" style={{
+          background: 'linear-gradient(135deg, rgba(255,61,113,0.08) 0%, rgba(255,61,113,0.03) 100%)',
+          borderColor: 'rgba(255,61,113,0.25)'
+        }}>
           <div className="card-content">
-            <div className="label" style={{ color: '#C8B800' }}>TAXAS</div>
+            <div className="label" style={{ color: '#FF3D71' }}>TAXAS</div>
             <div className="value">{formatCurrency(totals.totalTax)}</div>
           </div>
-          <div className="card-icon icon-pulse">💸</div>
+          <div className="card-icon icon-bounce" style={{ fontSize: 36 }}>🧾</div>
         </div>
       </div>
 
       {sortedPortfolio.length > 0 && (
-        <div className="asset-cards-grid">
-          {sortedPortfolio.map((asset) => {
-            const isProfit = asset.resultado >= 0;
-            const tipoNorm = asset.tipo.replace(/Fii/g, 'FII');
-            const accent = borderColors[tipoNorm] || '#2A2A2A';
-            return (
-              <div key={asset.ticker} className="asset-card" style={{ '--card-accent': accent }}>
-                <div className="asset-card-bar"></div>
-                <div className="asset-card-left">
-                  <LogoImage
-                    ticker={asset.ticker}
-                    fallback={typeIcons[asset.tipo] || '📄'}
-                    size={50}
-                    style={{ borderRadius: 8 }}
-                  />
-                  <div className="asset-card-cotas">
-                    <span className="cotas-label">COTAS</span>
-                    <span className="cotas-value">{formatNumber(asset.quantidade)}</span>
+        <>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6, marginTop: 4 }}>
+            <span style={{ fontSize: '0.65em', textTransform: 'uppercase', letterSpacing: '2px', color: '#555568', fontWeight: 600 }}>Portfólio</span>
+            <div style={{ flex: 1, height: 1, background: 'linear-gradient(90deg, rgba(255,255,255,0.06), transparent)' }} />
+            <span style={{ fontSize: '0.65em', color: '#555568' }}>{sortedPortfolio.length} ativos</span>
+          </div>
+          <div className="asset-cards-grid">
+            {sortedPortfolio.map((asset) => {
+              const isProfit = asset.resultado >= 0;
+              const tipoNorm = asset.tipo.replace(/Fii/g, 'FII');
+              const accent = borderColors[tipoNorm] || '#555568';
+              return (
+                <div key={asset.ticker} className="asset-card" style={{ '--card-accent': accent }}>
+                  <div className="asset-card-bar"></div>
+                  <div className="asset-card-left">
+                    <LogoImage
+                      ticker={asset.ticker}
+                      fallback={typeIcons[asset.tipo] || '📄'}
+                      size={46}
+                      style={{ borderRadius: 10 }}
+                    />
+                    <div className="asset-card-cotas">
+                      <span className="cotas-label">COTAS</span>
+                      <span className="cotas-value">{formatNumber(asset.quantidade)}</span>
+                    </div>
                   </div>
-                </div>
 
-                <div className="asset-card-info">
-                  <div className="info-ticker">{asset.ticker}</div>
-                  <div className="info-row">
-                    <span className="info-label">Tipo</span>
-                    <span className="info-value" style={{ color: '#E0E0E0' }}>{asset.tipo.replace(/Fii/g, 'FII')}</span>
+                  <div className="asset-card-info">
+                    <div className="info-ticker">{asset.ticker}</div>
+                    <div className="info-row">
+                      <span className="info-label">Tipo</span>
+                      <span className="info-value" style={{ color: accent, opacity: 0.9 }}>{asset.tipo.replace(/Fii/g, 'FII')}</span>
+                    </div>
+                    <div className="info-row">
+                      <span className="info-label">Atual</span>
+                      <span className="info-value">{formatCurrency(asset.atual)}</span>
+                    </div>
+                    <div className="info-row">
+                      <span className="info-label">{isProfit ? 'Lucro' : 'Perda'}</span>
+                      <span className="info-value" style={{ color: isProfit ? '#00E676' : '#FF3D71', fontWeight: 700 }}>
+                        {isProfit ? '+' : '-'}{formatCurrency(Math.abs(asset.resultado))}
+                      </span>
+                    </div>
+                    <div className="info-row">
+                      <span className="info-label">PM</span>
+                      <span className="info-value">{formatCurrency(asset.precoMedio)}</span>
+                    </div>
+                    <div className="info-row">
+                      <span className="info-label">Hoje</span>
+                      <span className="info-value">
+                        {asset.cotacao != null ? formatCurrency(asset.cotacao) : <span style={{ color: '#333345' }}>—</span>}
+                      </span>
+                    </div>
                   </div>
-                  <div className="info-row">
-                    <span className="info-label">Valor Atual</span>
-                    <span className="info-value">{formatCurrency(asset.atual)}</span>
-                  </div>
-                  <div className="info-row">
-                    <span className="info-label">{isProfit ? 'Lucro' : 'Perda'}</span>
-                    <span className="info-value" style={{ color: isProfit ? '#00CC66' : '#FF5555' }}>
-                      {isProfit ? '' : '-'}{formatCurrency(Math.abs(asset.resultado))}
-                    </span>
-                  </div>
-                  <div className="info-row">
-                    <span className="info-label">Preço Médio</span>
-                    <span className="info-value">{formatCurrency(asset.precoMedio)}</span>
-                  </div>
-                  <div className="info-row">
-                    <span className="info-label">Preço Hoje</span>
-                    <span className="info-value">
-                      {asset.cotacao != null ? formatCurrency(asset.cotacao) : <span style={{ color: '#666666' }}>—</span>}
-                    </span>
-                  </div>
-                </div>
 
-                <div className="asset-card-arrow" style={{ color: isProfit ? '#00CC66' : '#FF5555' }}>
-                  {isProfit ? '▲' : '▼'}
+                  <div className="asset-card-arrow" style={{ color: isProfit ? '#00E676' : '#FF3D71' }}>
+                    {isProfit ? '▲' : '▼'}
+                  </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        </>
       )}
     </div>
   );

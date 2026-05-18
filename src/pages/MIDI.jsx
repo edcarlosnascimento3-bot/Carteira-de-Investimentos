@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useProventos } from '../context/ProventosContext';
+import { formatCurrency } from '../services/format';
 
 const meses = [
   'JANEIRO', 'FEVEREIRO', 'MARÇO', 'ABRIL', 'MAIO', 'JUNHO',
