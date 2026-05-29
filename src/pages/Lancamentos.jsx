@@ -40,13 +40,13 @@ const selectStyle = {
   background: '#0D0D0D',
   color: '#E0E0E0',
   border: '1px solid #C8B800AA',
-  borderRadius: 8,
-  padding: '8px 14px',
-  fontSize: '0.85em',
+  borderRadius: 6,
+  padding: '5px 8px',
+  fontSize: '0.75em',
   fontFamily: 'inherit',
   cursor: 'pointer',
   outline: 'none',
-  minWidth: 120,
+  minWidth: 90,
 };
 
 function normalizeHeader(h) {
@@ -95,9 +95,29 @@ function Lancamentos() {
   const [massStatus, setMassStatus] = useState(null);
   const [clearConfirm, setClearConfirm] = useState(false);
 
-  const uniqueTickers = useMemo(() => [...new Set(transactions.map(t => t.ticker))].sort(), [transactions]);
-  const uniqueTipos = useMemo(() => [...new Set(transactions.map(t => t.tipo))].sort(), [transactions]);
-  const uniqueAnos = useMemo(() => [...new Set(transactions.map(t => t.ano))].sort((a, b) => b - a), [transactions]);
+  const uniqueTickers = useMemo(() => {
+    let data = transactions;
+    if (filterTipo) data = data.filter(t => t.tipo === filterTipo);
+    if (filterOperacao) data = data.filter(t => t.operacao === filterOperacao);
+    if (filterAno) data = data.filter(t => Number(t.ano) === Number(filterAno));
+    return [...new Set(data.map(t => t.ticker))].sort();
+  }, [transactions, filterTipo, filterOperacao, filterAno]);
+
+  const uniqueTipos = useMemo(() => {
+    let data = transactions;
+    if (filterTicker) data = data.filter(t => t.ticker === filterTicker);
+    if (filterOperacao) data = data.filter(t => t.operacao === filterOperacao);
+    if (filterAno) data = data.filter(t => Number(t.ano) === Number(filterAno));
+    return [...new Set(data.map(t => t.tipo))].sort();
+  }, [transactions, filterTicker, filterOperacao, filterAno]);
+
+  const uniqueAnos = useMemo(() => {
+    let data = transactions;
+    if (filterTicker) data = data.filter(t => t.ticker === filterTicker);
+    if (filterTipo) data = data.filter(t => t.tipo === filterTipo);
+    if (filterOperacao) data = data.filter(t => t.operacao === filterOperacao);
+    return [...new Set(data.map(t => t.ano))].sort((a, b) => b - a);
+  }, [transactions, filterTicker, filterTipo, filterOperacao]);
 
   const filtered = useMemo(() => {
     return transactions.filter(t => {
@@ -313,12 +333,12 @@ function Lancamentos() {
           </select>
         </div>
 
-        <div style={{ display: 'flex', gap: 10 }}>
+        <div style={{ display: 'flex', gap: 8 }}>
           <button
             onClick={() => setClearConfirm(true)}
             style={{
-              background: '#FF3333', color: '#FFFFFF', border: 'none', borderRadius: 8,
-              padding: '10px 22px', fontSize: '0.85em', fontWeight: 700, fontFamily: 'inherit',
+              background: '#FF3333', color: '#FFFFFF', border: 'none', borderRadius: 6,
+              padding: '6px 14px', fontSize: '0.75em', fontWeight: 700, fontFamily: 'inherit',
               cursor: 'pointer', letterSpacing: '1px', whiteSpace: 'nowrap',
               transition: 'all 0.2s ease',
             }}
@@ -330,8 +350,8 @@ function Lancamentos() {
           <button
             onClick={() => fileInputRef.current?.click()}
             style={{
-              background: '#C8B800', color: '#0A0A0A', border: 'none', borderRadius: 8,
-              padding: '10px 22px', fontSize: '0.85em', fontWeight: 700, fontFamily: 'inherit',
+              background: '#C8B800', color: '#0A0A0A', border: 'none', borderRadius: 6,
+              padding: '6px 14px', fontSize: '0.75em', fontWeight: 700, fontFamily: 'inherit',
               cursor: 'pointer', letterSpacing: '1px', whiteSpace: 'nowrap',
               transition: 'all 0.2s ease',
             }}
@@ -340,7 +360,6 @@ function Lancamentos() {
           >
             IMPORTAR PLANILHA
           </button>
-
         </div>
         <input
           ref={fileInputRef}

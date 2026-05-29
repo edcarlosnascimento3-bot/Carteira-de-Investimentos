@@ -41,7 +41,7 @@ function Principal() {
       else groups[t.ticker].qtdVenda += t.quantidade;
     });
     const portfolioTickers = Object.entries(groups)
-      .filter(([, g]) => g.qtdCompra - g.qtdVenda > 0 && !['Renda Fixa', 'Dólar', 'Euro'].includes(g.tipo))
+      .filter(([, g]) => g.qtdCompra - g.qtdVenda > 0 && !['Dólar', 'Euro'].includes(g.tipo))
       .map(([ticker]) => ticker);
     
     const tipos = new Set(transactions.map((t) => t.tipo.replace(/Fii/g, 'FII')));

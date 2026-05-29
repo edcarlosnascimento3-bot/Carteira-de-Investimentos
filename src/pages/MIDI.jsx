@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useProventos } from '../context/ProventosContext';
 import { formatCurrency } from '../services/format';
 
@@ -32,6 +32,12 @@ function MIDI() {
   const uniqueAnos = useMemo(() => {
     return [...new Set(proventos.map(p => p.ano))].sort((a, b) => b - a);
   }, [proventos]);
+
+  useEffect(() => {
+    if (uniqueAnos.length > 0 && !anoFiltro) {
+      setAnoFiltro(String(uniqueAnos[0]));
+    }
+  }, [uniqueAnos, anoFiltro]);
 
   const tickerData = useMemo(() => {
     const filtered = anoFiltro

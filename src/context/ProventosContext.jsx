@@ -13,6 +13,8 @@ const initialData = [
   { id: 5, ticker: 'PETR4', nome: 'Petrobras PN', tipo: 'Ação', data: '02/05/2026', ano: 2026, dividendos: 0, jcp: 0, rendimento: 0, reembolso: 50.00, observacao: 'Reembolso taxa' },
 ];
 
+let _proventoNextId = Date.now();
+
 export function ProventosProvider({ children }) {
   const [proventos, setProventos] = useState(initialData);
   const [loaded, setLoaded] = useState(false);
@@ -38,7 +40,7 @@ export function ProventosProvider({ children }) {
   }, [proventos, loaded]);
 
   const addProvento = (entry) => {
-    const newProv = { id: Date.now(), ...entry };
+    const newProv = { id: ++_proventoNextId, ...entry };
     setProventos((prev) => {
       const next = [newProv, ...prev];
       localStorage.setItem(`investimento_${STORAGE_NAME}`, JSON.stringify(next));

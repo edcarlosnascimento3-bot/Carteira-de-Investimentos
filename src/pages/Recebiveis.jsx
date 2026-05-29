@@ -1,6 +1,7 @@
 import { formatCurrency } from '../services/format';
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef, useCallback } from 'react';
 import { useProventos } from '../context/ProventosContext';
+import { useTransactions } from '../context/TransactionsContext';
 import { useUser } from '../context/UserContext';
 import EditProventoModal from '../components/Modals/EditProventoModal';
 import ConfirmModal from '../components/Modals/ConfirmModal';
@@ -30,12 +31,12 @@ const selectStyle = {
   color: '#E0E0E0',
   border: '1px solid #C8B800AA',
   borderRadius: 8,
-  padding: '8px 14px',
-  fontSize: '0.85em',
+  padding: '5px 8px',
+  fontSize: '0.75em',
   fontFamily: 'inherit',
   cursor: 'pointer',
   outline: 'none',
-  minWidth: 120,
+  minWidth: 90,
 };
 
 
@@ -81,6 +82,7 @@ const headerAliases = {
 
 function Proventos() {
   const { proventos, addProvento, updateProvento, removeProvento, clearProventos } = useProventos();
+  const { transactions } = useTransactions();
   const { userName } = useUser();
   const fileInputRef = useRef(null);
   const [editTarget, setEditTarget] = useState(null);
@@ -91,17 +93,40 @@ function Proventos() {
   const [filterJcp, setFilterJcp] = useState('');
   const [filterRendimento, setFilterRendimento] = useState('');
   const [filterReembolso, setFilterReembolso] = useState('');
+  const [addTarget, setAddTarget] = useState(null);
   const [massModal, setMassModal] = useState(null);
   const [massStatus, setMassStatus] = useState(null);
   const [clearConfirm, setClearConfirm] = useState(false);
 
-  const uniqueTickers = useMemo(() => [...new Set(proventos.map(p => p.ticker))].sort(), [proventos]);
-  const uniqueAnos = useMemo(() => [...new Set(proventos.map(p => p.ano))].sort((a, b) => b - a), [proventos]);
+  const uniqueTickers = useMemo(() => {
+    return [...new Set(proventos.map(p => p.ticker))].sort();
+  }, [proventos]);
 
-  const filtered = useMemo(() => {
-    return proventos.filter(p => {
+  const uniqueAnos = useMemo(() => {
+    return [...new Set(proventos.map(p => String(p.ano)))].sort((a, b) => b - a);
+  }, [proventos]);
+
+  const tickerOptions = useMemo(() => [...new Set(transactions.map(t => t.ticker))].sort(), [transactions]);
+  const tickerNomeMap = useMemo(() => {
+    const map = {};
+    transactions.forEach(t => {
+      if (!map[t.ticker]) map[t.ticker] = t.ativo;
+    });
+    return map;
+  }, [transactions]);
+  const tickerTipoMap = useMemo(() => {
+    const map = {};
+    transactions.forEach(t => {
+      if (!map[t.ticker]) map[t.ticker] = t.tipo;
+    });
+    return map;
+  }, [transactions]);
+
+  // Filtros aplicados diretamente (sem useMemo) para garantir reatividade imediata
+  const filtered = proventos
+    .filter(p => {
       if (filterTicker && p.ticker !== filterTicker) return false;
-      if (filterAno && Number(p.ano) !== Number(filterAno)) return false;
+      if (filterAno && String(p.ano) !== String(filterAno)) return false;
       if (filterDividendos === 'sim' && (!p.dividendos || p.dividendos <= 0)) return false;
       if (filterDividendos === 'nao' && p.dividendos && p.dividendos > 0) return false;
       if (filterJcp === 'sim' && (!p.jcp || p.jcp <= 0)) return false;
@@ -111,14 +136,25 @@ function Proventos() {
       if (filterReembolso === 'sim' && (!p.reembolso || p.reembolso <= 0)) return false;
       if (filterReembolso === 'nao' && p.reembolso && p.reembolso > 0) return false;
       return true;
-    }).sort((a, b) => {
-      const [da, ma, ya] = a.data.split('/').map(Number);
-      const [db, mb, yb] = b.data.split('/').map(Number);
-      const ta = new Date(ya, ma - 1, da);
-      const tb = new Date(yb, mb - 1, db);
-      return tb - ta;
+    })
+    .sort((a, b) => {
+      try {
+        const [da, ma, ya] = (a.data || '').split('/').map(Number);
+        const [db, mb, yb] = (b.data || '').split('/').map(Number);
+        return new Date(yb, mb - 1, db) - new Date(ya, ma - 1, da);
+      } catch { return 0; }
     });
-  }, [proventos, filterTicker, filterAno, filterDividendos, filterJcp, filterRendimento, filterReembolso]);
+
+  const hasActiveFilters = filterTicker || filterAno || filterDividendos || filterJcp || filterRendimento || filterReembolso;
+
+  const clearFilters = useCallback(() => {
+    setFilterTicker('');
+    setFilterAno('');
+    setFilterDividendos('');
+    setFilterJcp('');
+    setFilterRendimento('');
+    setFilterReembolso('');
+  }, []);
 
 
 
@@ -131,6 +167,12 @@ function Proventos() {
     const dt = new Date(y, m - 1, d);
     if (isNaN(dt)) return str;
     return dt.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  };
+
+  const handleAddNew = () => setAddTarget({});
+
+  const handleProventoAdded = () => {
+    setMassStatus({ type: 'success', msg: 'Provento lançado com sucesso!' });
   };
 
   const handleEdit = (row) => setEditTarget(row);
@@ -268,7 +310,7 @@ function Proventos() {
 
   const selectSimNaoStyle = {
     ...selectStyle,
-    minWidth: 100,
+    minWidth: 80,
   };
 
   const greenCellStyle = {
@@ -284,7 +326,10 @@ function Proventos() {
         Registro de dividendos, JCP, rendimentos e reembolsos
         {proventos.length > 0 && (
           <span style={{ color: '#666666', marginLeft: '8px' }}>
-            — {proventos.length} registro(s)
+            {hasActiveFilters
+              ? <>— <span style={{ color: '#C8B800' }}>{filtered.length}</span> de {proventos.length} registro(s)</>
+              : <>— {proventos.length} registro(s)</>
+            }
           </span>
         )}
       </p>
@@ -300,7 +345,7 @@ function Proventos() {
           </select>
           <select value={filterAno} onChange={e => setFilterAno(e.target.value)} style={selectStyle}>
             <option value="">ANO: Todos</option>
-            {uniqueAnos.map(a => <option key={a} value={a}>{a}</option>)}
+            {uniqueAnos.map(a => <option key={String(a)} value={String(a)}>{a}</option>)}
           </select>
           <select value={filterDividendos} onChange={e => setFilterDividendos(e.target.value)} style={selectSimNaoStyle}>
             <option value="">DIVIDENDOS: Todos</option>
@@ -322,14 +367,29 @@ function Proventos() {
             <option value="sim">Com valor</option>
             <option value="nao">Sem valor</option>
           </select>
+          {hasActiveFilters && (
+            <button
+              onClick={clearFilters}
+              style={{
+                background: 'transparent', color: '#C8B800', border: '1px solid #C8B80066',
+                borderRadius: 6, padding: '5px 12px', fontSize: '0.75em', fontWeight: 700,
+                fontFamily: 'inherit', cursor: 'pointer', letterSpacing: '0.5px',
+                whiteSpace: 'nowrap', transition: 'all 0.2s ease',
+              }}
+              onMouseOver={e => { e.currentTarget.style.background = '#C8B80022'; e.currentTarget.style.borderColor = '#C8B800'; }}
+              onMouseOut={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = '#C8B80066'; }}
+            >
+              ✕ Limpar Filtros
+            </button>
+          )}
         </div>
 
-        <div style={{ display: 'flex', gap: 10 }}>
+        <div style={{ display: 'flex', gap: 8 }}>
           <button
             onClick={() => setClearConfirm(true)}
             style={{
-              background: '#FF3333', color: '#FFFFFF', border: 'none', borderRadius: 8,
-              padding: '10px 22px', fontSize: '0.85em', fontWeight: 700, fontFamily: 'inherit',
+              background: '#FF3333', color: '#FFFFFF', border: 'none', borderRadius: 6,
+              padding: '6px 14px', fontSize: '0.75em', fontWeight: 700, fontFamily: 'inherit',
               cursor: 'pointer', letterSpacing: '1px', whiteSpace: 'nowrap',
               transition: 'all 0.2s ease',
             }}
@@ -339,10 +399,23 @@ function Proventos() {
             EXCLUIR TABELA
           </button>
           <button
+            onClick={() => setAddTarget({})}
+            style={{
+              background: '#00CC66', color: '#0A0A0A', border: 'none', borderRadius: 6,
+              padding: '6px 14px', fontSize: '0.75em', fontWeight: 700, fontFamily: 'inherit',
+              cursor: 'pointer', letterSpacing: '1px', whiteSpace: 'nowrap',
+              transition: 'all 0.2s ease',
+            }}
+            onMouseOver={e => e.target.style.background = '#22EE88'}
+            onMouseOut={e => e.target.style.background = '#00CC66'}
+          >
+            ADICIONAR PROVENTOS
+          </button>
+          <button
             onClick={() => fileInputRef.current?.click()}
             style={{
-              background: '#C8B800', color: '#0A0A0A', border: 'none', borderRadius: 8,
-              padding: '10px 22px', fontSize: '0.85em', fontWeight: 700, fontFamily: 'inherit',
+              background: '#C8B800', color: '#0A0A0A', border: 'none', borderRadius: 6,
+              padding: '6px 14px', fontSize: '0.75em', fontWeight: 700, fontFamily: 'inherit',
               cursor: 'pointer', letterSpacing: '1px', whiteSpace: 'nowrap',
               transition: 'all 0.2s ease',
             }}
@@ -422,7 +495,7 @@ function Proventos() {
               ))}
             </tr>
           </thead>
-          <tbody>
+          <tbody key={`${filterTicker}|${filterAno}|${filterDividendos}|${filterJcp}|${filterRendimento}|${filterReembolso}`}>
             {filtered.length === 0 ? (
               <tr>
                 <td colSpan={columns.length} className="table-empty">
@@ -430,10 +503,10 @@ function Proventos() {
                 </td>
               </tr>
             ) : (
-              filtered.map((row) => {
+              filtered.map((row, idx) => {
                 const montante = calcMontante(row);
                 return (
-                  <tr key={row.id}>
+                  <tr key={idx}>
                     <td className="td-ticker">{row.ticker}</td>
                     <td style={{ textAlign: 'center', color: '#E0E0E0' }}>{row.nome}</td>
                     <td className="td-tipo">{row.tipo}</td>
@@ -478,11 +551,26 @@ function Proventos() {
         )}
       </div>
 
+      {addTarget && (
+        <EditProventoModal
+          data={addTarget}
+          onClose={() => setAddTarget(null)}
+          tickerList={tickerOptions}
+          tickerNomeMap={tickerNomeMap}
+          tickerTipoMap={tickerTipoMap}
+          addProvento={addProvento}
+          onProventoAdded={handleProventoAdded}
+        />
+      )}
+
       {editTarget && (
         <EditProventoModal
           data={editTarget}
           onSave={handleSaveEdit}
           onClose={() => setEditTarget(null)}
+          tickerList={tickerOptions}
+          tickerNomeMap={tickerNomeMap}
+          tickerTipoMap={tickerTipoMap}
         />
       )}
 

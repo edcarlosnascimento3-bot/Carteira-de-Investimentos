@@ -1367,7 +1367,7 @@ body {
 }
 
 .evento-badge.acao { background: #E63946; color: white; }
-.evento-badge.fii { background: #00AA66; color: white; }
+.evento-badge.fii { background: #00AA66; color: black; }
 
 .eventos-lista {
   width: 580px;

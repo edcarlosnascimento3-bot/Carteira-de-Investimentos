@@ -1,15 +1,28 @@
 import { formatCurrency } from '../../services/format';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
-const tipos = ['Ação', 'FII', 'Renda Fixa'];
+function toDateInput(ddmmmyyyy) {
+  if (!ddmmmyyyy) return '';
+  const [d, m, y] = ddmmmyyyy.split('/');
+  if (!d || !m || !y) return '';
+  return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+}
 
-function EditProventoModal({ data, onSave, onClose }) {
+const INITIAL_FORM = {
+  ticker: '', nome: '', tipo: '',
+  data: '', dataDate: '', ano: '',
+  dividendos: 0, jcp: 0, rendimento: 0, reembolso: 0, observacao: '',
+};
+
+function EditProventoModal({ data, onSave, onClose, tickerList, tickerNomeMap, tickerTipoMap, addProvento, onProventoAdded }) {
+  const [showConfirm, setShowConfirm] = useState(false);
   const [form, setForm] = useState({
     ticker: data.ticker || '',
     nome: data.nome || '',
-    tipo: data.tipo || 'Ação',
+    tipo: data.tipo || '',
     data: data.data || '',
-    ano: data.ano || new Date().getFullYear(),
+    dataDate: toDateInput(data.data),
+    ano: data.ano || '',
     dividendos: data.dividendos || 0,
     jcp: data.jcp || 0,
     rendimento: data.rendimento || 0,
@@ -17,19 +30,73 @@ function EditProventoModal({ data, onSave, onClose }) {
     observacao: data.observacao || '',
   });
 
+  const resetForm = () => setForm({ ...INITIAL_FORM });
+
+  useEffect(() => {
+    if (form.ticker) {
+      setForm((prev) => ({
+        ...prev,
+        nome: tickerNomeMap?.[form.ticker] || prev.nome,
+        tipo: tickerTipoMap?.[form.ticker] || prev.tipo,
+      }));
+    } else {
+      setForm((prev) => ({
+        ...prev,
+        nome: '', tipo: '', data: '', dataDate: '', ano: '',
+        dividendos: 0, jcp: 0, rendimento: 0, reembolso: 0, observacao: '',
+      }));
+    }
+  }, [form.ticker, tickerNomeMap, tickerTipoMap]);
+
   const handleChange = (field, value) => {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
+  const handleDateChange = (value) => {
+    if (!value) {
+      setForm((prev) => ({ ...prev, dataDate: '', data: '', ano: '' }));
+      return;
+    }
+    const [y, m, d] = value.split('-');
+    setForm((prev) => ({
+      ...prev,
+      dataDate: value,
+      data: `${d}/${m}/${y}`,
+      ano: y,
+    }));
+  };
+
   const handleSave = () => {
-    onSave({
-      ...form,
+    if (!form.ticker || !form.data) return;
+    const { dataDate, ...rest } = form;
+    const payload = {
+      ...rest,
       dividendos: Number(form.dividendos),
       jcp: Number(form.jcp),
       rendimento: Number(form.rendimento),
       reembolso: Number(form.reembolso),
       ano: Number(form.ano),
-    });
+    };
+
+    if (data?.id) {
+      onSave(payload);
+      onClose();
+    } else if (addProvento) {
+      addProvento(payload);
+      onProventoAdded?.();
+      setShowConfirm(true);
+    }
+  };
+
+  const handleConfirmSim = () => {
+    setShowConfirm(false);
+    resetForm();
+  };
+
+  const handleConfirmNao = () => {
+    setShowConfirm(false);
+    onClose();
+    window.location.reload();
   };
 
   const inputStyle = {
@@ -61,7 +128,7 @@ function EditProventoModal({ data, onSave, onClose }) {
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content modal-edit" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>Editar Provento</h2>
+          <h2>{data?.id ? 'Editar Provento' : 'Adicionar Proventos'}</h2>
           <button className="modal-close" onClick={onClose}>✕</button>
         </div>
 
@@ -69,50 +136,58 @@ function EditProventoModal({ data, onSave, onClose }) {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
             <div style={groupStyle}>
               <label style={labelStyle}>Ticker</label>
-              <input
-                style={inputStyle}
-                value={form.ticker}
-                onChange={(e) => handleChange('ticker', e.target.value.toUpperCase())}
-              />
+              {tickerList && tickerList.length > 0 ? (
+                <select
+                  style={inputStyle}
+                  value={form.ticker}
+                  onChange={(e) => handleChange('ticker', e.target.value)}
+                >
+                  <option value="">Selecione um ativo</option>
+                  {tickerList.map((t) => <option key={t} value={t}>{t}</option>)}
+                </select>
+              ) : (
+                <input
+                  style={inputStyle}
+                  value={form.ticker}
+                  onChange={(e) => handleChange('ticker', e.target.value.toUpperCase())}
+                />
+              )}
             </div>
 
             <div style={groupStyle}>
               <label style={labelStyle}>Nome</label>
               <input
-                style={inputStyle}
+                style={{ ...inputStyle, color: '#E0E0E0' }}
                 value={form.nome}
-                onChange={(e) => handleChange('nome', e.target.value)}
+                readOnly
               />
             </div>
 
             <div style={groupStyle}>
               <label style={labelStyle}>Tipo</label>
-              <select
-                style={inputStyle}
+              <input
+                style={{ ...inputStyle, color: '#E0E0E0' }}
                 value={form.tipo}
-                onChange={(e) => handleChange('tipo', e.target.value)}
-              >
-                {tipos.map((t) => <option key={t} value={t}>{t}</option>)}
-              </select>
+                readOnly
+              />
             </div>
 
             <div style={groupStyle}>
               <label style={labelStyle}>Data</label>
               <input
-                style={inputStyle}
-                value={form.data}
-                onChange={(e) => handleChange('data', e.target.value)}
-                placeholder="DD/MM/AAAA"
+                style={{ ...inputStyle, colorScheme: 'dark' }}
+                type="date"
+                value={form.dataDate}
+                onChange={(e) => handleDateChange(e.target.value)}
               />
             </div>
 
             <div style={groupStyle}>
               <label style={labelStyle}>Ano</label>
               <input
-                style={inputStyle}
-                type="number"
+                style={{ ...inputStyle, color: '#666666', background: '#050505' }}
                 value={form.ano}
-                onChange={(e) => handleChange('ano', e.target.value)}
+                readOnly
               />
             </div>
 
@@ -194,9 +269,29 @@ function EditProventoModal({ data, onSave, onClose }) {
 
         <div className="modal-footer">
           <button className="btn btn-cancel" onClick={onClose}>Cancelar</button>
-          <button className="btn btn-save" onClick={handleSave}>Salvar Alterações</button>
+          <button className="btn btn-save" onClick={handleSave}>{data?.id ? 'Salvar Alterações' : 'Adicionar'}</button>
         </div>
       </div>
+
+      {showConfirm && (
+        <div className="modal-overlay" style={{ zIndex: 9999 }} onClick={() => {}}>
+          <div className="modal-content modal-confirm" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Confirmação</h2>
+            </div>
+            <div className="modal-body" style={{ textAlign: 'center', padding: '30px 20px' }}>
+              <div style={{ fontSize: '3em', marginBottom: '16px' }}>✅</div>
+              <p style={{ color: '#E0E0E0', fontSize: '1.1em', lineHeight: 1.6 }}>
+                Deseja adicionar outros proventos?
+              </p>
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-save" onClick={handleConfirmSim}>Sim</button>
+              <button className="btn btn-cancel" onClick={handleConfirmNao}>Não</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
