@@ -20,6 +20,7 @@ import Meta from './pages/Meta';
 import Analitico from './pages/Analitico';
 import AnalisarAcoes from './pages/AnalisarAcoes';
 import AnalisarFIIs from './pages/AnalisarFIIs';
+import Conferencia from './pages/Conferencia';
 import { useState } from 'react';
 
 const pages = {
@@ -41,6 +42,7 @@ const pages = {
   analitico: Analitico,
   'analisar-acoes': AnalisarAcoes,
   'analisar-fiis': AnalisarFIIs,
+  conferencia: Conferencia,
 };
 
 function App() {

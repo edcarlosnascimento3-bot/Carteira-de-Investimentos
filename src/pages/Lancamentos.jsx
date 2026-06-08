@@ -339,26 +339,26 @@ function Lancamentos() {
             style={{
               background: '#FF3333', color: '#FFFFFF', border: 'none', borderRadius: 6,
               padding: '6px 14px', fontSize: '0.75em', fontWeight: 700, fontFamily: 'inherit',
-              cursor: 'pointer', letterSpacing: '1px', whiteSpace: 'nowrap',
+              cursor: 'pointer', letterSpacing: '1px', lineHeight: 1.3,
               transition: 'all 0.2s ease',
             }}
             onMouseOver={e => e.target.style.background = '#FF5555'}
             onMouseOut={e => e.target.style.background = '#FF3333'}
           >
-            EXCLUIR TABELA
+            EXCLUIR<br />TABELA
           </button>
           <button
             onClick={() => fileInputRef.current?.click()}
             style={{
               background: '#C8B800', color: '#0A0A0A', border: 'none', borderRadius: 6,
               padding: '6px 14px', fontSize: '0.75em', fontWeight: 700, fontFamily: 'inherit',
-              cursor: 'pointer', letterSpacing: '1px', whiteSpace: 'nowrap',
+              cursor: 'pointer', letterSpacing: '1px', lineHeight: 1.3,
               transition: 'all 0.2s ease',
             }}
             onMouseOver={e => e.target.style.background = '#E8D844'}
             onMouseOut={e => e.target.style.background = '#C8B800'}
           >
-            IMPORTAR PLANILHA
+            IMPORTAR<br />PLANILHA
           </button>
         </div>
         <input

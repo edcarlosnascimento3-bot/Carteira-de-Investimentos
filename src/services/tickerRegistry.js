@@ -9,14 +9,18 @@ function load() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) return { ...knownTickers, ...JSON.parse(raw) };
-  } catch {}
+  } catch (e) {
+    console.warn('[tickerRegistry] load localStorage error:', e);
+  }
   return { ...knownTickers };
 }
 
 function save(data) {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-  } catch {}
+  } catch (e) {
+    console.warn('[tickerRegistry] save localStorage error:', e);
+  }
 }
 
 function getRegistry() {
@@ -28,7 +32,10 @@ export async function loadAtivosRegistry() {
   if (ativosLoaded) return;
   try {
     const res = await fetch('/api/db/ativos');
-    if (!res.ok) return;
+    if (!res.ok) {
+      console.warn('[tickerRegistry] loadAtivosRegistry fetch status:', res.status);
+      return;
+    }
     const list = await res.json();
     const map = {};
     list.forEach(a => {
@@ -45,7 +52,9 @@ export async function loadAtivosRegistry() {
     knownTickers = map;
     cache = { ...map, ...load() };
     ativosLoaded = true;
-  } catch {}
+  } catch (e) {
+    console.warn('[tickerRegistry] loadAtivosRegistry error:', e);
+  }
 }
 
 export function getTickerInfo(ticker) {
@@ -73,7 +82,7 @@ export async function saveTickerInfo(ticker, info) {
   }
 
   try {
-    await fetch('/api/db/ativos', {
+    const res = await fetch('/api/db/ativos', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(
@@ -87,7 +96,13 @@ export async function saveTickerInfo(ticker, info) {
         )
       ),
     });
-  } catch {}
+    if (!res.ok) {
+      throw new Error(`Backend ${res.status}: ${res.statusText}`);
+    }
+  } catch (e) {
+    console.warn('[tickerRegistry] saveTickerInfo fetch error:', e);
+    throw e;
+  }
 }
 
 export function buildRegistryFromTransactions(transactions) {

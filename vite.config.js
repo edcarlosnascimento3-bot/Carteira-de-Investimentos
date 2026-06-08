@@ -53,6 +53,11 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api\/yahoo/, '/v8/finance'),
       },
+      '/api/brapi': {
+        target: 'https://brapi.dev',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/brapi/, '/api'),
+      },
     },
   },
 });

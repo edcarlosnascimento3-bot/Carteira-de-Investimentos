@@ -37,6 +37,7 @@ const menuItems = [
     ],
   },
   { id: 'relatorios', label: 'Relatórios', icon: '📄' },
+  { id: 'conferencia', label: 'Conferência', icon: '🔍' },
   { id: 'midi', label: 'MIDI', icon: '🔗' },
   { id: 'meta', label: 'Meta', icon: '🎯' },
 ];

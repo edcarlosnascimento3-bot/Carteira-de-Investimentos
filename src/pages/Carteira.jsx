@@ -136,11 +136,9 @@ function Carteira() {
     const raw = editRfValue.replace(/[R$\s.]/g, '').replace(',', '.');
     const val = parseFloat(raw);
     if (isNaN(val) || val < 0) return;
-    setManualAtual(prev => {
-      const next = { ...prev, [editRf.ticker]: val };
-      localStorage.setItem('investimento_rf_manual', JSON.stringify(next));
-      return next;
-    });
+    setManualAtual(prev => ({ ...prev, [editRf.ticker]: val }));
+    const existing = JSON.parse(localStorage.getItem('investimento_rf_manual') || '{}');
+    localStorage.setItem('investimento_rf_manual', JSON.stringify({ ...existing, [editRf.ticker]: val }));
     setEditRf(null);
   };
 

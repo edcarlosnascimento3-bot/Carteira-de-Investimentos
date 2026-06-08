@@ -1,10 +1,9 @@
-import React, { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect, useCallback, useRef } from 'react';
 import { useTransactions } from '../context/TransactionsContext';
 import { useProventos } from '../context/ProventosContext';
-import { usePrices } from '../hooks/usePrices';
+import { fetchYahooDividends } from '../services/api';
 import '../styles/globals.css';
 
-// Categorias canônicas de proventos e suas cores
 const TIPO_CONFIG = {
   'Rendimento':  { cor: '#00CC66', bg: 'rgba(0,204,102,0.12)' },
   'JCP':         { cor: '#3399FF', bg: 'rgba(51,153,255,0.12)' },
@@ -15,20 +14,44 @@ const TIPO_CONFIG = {
 
 const TIPOS_ORDEM = ['Rendimento', 'JCP', 'Dividendos', 'Reembolso', 'Outros'];
 
-function normalizaTipo(tipo) {
-  if (!tipo) return 'Outros';
-  const t = tipo.toLowerCase();
-  if (t.includes('rendimento')) return 'Rendimento';
-  if (t.includes('jcp'))        return 'JCP';
-  if (t.includes('dividendo'))  return 'Dividendos';
-  if (t.includes('reembolso'))  return 'Reembolso';
-  return 'Outros';
-}
+const MESES = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
 
 function CalendarioRendimentos() {
   const { transactions } = useTransactions();
   const { proventos } = useProventos();
   const [selectedDate, setSelectedDate] = useState(null);
+  const [apiDividends, setApiDividends] = useState([]);
+  const [apiLoading, setApiLoading] = useState(false);
+  const [apiError, setApiError] = useState(null);
+  const mountedRef = useRef(true);
+
+  const hoje = new Date();
+  const [mesAtual, setMesAtual] = useState(hoje.getMonth());
+  const [anoAtual, setAnoAtual] = useState(hoje.getFullYear());
+
+  const mesAnoPrefix = `${anoAtual}-${(mesAtual + 1).toString().padStart(2, '0')}`;
+
+  const ehMesPassado = anoAtual < hoje.getFullYear() || (anoAtual === hoje.getFullYear() && mesAtual < hoje.getMonth());
+
+  function prevMonth() {
+    setSelectedDate(null);
+    if (mesAtual === 0) {
+      setMesAtual(11);
+      setAnoAtual(anoAtual - 1);
+    } else {
+      setMesAtual(mesAtual - 1);
+    }
+  }
+
+  function nextMonth() {
+    setSelectedDate(null);
+    if (mesAtual === 11) {
+      setMesAtual(0);
+      setAnoAtual(anoAtual + 1);
+    } else {
+      setMesAtual(mesAtual + 1);
+    }
+  }
 
   const quantidades = useMemo(() => {
     const qtd = {};
@@ -41,32 +64,63 @@ function CalendarioRendimentos() {
   }, [transactions]);
 
   const meusAtivos = useMemo(() => {
-    return Object.keys(quantidades).filter(ticker => quantidades[ticker] > 0);
-  }, [quantidades]);
+    return [...new Set(transactions.map(t => t.ticker))].sort();
+  }, [transactions]);
 
-  const eventosBase = [
-    { data: '2026-05-04', ativo: 'ITUB4', tipo: 'JCP', valorCotacao: 0.015 },
-    { data: '2026-05-15', ativo: 'HGLG11', tipo: 'Rendimento', valorCotacao: 1.10 },
-    { data: '2026-05-20', ativo: 'PETR4', tipo: 'Dividendos', valorCotacao: 0 },
-    { data: '2026-05-20', ativo: 'VGIP11', tipo: 'Rendimento', valorCotacao: 1.08 },
-    { data: '2026-05-15', ativo: 'VSLH11', tipo: 'Rendimento', valorCotacao: 0.025 },
-    { data: '2026-05-10', ativo: 'BBAS3', tipo: 'JCP' },
-    { data: '2026-05-15', ativo: 'MXRF11', tipo: 'Rendimento', valorCotacao: 0.10 },
-    { data: '2026-05-15', ativo: 'BTLG11', tipo: 'Rendimento' },
-    { data: '2026-05-15', ativo: 'KNRI11', tipo: 'Rendimento' },
-    { data: '2026-05-15', ativo: 'XPLG11', tipo: 'Rendimento' },
-    { data: '2026-05-15', ativo: 'CPTS11', tipo: 'Rendimento' },
-  ];
+  const tipoMap = useMemo(() => {
+    const map = {};
+    transactions.forEach(t => {
+      if (t.tipo && !map[t.ticker]) map[t.ticker] = t.tipo;
+    });
+    return map;
+  }, [transactions]);
 
-  const allBaseTickers = useMemo(() => {
-    return [...new Set([...meusAtivos, ...eventosBase.map(e => e.ativo)])];
+  const fetchDividends = useCallback(async () => {
+    const tickers = meusAtivos.filter(t => !['Dólar', 'Euro'].includes(t));
+    if (tickers.length === 0) return;
+
+    setApiLoading(true);
+    setApiError(null);
+
+    const results = [];
+    const concurrency = 5;
+    for (let i = 0; i < tickers.length; i += concurrency) {
+      const batch = tickers.slice(i, i + concurrency);
+      const promises = batch.map(async (ticker) => {
+        try {
+          const data = await fetchYahooDividends(ticker);
+          return { ticker, data };
+        } catch {
+          return { ticker, data: [] };
+        }
+      });
+      const settled = await Promise.allSettled(promises);
+      for (const s of settled) {
+        if (s.status === 'fulfilled' && s.value.data) {
+          results.push(...s.value.data.map(d => ({ ...d, ticker: s.value.ticker })));
+        }
+      }
+      if (i + concurrency < tickers.length) {
+        await new Promise(r => setTimeout(r, 300));
+      }
+    }
+
+    if (mountedRef.current) {
+      setApiDividends(results);
+      setApiLoading(false);
+    }
   }, [meusAtivos]);
 
-  const { prices, loading } = usePrices(allBaseTickers);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => { mountedRef.current = false; };
+  }, []);
 
-  // Agrupado por data+ativo, com múltiplos tipos de provento por entrada
+  useEffect(() => {
+    fetchDividends();
+  }, [fetchDividends, mesAtual, anoAtual]);
+
   const eventosAgrupados = useMemo(() => {
-    // 1. Proventos lançados manualmente — cada campo vira um tipo separado
     const lancados = proventos.flatMap(p => {
       if (!p.data) return [];
       const [dia, mes, ano] = p.data.split('/');
@@ -81,91 +135,113 @@ function CalendarioRendimentos() {
       return resultados;
     });
 
-    const ativosLancadosDoMes = new Set(
-      lancados.filter(l => l.data.startsWith('2026-05')).map(l => l.ativo)
-    );
+    const daApi = apiDividends.flatMap(d => {
+      if (!d.date) return [];
+      const parts = d.date.split('/');
+      if (parts.length !== 3) return [];
+      const data = `${parts[2]}-${parts[1]}-${parts[0]}`;
+      const tipoCanon =
+        d.type === 'JCP' ? 'JCP' :
+        d.type === 'Dividendo' ? 'Dividendos' :
+        d.type === 'Rendimento' ? 'Rendimento' :
+        'Dividendos';
+      return { data, ativo: d.ticker, tipoCanon, valor: d.value, fonte: 'api' };
+    });
 
-    // 2. Eventos pesquisados filtrados pela carteira do usuário
-    const pesquisados = eventosBase
-      .filter(evt => meusAtivos.includes(evt.ativo) && !ativosLancadosDoMes.has(evt.ativo))
-      .map(evt => {
-        const tipoCanon = normalizaTipo(evt.tipo);
-        let valor = null;
-        if (evt.valorCotacao !== undefined && evt.valorCotacao > 0) {
-          valor = evt.valorCotacao * (quantidades[evt.ativo] || 0);
-        } else if (evt.valorCotacao === 0) {
-          valor = 0;
-        } else {
-          // Se valorCotacao é undefined, estima o rendimento com base no preço atual da cotação buscado da internet!
-          const precoAtual = prices[evt.ativo];
-          if (precoAtual) {
-            // Estima em ~0.72% para FIIs se for rendimento, ou ~1.25% para Ações se for JCP/Dividendo
-            const taxaEstimada = tipoCanon === 'Rendimento' ? 0.0072 : 0.0125;
-            valor = precoAtual * taxaEstimada * (quantidades[evt.ativo] || 0);
-          }
-        }
-        return { data: evt.data, ativo: evt.ativo, tipoCanon, valor };
-      });
-
-    // 3. Agrupa por data+ativo, somando valores por tipo
-    const todos = [...pesquisados, ...lancados].filter(e => e.data.startsWith('2026-05'));
+    const todos = [...lancados, ...daApi].filter(e => e.data.startsWith(mesAnoPrefix));
     const mapa = {};
+
     todos.forEach(e => {
       const key = `${e.data}_${e.ativo}`;
-      if (!mapa[key]) mapa[key] = { data: e.data, ativo: e.ativo, proventos: {} };
+      if (!mapa[key]) mapa[key] = { data: e.data, ativo: e.ativo, proventos: {}, fontes: {} };
       if (mapa[key].proventos[e.tipoCanon] === undefined) {
         mapa[key].proventos[e.tipoCanon] = e.valor;
+        mapa[key].fontes[e.tipoCanon] = e.fonte || 'manual';
       } else {
-        mapa[key].proventos[e.tipoCanon] = (mapa[key].proventos[e.tipoCanon] || 0) + (e.valor || 0);
+        const manual = e.fonte !== 'api';
+        const existente = mapa[key].fontes[e.tipoCanon];
+        if (manual || existente === 'api') {
+          mapa[key].proventos[e.tipoCanon] = (mapa[key].proventos[e.tipoCanon] || 0) + (e.valor || 0);
+          if (manual) mapa[key].fontes[e.tipoCanon] = 'manual';
+        }
       }
     });
 
     return Object.values(mapa).sort((a, b) => new Date(a.data) - new Date(b.data));
-  }, [meusAtivos, proventos, quantidades, prices]);
+  }, [proventos, apiDividends, mesAnoPrefix]);
 
-  // Calendário
-  const currentDate = new Date(2026, 4, 1);
-  const diasNoMes = new Date(2026, 5, 0).getDate();
-  const primeiroDiaSemana = currentDate.getDay();
+  const primeiroDiaDoMes = new Date(anoAtual, mesAtual, 1);
+  const diasNoMes = new Date(anoAtual, mesAtual + 1, 0).getDate();
+  const primeiroDiaSemana = primeiroDiaDoMes.getDay();
+  const TOTAL_CELULAS = 42;
   const dias = [];
   for (let i = 0; i < primeiroDiaSemana; i++) dias.push(null);
   for (let i = 1; i <= diasNoMes; i++) dias.push(i);
+  while (dias.length < TOTAL_CELULAS) dias.push(null);
 
   const eventosNoDia = (dia) => {
     if (!dia) return [];
-    const dataStr = `2026-05-${dia.toString().padStart(2, '0')}`;
+    const dataStr = `${mesAnoPrefix}-${dia.toString().padStart(2, '0')}`;
     return eventosAgrupados.filter(e => e.data === dataStr);
   };
+
+  const btnStyle = {
+    background: 'none',
+    border: '1px solid rgba(255,255,255,0.15)',
+    color: '#ccc',
+    fontSize: '1.1em',
+    padding: '4px 12px',
+    borderRadius: '6px',
+    cursor: 'pointer',
+    lineHeight: 1,
+    transition: 'all 0.2s',
+  };
+
+  const tituloTabela = ehMesPassado ? 'Pagamentos Realizados' : 'Próximos Pagamentos';
 
   return (
     <div className="calendario-container">
       <div className="calendario-main">
         <div className="calendario-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingRight: '8px' }}>
-          <h3>Maio 2026</h3>
-          <span style={{
-            fontSize: '0.78em',
-            color: loading ? '#C8B800' : '#00CC66',
-            background: 'rgba(255,255,255,0.03)',
-            padding: '5px 12px',
-            borderRadius: '12px',
-            border: `1px solid ${loading ? 'rgba(200,184,0,0.2)' : 'rgba(0,204,102,0.2)'}`,
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            fontWeight: 600,
-            letterSpacing: '0.5px'
-          }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <button onClick={prevMonth} style={btnStyle}>&lt;</button>
+            <h3 style={{ margin: 0, minWidth: 160, textAlign: 'center' }}>{MESES[mesAtual]} {anoAtual}</h3>
+            <button onClick={nextMonth} style={btnStyle}>&gt;</button>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            {apiError && (
+              <span style={{
+                fontSize: '0.72em', color: '#FF5555', background: 'rgba(255,85,85,0.08)',
+                padding: '4px 10px', borderRadius: '8px', border: '1px solid rgba(255,85,85,0.2)',
+              }}>
+                API de dividendos indisponível
+              </span>
+            )}
             <span style={{
-              width: '6px',
-              height: '6px',
-              borderRadius: '50%',
-              background: loading ? '#C8B800' : '#00CC66',
-              boxShadow: `0 0 8px ${loading ? '#C8B800' : '#00CC66'}`,
-              display: 'inline-block',
-              animation: loading ? 'pulse 1.2s infinite' : 'none'
-            }} />
-            {loading ? 'Sincronizando Bolsa...' : 'Bolsa Sincronizada'}
-          </span>
+              fontSize: '0.78em',
+              color: apiLoading ? '#C8B800' : '#00CC66',
+              background: 'rgba(255,255,255,0.03)',
+              padding: '5px 12px',
+              borderRadius: '12px',
+              border: `1px solid ${apiLoading ? 'rgba(200,184,0,0.2)' : 'rgba(0,204,102,0.2)'}`,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              fontWeight: 600,
+              letterSpacing: '0.5px'
+            }}>
+              <span style={{
+                width: '6px',
+                height: '6px',
+                borderRadius: '50%',
+                background: apiLoading ? '#C8B800' : '#00CC66',
+                boxShadow: `0 0 8px ${apiLoading ? '#C8B800' : '#00CC66'}`,
+                display: 'inline-block',
+                animation: apiLoading ? 'pulse 1.2s infinite' : 'none'
+              }} />
+              {apiLoading ? 'Buscando dividendos...' : apiError ? 'API off-line' : 'Dividendos sincronizados'}
+            </span>
+          </div>
         </div>
 
         <div className="calendario-grid" onClick={() => setSelectedDate(null)}>
@@ -176,14 +252,14 @@ function CalendarioRendimentos() {
           {dias.map((dia, index) => {
             const evts = eventosNoDia(dia);
             const hasEvent = evts.length > 0;
+            const dataStr = dia ? `${mesAnoPrefix}-${dia.toString().padStart(2, '0')}` : '';
             return (
               <div
                 key={index}
-                className={`calendario-celula ${dia ? 'dia-ativo' : 'dia-vazio'} ${hasEvent ? 'tem-evento' : ''} ${dia && selectedDate === `2026-05-${dia.toString().padStart(2, '0')}` ? 'celula-selecionada' : ''}`}
+                className={`calendario-celula ${dia ? 'dia-ativo' : 'dia-vazio'} ${hasEvent ? 'tem-evento' : ''} ${dia && selectedDate === dataStr ? 'celula-selecionada' : ''}`}
                 onClick={(e) => {
                   e.stopPropagation();
                   if (hasEvent) {
-                    const dataStr = `2026-05-${dia.toString().padStart(2, '0')}`;
                     setSelectedDate(prev => prev === dataStr ? null : dataStr);
                   }
                 }}
@@ -194,8 +270,10 @@ function CalendarioRendimentos() {
                   <div className="eventos-badges">
                     {evts.map((evt, idx) => {
                       const isFii = /11$/.test(evt.ativo);
+                      const isRendaFixa = tipoMap[evt.ativo] === 'Renda Fixa';
+                      const badgeClass = isRendaFixa ? 'renda-fixa' : isFii ? 'fii' : 'acao';
                       return (
-                        <span key={idx} className={`evento-badge ${isFii ? 'fii' : 'acao'}`} title={evt.ativo}>
+                        <span key={idx} className={`evento-badge ${badgeClass}`} title={evt.ativo}>
                           {evt.ativo}
                         </span>
                       );
@@ -208,12 +286,31 @@ function CalendarioRendimentos() {
         </div>
       </div>
 
-      {/* ─── Lista de Próximos Pagamentos ─── */}
       <div className="eventos-lista">
-        <h4>Próximos Pagamentos</h4>
+        <h4>{tituloTabela}</h4>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+          <span style={{ fontSize: '0.75em', color: '#888' }}>
+            {eventosAgrupados.filter(e => Object.values(e.fontes || {}).every(f => f === 'api')).length > 0
+              ? '🔄 Dados automáticos via brapi.dev'
+              : ''}
+          </span>
+          {eventosAgrupados.length > 0 && (
+            <button
+              onClick={fetchDividends}
+              disabled={apiLoading}
+              style={{
+                background: 'transparent', border: '1px solid #444', color: '#aaa',
+                borderRadius: 6, padding: '3px 10px', fontSize: '0.7em', cursor: 'pointer',
+                fontFamily: 'inherit', fontWeight: 600,
+              }}
+            >
+              {apiLoading ? 'Atualizando...' : '🔄 Atualizar'}
+            </button>
+          )}
+        </div>
         {eventosAgrupados.length === 0 ? (
           <p style={{ color: '#888', fontSize: '0.9em' }}>
-            Não há pagamentos previstos para os ativos que você possui neste mês.
+            {apiLoading ? 'Buscando dividendos da internet...' : 'Nenhum provento neste mês.'}
           </p>
         ) : (
           <ul>
@@ -222,19 +319,24 @@ function CalendarioRendimentos() {
               const isSelected = selectedDate === evt.data;
               const isDimmed = selectedDate && !isSelected;
               const tiposPresentes = TIPOS_ORDEM.filter(t => evt.proventos[t] !== undefined);
+              const isFromApi = Object.values(evt.fontes || {}).every(f => f === 'api');
 
               return (
                 <li
                   key={idx}
                   className={`evento-card${isSelected ? ' evento-selecionado' : ''}${isDimmed ? ' evento-diminido' : ''}`}
+                  style={isFromApi ? { borderLeft: '2px solid rgba(0,204,102,0.2)' } : {}}
                 >
-                  {/* Linha superior: Data e Ticker */}
                   <div className="evento-card-header">
                     <span className="evento-data">{dia}/{mes}</span>
                     <span className="evento-ativo">{evt.ativo}</span>
+                    {isFromApi && (
+                      <span style={{ marginLeft: 'auto', fontSize: '0.65em', color: '#00CC66', opacity: 0.6 }}>
+                        automático
+                      </span>
+                    )}
                   </div>
 
-                  {/* Tipos de provento com valores */}
                   <div className="evento-card-proventos">
                     {tiposPresentes.map(tipo => {
                       const cfg = TIPO_CONFIG[tipo] || TIPO_CONFIG['Outros'];

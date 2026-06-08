@@ -1,0 +1,15 @@
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+
+  [32m[1mVITE[22m v5.4.21[39m  [2mready in [0m[1m76235[22m[2m[0m ms[22m
+
+  [32m➜[39m  [1mLocal[22m:   [36mhttp://localhost:[1m5173[22m/[39m
+  [32m➜[39m  [1mNetwork[22m: [36mhttp://192.168.10.172:[1m5173[22m/[39m
+  [32m➜[39m  [1mNetwork[22m: [36mhttp://54.232.189.113:[1m5173[22m/[39m
+[2m[32m  ➜[39m[22m[2m  press [22m[1mh + enter[22m[2m to show help[22m
+[2m22:13:20[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/Graficos.jsx[22m
+[2m22:14:26[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/Graficos.jsx[22m
+[2m22:15:14[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/Graficos.jsx[22m
+[2m22:15:29[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/Graficos.jsx[22m
+[2m22:15:45[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/Graficos.jsx[22m
+[2m22:22:35[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/Graficos.jsx[22m
+[2m22:24:09[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/Graficos.jsx[22m

@@ -1,5 +1,5 @@
 import { formatCurrency } from '../../services/format';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 
 function toDateInput(ddmmmyyyy) {
   if (!ddmmmyyyy) return '';
@@ -11,11 +11,15 @@ function toDateInput(ddmmmyyyy) {
 const INITIAL_FORM = {
   ticker: '', nome: '', tipo: '',
   data: '', dataDate: '', ano: '',
-  dividendos: 0, jcp: 0, rendimento: 0, reembolso: 0, observacao: '',
+  dividendos: '', jcp: '', rendimento: '', reembolso: '', observacao: '',
 };
 
 function EditProventoModal({ data, onSave, onClose, tickerList, tickerNomeMap, tickerTipoMap, addProvento, onProventoAdded }) {
   const [showConfirm, setShowConfirm] = useState(false);
+  const [filterText, setFilterText] = useState(data.ticker || '');
+  const [showDropdown, setShowDropdown] = useState(false);
+  const inputRef = useRef(null);
+  const wrapperRef = useRef(null);
   const [form, setForm] = useState({
     ticker: data.ticker || '',
     nome: data.nome || '',
@@ -23,12 +27,29 @@ function EditProventoModal({ data, onSave, onClose, tickerList, tickerNomeMap, t
     data: data.data || '',
     dataDate: toDateInput(data.data),
     ano: data.ano || '',
-    dividendos: data.dividendos || 0,
-    jcp: data.jcp || 0,
-    rendimento: data.rendimento || 0,
-    reembolso: data.reembolso || 0,
+    dividendos: data.dividendos != null ? data.dividendos : '',
+    jcp: data.jcp != null ? data.jcp : '',
+    rendimento: data.rendimento != null ? data.rendimento : '',
+    reembolso: data.reembolso != null ? data.reembolso : '',
     observacao: data.observacao || '',
   });
+
+  const filteredTickers = useMemo(() => {
+    if (!tickerList) return [];
+    if (!filterText) return tickerList;
+    const term = filterText.toUpperCase();
+    return tickerList.filter(t => t.toUpperCase().includes(term));
+  }, [tickerList, filterText]);
+
+  useEffect(() => {
+    function handleClick(e) {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target)) {
+        setShowDropdown(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, []);
 
   const resetForm = () => setForm({ ...INITIAL_FORM });
 
@@ -43,7 +64,7 @@ function EditProventoModal({ data, onSave, onClose, tickerList, tickerNomeMap, t
       setForm((prev) => ({
         ...prev,
         nome: '', tipo: '', data: '', dataDate: '', ano: '',
-        dividendos: 0, jcp: 0, rendimento: 0, reembolso: 0, observacao: '',
+        dividendos: '', jcp: '', rendimento: '', reembolso: '', observacao: '',
       }));
     }
   }, [form.ticker, tickerNomeMap, tickerTipoMap]);
@@ -134,23 +155,53 @@ function EditProventoModal({ data, onSave, onClose, tickerList, tickerNomeMap, t
 
         <div className="modal-body">
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-            <div style={groupStyle}>
+            <div style={{ ...groupStyle, position: 'relative' }} ref={wrapperRef}>
               <label style={labelStyle}>Ticker</label>
-              {tickerList && tickerList.length > 0 ? (
-                <select
-                  style={inputStyle}
-                  value={form.ticker}
-                  onChange={(e) => handleChange('ticker', e.target.value)}
-                >
-                  <option value="">Selecione um ativo</option>
-                  {tickerList.map((t) => <option key={t} value={t}>{t}</option>)}
-                </select>
-              ) : (
-                <input
-                  style={inputStyle}
-                  value={form.ticker}
-                  onChange={(e) => handleChange('ticker', e.target.value.toUpperCase())}
-                />
+              <input
+                ref={inputRef}
+                style={inputStyle}
+                placeholder="Digite para filtrar..."
+                value={filterText}
+                onFocus={() => setShowDropdown(true)}
+                onChange={(e) => {
+                  const v = e.target.value.toUpperCase();
+                  setFilterText(v);
+                  setShowDropdown(true);
+                  handleChange('ticker', v);
+                }}
+              />
+              {showDropdown && tickerList && tickerList.length > 0 && (
+                <div style={{
+                  position: 'absolute', zIndex: 100, background: '#0A0A0A',
+                  border: '1px solid #2A2A2A', borderRadius: '6px', maxHeight: '200px',
+                  overflowY: 'auto', width: 'calc(100% - 2px)', marginTop: '2px',
+                }}>
+                  {filteredTickers.length === 0 ? (
+                    <div style={{ padding: '10px 12px', color: '#666', fontSize: '0.85em' }}>
+                      Nenhum ativo encontrado
+                    </div>
+                  ) : (
+                    filteredTickers.map((t) => (
+                      <div
+                        key={t}
+                        style={{
+                          padding: '8px 12px', cursor: 'pointer', color: '#E0E0E0',
+                          fontSize: '0.9em', borderBottom: '1px solid #1A1A1A',
+                          background: form.ticker === t ? '#1A1A00' : 'transparent',
+                        }}
+                        onMouseOver={e => e.target.style.background = '#222'}
+                        onMouseOut={e => e.target.style.background = form.ticker === t ? '#1A1A00' : 'transparent'}
+                        onClick={() => {
+                          setFilterText(t);
+                          handleChange('ticker', t);
+                          setShowDropdown(false);
+                        }}
+                      >
+                        {t}
+                      </div>
+                    ))
+                  )}
+                </div>
               )}
             </div>
 
@@ -197,6 +248,7 @@ function EditProventoModal({ data, onSave, onClose, tickerList, tickerNomeMap, t
                 style={inputStyle}
                 type="number"
                 step="0.01"
+                placeholder="0"
                 value={form.dividendos}
                 onChange={(e) => handleChange('dividendos', e.target.value)}
               />
@@ -208,6 +260,7 @@ function EditProventoModal({ data, onSave, onClose, tickerList, tickerNomeMap, t
                 style={inputStyle}
                 type="number"
                 step="0.01"
+                placeholder="0"
                 value={form.jcp}
                 onChange={(e) => handleChange('jcp', e.target.value)}
               />
@@ -219,6 +272,7 @@ function EditProventoModal({ data, onSave, onClose, tickerList, tickerNomeMap, t
                 style={inputStyle}
                 type="number"
                 step="0.01"
+                placeholder="0"
                 value={form.rendimento}
                 onChange={(e) => handleChange('rendimento', e.target.value)}
               />
@@ -230,6 +284,7 @@ function EditProventoModal({ data, onSave, onClose, tickerList, tickerNomeMap, t
                 style={inputStyle}
                 type="number"
                 step="0.01"
+                placeholder="0"
                 value={form.reembolso}
                 onChange={(e) => handleChange('reembolso', e.target.value)}
               />

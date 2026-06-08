@@ -1368,6 +1368,7 @@ body {
 
 .evento-badge.acao { background: #E63946; color: white; }
 .evento-badge.fii { background: #00AA66; color: black; }
+.evento-badge.renda-fixa { background: #FFD700; color: black; font-weight: 900; }
 
 .eventos-lista {
   width: 580px;

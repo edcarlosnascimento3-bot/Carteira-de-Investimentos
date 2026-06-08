@@ -1,8 +1,8 @@
-import { useMemo, useState, useCallback } from 'react';
+import { useMemo, useState, useCallback, useRef, useLayoutEffect } from 'react';
 import { useTransactions } from '../context/TransactionsContext';
 import { useProventos } from '../context/ProventosContext';
 import { formatCurrency } from '../services/format';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LabelList, LineChart, Line, CartesianGrid } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LabelList, LineChart, Line, CartesianGrid, Sector } from 'recharts';
 
 const typeColors = {
   'Ação': '#FF3333',
@@ -31,13 +31,29 @@ const tooltipStyle = {
 const RADIAN = Math.PI / 180;
 
 function renderLabel({ name, percent, cx, cy, midAngle, outerRadius }) {
-  const radius = outerRadius * 1.25;
+  const radius = outerRadius * 1.2;
   const x = cx + radius * Math.cos(-midAngle * RADIAN);
   const y = cy + radius * Math.sin(-midAngle * RADIAN);
+  const pct = (percent * 100).toFixed(1);
+  const label = `${name} ${pct}%`;
+  const maxLen = 20;
+  const displayName = name.length > 10 ? name.slice(0, 8) + '…' : name;
+  const displayLabel = `${displayName} ${pct}%`;
   return (
-    <text x={x} y={y} fill="#BBB" textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central" fontSize={14}>
-      {name} {(percent * 100).toFixed(1)}%
+    <text x={x} y={y} fill="#BBB" textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central" fontSize={12}>
+      {displayLabel}
     </text>
+  );
+}
+
+function renderActiveShape(props) {
+  const { cx, cy, innerRadius, outerRadius, startAngle, endAngle, fill, payload, percent } = props;
+  return (
+    <g>
+      <Sector cx={cx} cy={cy} innerRadius={innerRadius} outerRadius={outerRadius + 8} startAngle={startAngle} endAngle={endAngle} fill={fill} stroke="#FFF" strokeWidth={2} />
+      <text x={cx} y={cy - 12} textAnchor="middle" fill="#FFF" fontSize={13}>{payload.name}</text>
+      <text x={cx} y={cy + 12} textAnchor="middle" fill="#FFF" fontSize={11}>{(percent * 100).toFixed(1)}%</text>
+    </g>
   );
 }
 
@@ -63,6 +79,19 @@ function Graficos() {
   const [selectedProventosAnoTipo, setSelectedProventosAnoTipo] = useState(null);
   const [selectedProventosTipos, setSelectedProventosTipos] = useState([]);
   const [selectedIndices, setSelectedIndices] = useState(['IBOVESPA', 'IFIX', 'IPCA', 'CDI']);
+  const [pieHover, setPieHover] = useState(null);
+  const [tickerHover, setTickerHover] = useState(null);
+  const ativoRef = useRef(null);
+  const mediaRef = useRef(null);
+  const qtdRef = useRef(null);
+  const [qtdHeight, setQtdHeight] = useState(null);
+
+  useLayoutEffect(() => {
+    if (ativoRef.current && mediaRef.current) {
+      const h = ativoRef.current.offsetHeight + 16 + mediaRef.current.offsetHeight;
+      setQtdHeight(prev => prev === h ? prev : h);
+    }
+  });
 
   const monthNames = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
   const normalizeTipo = (tipo) => tipo === 'FII Agro' ? 'FII' : tipo;
@@ -413,172 +442,182 @@ function Graficos() {
   }, []);
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }}>
-      {tipoData.length > 0 && (
-        <div className="chart-card" style={{ display: 'flex', flexDirection: 'column', position: 'relative' }}>
-          <h2 style={{ textAlign: 'center' }}>Distribuição por Tipo</h2>
-          <div style={{ flex: 1, minHeight: 0 }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <defs>
-                  <filter id="pieShadowTipo" x="-20%" y="-20%" width="140%" height="140%">
-                    <feDropShadow dx="3" dy="3" stdDeviation="4" flood-color="#000" flood-opacity="0.5" />
-                  </filter>
-                </defs>
-                <Pie
-                  data={tipoData}
-                  dataKey="value"
-                  nameKey="name"
-                  cx="42%"
-                  cy="48%"
-                  outerRadius="70%"
-                  innerRadius="12%"
-                  paddingAngle={3}
-                  label={renderLabel}
-                  labelLine={{ stroke: '#555', strokeWidth: 1 }}
-                >
-                  {tipoData.map((entry) => (
-                    <Cell
-                      key={entry.name}
-                      fill={typeColors[entry.name] || '#666'}
-                      fillOpacity={getTipoOpacity(entry.name)}
-                      stroke={selectedType === entry.name ? selColor : 'transparent'}
-                      strokeWidth={selectedType === entry.name ? 2 : 0}
-                      cursor="pointer"
-                      onClick={() => handleTypeClick(entry.name)}
-                      filter="url(#pieShadowTipo)"
-                    />
-                  ))}
-                </Pie>
-                <Tooltip contentStyle={tooltipStyle} formatter={(v) => formatCurrency(v)} />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-          {hasFilter && (
-            <div style={{
-              position: 'absolute', top: 8, right: 8, zIndex: 10,
-              background: '#C8B800', color: '#0A0A0A', border: 'none', borderRadius: 6,
-              padding: '3px 10px', fontSize: '0.75em', cursor: 'pointer', fontWeight: 700,
-            }} onClick={() => { setSelectedType(null); setSelectedTicker(null); }}>
-              ✕ LIMPAR
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 400px), 1fr))', gap: 16 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, gridColumn: '1 / -1' }}>
+        {tipoData.length > 0 && (
+          <div className="chart-card" style={{ display: 'flex', flexDirection: 'column', position: 'relative', minHeight: 320 }}>
+            <h2 style={{ textAlign: 'center' }}>Distribuição por Tipo</h2>
+            <div style={{ flex: 1, minHeight: 0 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <defs>
+                    <filter id="pieShadowTipo" x="-20%" y="-20%" width="140%" height="140%">
+                      <feDropShadow dx="3" dy="3" stdDeviation="4" flood-color="#000" flood-opacity="0.5" />
+                    </filter>
+                  </defs>
+                  <Pie
+                    data={tipoData}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    outerRadius="60%"
+                    innerRadius="14%"
+                    paddingAngle={3}
+                    label={renderLabel}
+                    labelLine={{ stroke: '#555', strokeWidth: 1 }}
+                    activeIndex={pieHover}
+                    activeShape={renderActiveShape}
+                    onMouseEnter={(_, index) => setPieHover(index)}
+                    onMouseLeave={() => setPieHover(null)}
+                  >
+                    {tipoData.map((entry) => (
+                      <Cell
+                        key={entry.name}
+                        fill={typeColors[entry.name] || '#666'}
+                        fillOpacity={getTipoOpacity(entry.name)}
+                        stroke={selectedType === entry.name ? selColor : 'transparent'}
+                        strokeWidth={selectedType === entry.name ? 2 : 0}
+                        cursor="pointer"
+                        onClick={() => handleTypeClick(entry.name)}
+                        filter="url(#pieShadowTipo)"
+                      />
+                    ))}
+                  </Pie>
+                  <Tooltip contentStyle={tooltipStyle} formatter={(v) => formatCurrency(v)} />
+                </PieChart>
+              </ResponsiveContainer>
             </div>
-          )}
-        </div>
-      )}
-
-      {tickerData.length > 0 && (
-        <div className="chart-card" style={{ display: 'flex', flexDirection: 'column', position: 'relative' }}>
-          <h2 style={{ textAlign: 'center' }}>Distribuição por Ativo</h2>
-          <div style={{ flex: 1, minHeight: 0 }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <defs>
-                  <filter id="pieShadowAtivo" x="-20%" y="-20%" width="140%" height="140%">
-                    <feDropShadow dx="3" dy="3" stdDeviation="4" flood-color="#000" flood-opacity="0.5" />
-                  </filter>
-                </defs>
-                <Pie
-                  data={tickerData}
-                  dataKey="value"
-                  nameKey="name"
-                  cx="50%"
-                  cy="50%"
-                  outerRadius="58%"
-                  innerRadius="15%"
-                  paddingAngle={2}
-                  label={renderTickerLabel}
-                  labelLine={{ stroke: '#555', strokeWidth: 1 }}
-                >
-                  {tickerData.map((entry, idx) => (
-                    <Cell
-                      key={entry.name}
-                      fill={CHART_COLORS[idx % CHART_COLORS.length]}
-                      fillOpacity={getTickerOpacity(entry.name)}
-                      stroke={selectedTicker === entry.name ? selColor : 'transparent'}
-                      strokeWidth={selectedTicker === entry.name ? 2 : 0}
-                      cursor="pointer"
-                      onClick={() => handleTickerClick(entry.name)}
-                      filter="url(#pieShadowAtivo)"
-                    />
-                  ))}
-                </Pie>
-                <Tooltip contentStyle={tooltipStyle} formatter={(v) => formatCurrency(v)} />
-              </PieChart>
-            </ResponsiveContainer>
+            {hasFilter && (
+              <div style={{
+                position: 'absolute', top: 8, right: 8, zIndex: 10,
+                background: '#C8B800', color: '#0A0A0A', border: 'none', borderRadius: 6,
+                padding: '3px 10px', fontSize: '0.75em', cursor: 'pointer', fontWeight: 700,
+              }} onClick={() => { setSelectedType(null); setSelectedTicker(null); }}>
+                ✕ LIMPAR
+              </div>
+            )}
           </div>
-        </div>
-      )}
+        )}
 
-      {qtdData.length > 0 && (
-        <div className="chart-card" style={{ display: 'flex', flexDirection: 'column', position: 'relative', gridColumn: '1 / -1' }}>
-          <h2 style={{ textAlign: 'center' }}>Quantidade de Ativos</h2>
-          <div style={{ flex: 1, minHeight: 0 }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={qtdData} layout="vertical" margin={{ left: 30, right: 50, top: 4, bottom: 4 }} barSize={48} barCategoryGap="60%">
-                <XAxis type="number" tick={{ fill: '#999', fontSize: 11 }} axisLine={{ stroke: '#2A2A2A' }} tickLine={false} />
-                <YAxis type="category" dataKey="name" tick={{ fill: '#E0E0E0', fontSize: 11 }} axisLine={false} tickLine={false} width={30} />
-                <Tooltip cursor={false} contentStyle={tooltipStyle} formatter={(v) => [v.toLocaleString('pt-BR'), 'Quantidade']} />
-                <Bar dataKey="quantidade" radius={[0, 50, 50, 0]} cursor="pointer" activeBar={false}>
-                  {qtdData.map((entry) => (
-                    <Cell
-                      key={entry.name}
-                      fill={selColor}
-                      fillOpacity={getBarOpacity(entry.name)}
-                      onClick={() => handleTickerClick(entry.name)}
-                    />
-                  ))}
-                  <LabelList dataKey="quantidade" position="right" fill={selColor} fontSize={11} fontWeight={700} />
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-          {(hasFilter && !selectedTicker) && (
-            <div style={{
-              position: 'absolute', top: 8, right: 8, zIndex: 10,
-              background: '#C8B800', color: '#0A0A0A', border: 'none', borderRadius: 6,
-              padding: '3px 10px', fontSize: '0.75em', cursor: 'pointer', fontWeight: 700,
-            }} onClick={() => { setSelectedType(null); setSelectedTicker(null); }}>
-              ✕ LIMPAR
+        {tickerData.length > 0 && (
+          <div ref={ativoRef} className="chart-card" style={{ display: 'flex', flexDirection: 'column', position: 'relative', minHeight: 320 }}>
+            <h2 style={{ textAlign: 'center' }}>Distribuição por Ativo</h2>
+            <div style={{ flex: 1, minHeight: 0 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <defs>
+                    <filter id="pieShadowAtivo" x="-20%" y="-20%" width="140%" height="140%">
+                      <feDropShadow dx="3" dy="3" stdDeviation="4" flood-color="#000" flood-opacity="0.5" />
+                    </filter>
+                  </defs>
+                  <Pie
+                    data={tickerData}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    outerRadius="55%"
+                    innerRadius="15%"
+                    paddingAngle={2}
+                    label={renderTickerLabel}
+                    labelLine={{ stroke: '#555', strokeWidth: 1 }}
+                    activeIndex={tickerHover}
+                    activeShape={renderActiveShape}
+                    onMouseEnter={(_, index) => setTickerHover(index)}
+                    onMouseLeave={() => setTickerHover(null)}
+                  >
+                    {tickerData.map((entry, idx) => (
+                      <Cell
+                        key={entry.name}
+                        fill={CHART_COLORS[idx % CHART_COLORS.length]}
+                        fillOpacity={getTickerOpacity(entry.name)}
+                        stroke={selectedTicker === entry.name ? selColor : 'transparent'}
+                        strokeWidth={selectedTicker === entry.name ? 2 : 0}
+                        cursor="pointer"
+                        onClick={() => handleTickerClick(entry.name)}
+                        filter="url(#pieShadowAtivo)"
+                      />
+                    ))}
+                  </Pie>
+                  <Tooltip contentStyle={tooltipStyle} formatter={(v) => formatCurrency(v)} />
+                </PieChart>
+              </ResponsiveContainer>
             </div>
-          )}
-        </div>
-      )}
-
-      {proventosEvolData.length > 0 && (
-        <div className="chart-card" style={{ display: 'flex', flexDirection: 'column', position: 'relative' }}>
-          <h2 style={{ textAlign: 'center' }}>Evolução dos Proventos Ano a Ano</h2>
-          <div style={{ flex: 1, minHeight: 0 }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={proventosEvolData} margin={{ left: 30, right: 30, top: 30, bottom: 10 }} barSize={60}>
-                <XAxis dataKey="name" tick={{ fill: '#E0E0E0', fontSize: 12 }} axisLine={{ stroke: '#2A2A2A' }} tickLine={false} />
-                <YAxis tick={{ fill: '#999', fontSize: 11 }} axisLine={{ stroke: '#2A2A2A' }} tickLine={false} />
-                <Tooltip cursor={false} contentStyle={tooltipStyle} formatter={(v) => formatCurrency(v)} />
-                <Bar dataKey="value" radius={[8, 8, 0, 0]} fill="#66B2FF" activeBar={false}>
-                  <LabelList dataKey="value" content={renderEvolLabel} />
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
           </div>
-        </div>
-      )}
+        )}
 
-      {proventosMediaData.length > 0 && (
-        <div className="chart-card" style={{ display: 'flex', flexDirection: 'column', position: 'relative' }}>
-          <h2 style={{ textAlign: 'center' }}>Média Mensal dos Proventos Ano a Ano</h2>
-          <div style={{ flex: 1, minHeight: 0 }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={proventosMediaData} layout="vertical" margin={{ left: 30, right: 80, top: 10, bottom: 10 }} barSize={30} barCategoryGap="40%">
-                <XAxis type="number" tick={{ fill: '#999', fontSize: 11 }} axisLine={{ stroke: '#2A2A2A' }} tickLine={false} />
-                <YAxis type="category" dataKey="name" tick={{ fill: '#E0E0E0', fontSize: 12 }} axisLine={false} tickLine={false} width={30} />
-                <Tooltip cursor={false} contentStyle={tooltipStyle} formatter={(v) => formatCurrency(v)} />
-                <Bar dataKey="value" radius={[0, 50, 50, 0]} fill="#FFD700" activeBar={false}>
-                  <LabelList dataKey="value" content={renderEvolLabelRight} />
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+        {qtdData.length > 0 && (
+          <div ref={qtdRef} className="chart-card" style={{ display: 'flex', flexDirection: 'column', position: 'relative', gridRow: '1 / 3', gridColumn: '3', minHeight: qtdHeight || undefined }}>
+            <h2 style={{ textAlign: 'center' }}>Quantidade de Ativos</h2>
+            <div style={{ flex: 1, minHeight: 0 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={qtdData} layout="vertical" margin={{ left: 24, right: 30, top: 4, bottom: 4 }} barSize={36} barCategoryGap="50%">
+                  <XAxis type="number" tick={{ fill: '#999', fontSize: 10 }} axisLine={{ stroke: '#2A2A2A' }} tickLine={false} />
+                  <YAxis type="category" dataKey="name" tick={{ fill: '#E0E0E0', fontSize: 10 }} axisLine={false} tickLine={false} width={28} />
+                  <Tooltip cursor={false} contentStyle={tooltipStyle} formatter={(v) => [v.toLocaleString('pt-BR'), 'Quantidade']} />
+                  <Bar dataKey="quantidade" radius={[0, 50, 50, 0]} cursor="pointer" activeBar={{ stroke: '#FFF', strokeWidth: 2, filter: 'brightness(1.15)' }}>
+                    {qtdData.map((entry) => (
+                      <Cell
+                        key={entry.name}
+                        fill={selColor}
+                        fillOpacity={getBarOpacity(entry.name)}
+                        onClick={() => handleTickerClick(entry.name)}
+                      />
+                    ))}
+                    <LabelList dataKey="quantidade" position="right" fill={selColor} fontSize={10} fontWeight={700} />
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+            {(hasFilter && !selectedTicker) && (
+              <div style={{
+                position: 'absolute', top: 8, right: 8, zIndex: 10,
+                background: '#C8B800', color: '#0A0A0A', border: 'none', borderRadius: 6,
+                padding: '3px 10px', fontSize: '0.75em', cursor: 'pointer', fontWeight: 700,
+              }} onClick={() => { setSelectedType(null); setSelectedTicker(null); }}>
+                ✕ LIMPAR
+              </div>
+            )}
           </div>
-        </div>
-      )}
+        )}
+
+        {proventosEvolData.length > 0 && (
+          <div className="chart-card" style={{ display: 'flex', flexDirection: 'column', position: 'relative', gridRow: '2', gridColumn: '1' }}>
+            <h2 style={{ textAlign: 'center' }}>Evolução dos Proventos Ano a Ano</h2>
+            <div style={{ flex: 1, minHeight: 0 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={proventosEvolData} margin={{ left: 30, right: 30, top: 30, bottom: 10 }} barSize={60}>
+                  <XAxis dataKey="name" tick={{ fill: '#E0E0E0', fontSize: 12 }} axisLine={{ stroke: '#2A2A2A' }} tickLine={false} />
+                  <YAxis tick={{ fill: '#999', fontSize: 11 }} axisLine={{ stroke: '#2A2A2A' }} tickLine={false} />
+                  <Tooltip cursor={false} contentStyle={tooltipStyle} formatter={(v) => formatCurrency(v)} />
+                  <Bar dataKey="value" radius={[8, 8, 0, 0]} fill="#66B2FF" activeBar={{ stroke: '#FFF', strokeWidth: 2, filter: 'brightness(1.15)' }}>
+                    <LabelList dataKey="value" content={renderEvolLabel} />
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        )}
+
+        {proventosMediaData.length > 0 && (
+          <div ref={mediaRef} className="chart-card" style={{ display: 'flex', flexDirection: 'column', position: 'relative', gridRow: '2', gridColumn: '2' }}>
+            <h2 style={{ textAlign: 'center' }}>Média Mensal dos Proventos Ano a Ano</h2>
+            <div style={{ flex: 1, minHeight: 0 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={proventosMediaData} layout="vertical" margin={{ left: 30, right: 80, top: 10, bottom: 10 }} barSize={30} barCategoryGap="40%">
+                  <XAxis type="number" tick={{ fill: '#999', fontSize: 11 }} axisLine={{ stroke: '#2A2A2A' }} tickLine={false} />
+                  <YAxis type="category" dataKey="name" tick={{ fill: '#E0E0E0', fontSize: 12 }} axisLine={false} tickLine={false} width={30} />
+                  <Tooltip cursor={false} contentStyle={tooltipStyle} formatter={(v) => formatCurrency(v)} />
+                  <Bar dataKey="value" radius={[0, 50, 50, 0]} fill="#FFD700" activeBar={{ stroke: '#FFF', strokeWidth: 2, filter: 'brightness(1.15)' }}>
+                    <LabelList dataKey="value" content={renderEvolLabelRight} />
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        )}
+      </div>
 
       {uniqueAnos.length > 0 && (
         <div className="chart-card" style={{ display: 'flex', flexDirection: 'column', position: 'relative', gridColumn: '1 / -1' }}>
@@ -619,14 +658,14 @@ function Graficos() {
 
       {evolData.length > 0 && (
         <div className="chart-card" style={{ display: 'flex', flexDirection: 'column', position: 'relative', gridColumn: '1 / -1' }}>
-          <h2 style={{ textAlign: 'center' }}>Evolução Ano a Ano</h2>
+          <h2 style={{ textAlign: 'center' }}>Evolução Do Patrimônio Ano a Ano</h2>
           <div style={{ flex: 1, minHeight: 0 }}>
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={evolData} margin={{ left: 30, right: 30, top: 30, bottom: 10 }} barSize={60}>
                 <XAxis dataKey="name" tick={{ fill: '#FFD700', fontSize: 13, fontWeight: 700 }} axisLine={{ stroke: '#2A2A2A' }} tickLine={false} />
                 <YAxis tick={{ fill: '#999', fontSize: 11 }} axisLine={{ stroke: '#2A2A2A' }} tickLine={false} />
                 <Tooltip cursor={false} contentStyle={tooltipStyle} formatter={(v) => formatCurrency(v)} />
-                <Bar dataKey="value" radius={[8, 8, 0, 0]} fill="#990000" activeBar={false}>
+                <Bar dataKey="value" radius={[8, 8, 0, 0]} fill="#990000" activeBar={{ stroke: '#FFF', strokeWidth: 2, filter: 'brightness(1.15)' }}>
                   <LabelList dataKey="value" content={renderEvolLabel} />
                 </Bar>
               </BarChart>
@@ -663,7 +702,7 @@ function Graficos() {
                 <XAxis dataKey="nome" tick={{ fill: '#FFD700', fontSize: 13, fontWeight: 700 }} axisLine={{ stroke: '#2A2A2A' }} tickLine={false} />
                 <YAxis tick={{ fill: '#999', fontSize: 11 }} axisLine={{ stroke: '#2A2A2A' }} tickLine={false} />
                 <Tooltip cursor={false} contentStyle={tooltipStyle} formatter={(v) => formatCurrency(v)} />
-                <Bar dataKey="value" radius={[8, 8, 0, 0]} activeBar={false} animationDuration={2000}>
+                <Bar dataKey="value" radius={[8, 8, 0, 0]} activeBar={{ stroke: '#FFF', strokeWidth: 2, filter: 'brightness(1.15)' }} animationDuration={2000}>
                   {proventosMonthData.map((entry, idx) => (
                     <Cell key={idx} fill={entry.isTotal ? '#FF0000' : '#4285F4'} />
                   ))}
