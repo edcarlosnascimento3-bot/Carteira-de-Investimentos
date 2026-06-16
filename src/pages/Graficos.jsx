@@ -16,6 +16,21 @@ const typeColors = {
 
 const CHART_COLORS = ['#C8B800','#CC8800','#0099CC','#CC44CC','#00BB66','#FF5555','#3399FF','#FF8800','#66CC00','#9933FF','#FFD700','#00CCCC'];
 
+const corretoraPorTicker = {
+  BBAS3: 'C6', TRXF11: 'C6', GARE11: 'C6', LTBX11: 'C6', XPML11: 'C6',
+  SOFISA: 'SOFISA',
+  RBOP11: 'XP INVESTIMENTOS', FGAA11: 'XP INVESTIMENTOS',
+  MXRF11: 'XP INVESTIMENTOS', VSLH11: 'XP INVESTIMENTOS',
+  VGHF11: 'XP INVESTIMENTOS', VGIP11: 'XP INVESTIMENTOS',
+  KNCR11: 'XP INVESTIMENTOS',
+  TAEE3: 'RICO', ITSA4: 'RICO', PETR4: 'RICO', VALE3: 'RICO',
+  AMER3: 'RICO', BBDC3: 'RICO', BBDC4: 'RICO', BBSE3: 'RICO',
+  BEES3: 'RICO', BRAP3: 'RICO', CMIN3: 'RICO', COCA34: 'RICO',
+  ELET3: 'RICO', GOAU3: 'RICO', GOAU4: 'RICO', OIBR3: 'RICO',
+  SANB3: 'RICO', SAPR3: 'RICO', TAEE11: 'RICO',
+  DÓLAR: 'WISE', EURO: 'WISE',
+};
+
 const INDEX_HISTORY = {
   IBOVESPA: { cor: '#3399FF', dados: { 2018: 15.0, 2019: 31.6, 2020: 2.9, 2021: -11.9, 2022: 4.7, 2023: 22.3, 2024: -10.4, 2025: 8.0 } },
   IFIX: { cor: '#00CC66', dados: { 2018: 8.2, 2019: 15.7, 2020: 0.8, 2021: -4.9, 2022: 8.2, 2023: 18.5, 2024: 12.0, 2025: 5.0 } },
@@ -35,13 +50,23 @@ function renderLabel({ name, percent, cx, cy, midAngle, outerRadius }) {
   const x = cx + radius * Math.cos(-midAngle * RADIAN);
   const y = cy + radius * Math.sin(-midAngle * RADIAN);
   const pct = (percent * 100).toFixed(1);
-  const label = `${name} ${pct}%`;
-  const maxLen = 20;
-  const displayName = name.length > 10 ? name.slice(0, 8) + '…' : name;
-  const displayLabel = `${displayName} ${pct}%`;
   return (
     <text x={x} y={y} fill="#BBB" textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central" fontSize={12}>
-      {displayLabel}
+      {`${name} ${pct}%`}
+    </text>
+  );
+}
+
+function renderCorretoraLabel({ name, value, percent, cx, cy, midAngle, outerRadius }) {
+  const radius = outerRadius * 1.3;
+  const x = cx + radius * Math.cos(-midAngle * RADIAN);
+  const y = cy + radius * Math.sin(-midAngle * RADIAN);
+  const pct = (percent * 100).toFixed(1);
+  const anchor = x > cx ? 'start' : 'end';
+  return (
+    <text x={x} y={y} textAnchor={anchor} dominantBaseline="central" fontSize={12}>
+      <tspan x={x} dy="-6" fill="#FFF" fontWeight="bold">{`${name} ${pct}%`}</tspan>
+      <tspan x={x} dy="14" fill="#4CAF50">{`(${formatCurrency(value)})`}</tspan>
     </text>
   );
 }
@@ -69,6 +94,25 @@ function renderTickerLabel({ name, percent, cx, cy, midAngle, outerRadius }) {
   );
 }
 
+function SelectionBadge({ data, selectedName, valueKey, formatFn }) {
+  if (!selectedName) return null;
+  const item = data.find(d => d.name === selectedName);
+  if (!item) return null;
+  const val = item[valueKey || 'value'];
+  return (
+    <div style={{
+      position: 'absolute', top: 8, left: 8, zIndex: 10,
+      background: 'rgba(0,0,0,0.85)', borderRadius: 8, padding: '6px 14px',
+      backdropFilter: 'blur(4px)', display: 'flex', gap: 8, alignItems: 'baseline',
+    }}>
+      <span style={{ color: '#C8B800', fontWeight: 700, fontSize: '0.9em' }}>{selectedName}</span>
+      <span style={{ color: '#FFF', fontSize: '0.85em' }}>
+        {formatFn ? formatFn(val) : formatCurrency(val)}
+      </span>
+    </div>
+  );
+}
+
 function Graficos() {
   const { transactions } = useTransactions();
   const { proventos } = useProventos();
@@ -81,6 +125,7 @@ function Graficos() {
   const [selectedIndices, setSelectedIndices] = useState(['IBOVESPA', 'IFIX', 'IPCA', 'CDI']);
   const [pieHover, setPieHover] = useState(null);
   const [tickerHover, setTickerHover] = useState(null);
+  const [selectedCorretora, setSelectedCorretora] = useState(null);
   const ativoRef = useRef(null);
   const mediaRef = useRef(null);
   const qtdRef = useRef(null);
@@ -193,6 +238,55 @@ function Graficos() {
       .sort((a, b) => b.investido - a.investido)
       .map(a => ({ name: a.ticker, value: a.investido }));
   }, [portfolioBase, selectedType]);
+
+  const acoesData = useMemo(() => {
+    return [...portfolioBase]
+      .filter(a => a.tipo === 'Ação')
+      .sort((a, b) => b.investido - a.investido)
+      .map(a => ({ name: a.ticker, value: a.investido }));
+  }, [portfolioBase]);
+
+  const fiisData = useMemo(() => {
+    return [...portfolioBase]
+      .filter(a => a.tipo === 'FII')
+      .sort((a, b) => b.investido - a.investido)
+      .map(a => ({ name: a.ticker, value: a.investido }));
+  }, [portfolioBase]);
+
+  const rendaFixaData = useMemo(() => {
+    return [...portfolioBase]
+      .filter(a => a.tipo === 'Renda Fixa')
+      .sort((a, b) => b.investido - a.investido)
+      .map(a => ({ name: a.ticker, value: a.investido }));
+  }, [portfolioBase]);
+
+  const internacionalData = useMemo(() => {
+    return [...portfolioBase]
+      .filter(a => a.tipo === 'Dólar' || a.tipo === 'Euro')
+      .sort((a, b) => b.investido - a.investido)
+      .map(a => ({ name: a.ticker, value: a.investido }));
+  }, [portfolioBase]);
+
+  const corretoraData = useMemo(() => {
+    const map = {};
+    portfolioBase.forEach(a => {
+      const nome = corretoraPorTicker[a.ticker] || 'Outros';
+      map[nome] = (map[nome] || 0) + a.investido;
+    });
+    return Object.entries(map)
+      .sort(([, a], [, b]) => b - a)
+      .map(([name, value]) => ({ name, value }));
+  }, [portfolioBase]);
+
+  const corretoraTickerMap = useMemo(() => {
+    const map = {};
+    portfolioBase.forEach(a => {
+      const nome = corretoraPorTicker[a.ticker] || 'Outros';
+      if (!map[nome]) map[nome] = [];
+      map[nome].push({ ticker: a.ticker, value: a.investido, quantidade: a.quantidade, precoMedio: a.precoMedio });
+    });
+    return map;
+  }, [portfolioBase]);
 
   const evolData = useMemo(() => {
     const map = {};
@@ -447,6 +541,7 @@ function Graficos() {
         {tipoData.length > 0 && (
           <div className="chart-card" style={{ display: 'flex', flexDirection: 'column', position: 'relative', minHeight: 320 }}>
             <h2 style={{ textAlign: 'center' }}>Distribuição por Tipo</h2>
+            <SelectionBadge data={tipoData} selectedName={selectedType} />
             <div style={{ flex: 1, minHeight: 0 }}>
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
@@ -470,6 +565,7 @@ function Graficos() {
                     activeShape={renderActiveShape}
                     onMouseEnter={(_, index) => setPieHover(index)}
                     onMouseLeave={() => setPieHover(null)}
+                    onClick={(entry) => handleTypeClick(entry.name)}
                   >
                     {tipoData.map((entry) => (
                       <Cell
@@ -479,7 +575,6 @@ function Graficos() {
                         stroke={selectedType === entry.name ? selColor : 'transparent'}
                         strokeWidth={selectedType === entry.name ? 2 : 0}
                         cursor="pointer"
-                        onClick={() => handleTypeClick(entry.name)}
                         filter="url(#pieShadowTipo)"
                       />
                     ))}
@@ -503,6 +598,7 @@ function Graficos() {
         {tickerData.length > 0 && (
           <div ref={ativoRef} className="chart-card" style={{ display: 'flex', flexDirection: 'column', position: 'relative', minHeight: 320 }}>
             <h2 style={{ textAlign: 'center' }}>Distribuição por Ativo</h2>
+            <SelectionBadge data={tickerData} selectedName={selectedTicker} />
             <div style={{ flex: 1, minHeight: 0 }}>
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
@@ -526,6 +622,7 @@ function Graficos() {
                     activeShape={renderActiveShape}
                     onMouseEnter={(_, index) => setTickerHover(index)}
                     onMouseLeave={() => setTickerHover(null)}
+                    onClick={(entry) => handleTickerClick(entry.name)}
                   >
                     {tickerData.map((entry, idx) => (
                       <Cell
@@ -535,7 +632,6 @@ function Graficos() {
                         stroke={selectedTicker === entry.name ? selColor : 'transparent'}
                         strokeWidth={selectedTicker === entry.name ? 2 : 0}
                         cursor="pointer"
-                        onClick={() => handleTickerClick(entry.name)}
                         filter="url(#pieShadowAtivo)"
                       />
                     ))}
@@ -550,11 +646,12 @@ function Graficos() {
         {qtdData.length > 0 && (
           <div ref={qtdRef} className="chart-card" style={{ display: 'flex', flexDirection: 'column', position: 'relative', gridRow: '1 / 3', gridColumn: '3', minHeight: qtdHeight || undefined }}>
             <h2 style={{ textAlign: 'center' }}>Quantidade de Ativos</h2>
+            <SelectionBadge data={qtdData} selectedName={selectedTicker} valueKey="quantidade" formatFn={(v) => `${v.toLocaleString('pt-BR')} un`} />
             <div style={{ flex: 1, minHeight: 0 }}>
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={qtdData} layout="vertical" margin={{ left: 24, right: 30, top: 4, bottom: 4 }} barSize={36} barCategoryGap="50%">
                   <XAxis type="number" tick={{ fill: '#999', fontSize: 10 }} axisLine={{ stroke: '#2A2A2A' }} tickLine={false} />
-                  <YAxis type="category" dataKey="name" tick={{ fill: '#E0E0E0', fontSize: 10 }} axisLine={false} tickLine={false} width={28} />
+                  <YAxis type="category" dataKey="name" tick={{ fill: '#E0E0E0', fontSize: 13 }} axisLine={false} tickLine={false} width={40} />
                   <Tooltip cursor={false} contentStyle={tooltipStyle} formatter={(v) => [v.toLocaleString('pt-BR'), 'Quantidade']} />
                   <Bar dataKey="quantidade" radius={[0, 50, 50, 0]} cursor="pointer" activeBar={{ stroke: '#FFF', strokeWidth: 2, filter: 'brightness(1.15)' }}>
                     {qtdData.map((entry) => (
@@ -565,7 +662,7 @@ function Graficos() {
                         onClick={() => handleTickerClick(entry.name)}
                       />
                     ))}
-                    <LabelList dataKey="quantidade" position="right" fill={selColor} fontSize={10} fontWeight={700} />
+                    <LabelList dataKey="quantidade" position="right" fill={selColor} fontSize={12} fontWeight={700} />
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
@@ -591,7 +688,7 @@ function Graficos() {
                   <XAxis dataKey="name" tick={{ fill: '#E0E0E0', fontSize: 12 }} axisLine={{ stroke: '#2A2A2A' }} tickLine={false} />
                   <YAxis tick={{ fill: '#999', fontSize: 11 }} axisLine={{ stroke: '#2A2A2A' }} tickLine={false} />
                   <Tooltip cursor={false} contentStyle={tooltipStyle} formatter={(v) => formatCurrency(v)} />
-                  <Bar dataKey="value" radius={[8, 8, 0, 0]} fill="#66B2FF" activeBar={{ stroke: '#FFF', strokeWidth: 2, filter: 'brightness(1.15)' }}>
+                  <Bar dataKey="value" radius={[8, 8, 0, 0]} fill="#1B2A4A" activeBar={{ stroke: '#FFF', strokeWidth: 2, filter: 'brightness(1.15)' }}>
                     <LabelList dataKey="value" content={renderEvolLabel} />
                   </Bar>
                 </BarChart>
@@ -609,7 +706,7 @@ function Graficos() {
                   <XAxis type="number" tick={{ fill: '#999', fontSize: 11 }} axisLine={{ stroke: '#2A2A2A' }} tickLine={false} />
                   <YAxis type="category" dataKey="name" tick={{ fill: '#E0E0E0', fontSize: 12 }} axisLine={false} tickLine={false} width={30} />
                   <Tooltip cursor={false} contentStyle={tooltipStyle} formatter={(v) => formatCurrency(v)} />
-                  <Bar dataKey="value" radius={[0, 50, 50, 0]} fill="#FFD700" activeBar={{ stroke: '#FFF', strokeWidth: 2, filter: 'brightness(1.15)' }}>
+                  <Bar dataKey="value" radius={[0, 50, 50, 0]} fill="#2E7D32" activeBar={{ stroke: '#FFF', strokeWidth: 2, filter: 'brightness(1.15)' }}>
                     <LabelList dataKey="value" content={renderEvolLabelRight} />
                   </Bar>
                 </BarChart>
@@ -617,6 +714,225 @@ function Graficos() {
             </div>
           </div>
         )}
+
+        <div className="chart-card" style={{ display: 'flex', flexDirection: 'column', position: 'relative', minHeight: 320 }}>
+          <h2 style={{ textAlign: 'center' }}>Ações</h2>
+          <SelectionBadge data={acoesData} selectedName={selectedTicker} />
+          <div style={{ flex: 1, minHeight: 0 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <defs>
+                  <filter id="pieShadowAcoes" x="-20%" y="-20%" width="140%" height="140%">
+                    <feDropShadow dx="3" dy="3" stdDeviation="4" flood-color="#000" flood-opacity="0.5" />
+                  </filter>
+                </defs>
+                <Pie
+                  data={acoesData}
+                  dataKey="value"
+                  nameKey="name"
+                  cx="50%"
+                  cy="50%"
+                  outerRadius="55%"
+                  innerRadius="15%"
+                  paddingAngle={2}
+                  label={renderTickerLabel}
+                  labelLine={{ stroke: '#555', strokeWidth: 1 }}
+                  onClick={(entry) => handleTickerClick(entry.name)}
+                >
+                  {acoesData.map((entry, idx) => (
+                    <Cell
+                      key={entry.name}
+                      fill={CHART_COLORS[idx % CHART_COLORS.length]}
+                      fillOpacity={getTickerOpacity(entry.name)}
+                      stroke={selectedTicker === entry.name ? selColor : 'transparent'}
+                      strokeWidth={selectedTicker === entry.name ? 2 : 0}
+                      cursor="pointer"
+                      filter="url(#pieShadowAcoes)"
+                    />
+                  ))}
+                </Pie>
+                <Tooltip contentStyle={tooltipStyle} formatter={(v) => formatCurrency(v)} />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        <div className="chart-card" style={{ display: 'flex', flexDirection: 'column', position: 'relative', minHeight: 320 }}>
+          <h2 style={{ textAlign: 'center' }}>FIIs</h2>
+          <SelectionBadge data={fiisData} selectedName={selectedTicker} />
+          <div style={{ flex: 1, minHeight: 0 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <defs>
+                  <filter id="pieShadowFiis" x="-20%" y="-20%" width="140%" height="140%">
+                    <feDropShadow dx="3" dy="3" stdDeviation="4" flood-color="#000" flood-opacity="0.5" />
+                  </filter>
+                </defs>
+                <Pie
+                  data={fiisData}
+                  dataKey="value"
+                  nameKey="name"
+                  cx="50%"
+                  cy="50%"
+                  outerRadius="55%"
+                  innerRadius="15%"
+                  paddingAngle={2}
+                  label={renderTickerLabel}
+                  labelLine={{ stroke: '#555', strokeWidth: 1 }}
+                  onClick={(entry) => handleTickerClick(entry.name)}
+                >
+                  {fiisData.map((entry, idx) => (
+                    <Cell
+                      key={entry.name}
+                      fill={CHART_COLORS[idx % CHART_COLORS.length]}
+                      fillOpacity={getTickerOpacity(entry.name)}
+                      stroke={selectedTicker === entry.name ? selColor : 'transparent'}
+                      strokeWidth={selectedTicker === entry.name ? 2 : 0}
+                      cursor="pointer"
+                      filter="url(#pieShadowFiis)"
+                    />
+                  ))}
+                </Pie>
+                <Tooltip contentStyle={tooltipStyle} formatter={(v) => formatCurrency(v)} />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        <div className="chart-card" style={{ display: 'flex', flexDirection: 'column', position: 'relative', minHeight: 320 }}>
+          <h2 style={{ textAlign: 'center' }}>Renda Fixa</h2>
+          <SelectionBadge data={rendaFixaData} selectedName={selectedTicker} />
+          <div style={{ flex: 1, minHeight: 0 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <defs>
+                  <filter id="pieShadowRF" x="-20%" y="-20%" width="140%" height="140%">
+                    <feDropShadow dx="3" dy="3" stdDeviation="4" flood-color="#000" flood-opacity="0.5" />
+                  </filter>
+                </defs>
+                <Pie
+                  data={rendaFixaData}
+                  dataKey="value"
+                  nameKey="name"
+                  cx="50%"
+                  cy="50%"
+                  outerRadius="55%"
+                  innerRadius="15%"
+                  paddingAngle={2}
+                  label={renderTickerLabel}
+                  labelLine={{ stroke: '#555', strokeWidth: 1 }}
+                  onClick={(entry) => handleTickerClick(entry.name)}
+                >
+                  {rendaFixaData.map((entry, idx) => (
+                    <Cell
+                      key={entry.name}
+                      fill={CHART_COLORS[idx % CHART_COLORS.length]}
+                      fillOpacity={getTickerOpacity(entry.name)}
+                      stroke={selectedTicker === entry.name ? selColor : 'transparent'}
+                      strokeWidth={selectedTicker === entry.name ? 2 : 0}
+                      cursor="pointer"
+                      filter="url(#pieShadowRF)"
+                    />
+                  ))}
+                </Pie>
+                <Tooltip contentStyle={tooltipStyle} formatter={(v) => formatCurrency(v)} />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        <div className="chart-card" style={{ display: 'flex', flexDirection: 'column', position: 'relative', minHeight: 320 }}>
+          <h2 style={{ textAlign: 'center' }}>Internacional</h2>
+          <SelectionBadge data={internacionalData} selectedName={selectedTicker} />
+          <div style={{ flex: 1, minHeight: 0 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <defs>
+                  <filter id="pieShadowIntl" x="-20%" y="-20%" width="140%" height="140%">
+                    <feDropShadow dx="3" dy="3" stdDeviation="4" flood-color="#000" flood-opacity="0.5" />
+                  </filter>
+                </defs>
+                <Pie
+                  data={internacionalData}
+                  dataKey="value"
+                  nameKey="name"
+                  cx="50%"
+                  cy="50%"
+                  outerRadius="55%"
+                  innerRadius="15%"
+                  paddingAngle={2}
+                  label={renderTickerLabel}
+                  labelLine={{ stroke: '#555', strokeWidth: 1 }}
+                  onClick={(entry) => handleTickerClick(entry.name)}
+                >
+                  {internacionalData.map((entry, idx) => (
+                    <Cell
+                      key={entry.name}
+                      fill={CHART_COLORS[idx % CHART_COLORS.length]}
+                      fillOpacity={getTickerOpacity(entry.name)}
+                      stroke={selectedTicker === entry.name ? selColor : 'transparent'}
+                      strokeWidth={selectedTicker === entry.name ? 2 : 0}
+                      cursor="pointer"
+                      filter="url(#pieShadowIntl)"
+                    />
+                  ))}
+                </Pie>
+                <Tooltip contentStyle={tooltipStyle} formatter={(v) => formatCurrency(v)} />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        <div className="chart-card" style={{ display: 'flex', flexDirection: 'column', position: 'relative', minHeight: 320 }}>
+          <h2 style={{ textAlign: 'center' }}>Por Corretora</h2>
+          {selectedCorretora && (
+            <div style={{
+              position: 'absolute', top: 36, left: 8, zIndex: 10,
+              background: 'rgba(0,0,0,0.85)', borderRadius: 8, padding: '8px 14px',
+              backdropFilter: 'blur(4px)', maxHeight: 240, overflowY: 'auto',
+            }}>
+              <div style={{ color: '#C8B800', fontWeight: 700, fontSize: '0.9em', marginBottom: 6 }}>{selectedCorretora}</div>
+              {(corretoraTickerMap[selectedCorretora] || []).map(t => (
+                <div key={t.ticker} style={{ display: 'flex', justifyContent: 'space-between', gap: 16, color: '#FFF', fontSize: '0.85em' }}>
+                  <span>{t.ticker}</span>
+                  <span style={{ color: '#4CAF50' }}>{formatCurrency(t.value)}</span>
+                </div>
+              ))}
+              <div style={{ marginTop: 4, borderTop: '1px solid #444', paddingTop: 4, display: 'flex', justifyContent: 'space-between', gap: 16, color: '#FFF', fontSize: '0.85em', fontWeight: 700 }}>
+                <span>Total</span>
+                <span style={{ color: '#4CAF50' }}>{formatCurrency(corretoraData.find(d => d.name === selectedCorretora)?.value || 0)}</span>
+              </div>
+              <button onClick={() => setSelectedCorretora(null)} style={{
+                marginTop: 6, background: 'transparent', border: '1px solid #555',
+                color: '#BBB', borderRadius: 4, padding: '2px 8px', cursor: 'pointer', fontSize: '0.75em',
+                width: '100%', textAlign: 'center',
+              }}>Fechar</button>
+            </div>
+          )}
+          {corretoraData.length > 0 ? (
+            <div style={{ flex: 1, minHeight: 0 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <defs>
+                    <filter id="pieShadowCorr" x="-20%" y="-20%" width="140%" height="140%">
+                      <feDropShadow dx="3" dy="3" stdDeviation="4" flood-color="#000" flood-opacity="0.5" />
+                    </filter>
+                  </defs>
+                  <Pie data={corretoraData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius="55%" innerRadius="15%" paddingAngle={2} startAngle={-20} label={renderCorretoraLabel} labelLine={{ stroke: '#555', strokeWidth: 1 }} onClick={(entry) => setSelectedCorretora(prev => prev === entry.name ? null : entry.name)}>
+                    {corretoraData.map((_, i) => (
+                      <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} filter="url(#pieShadowCorr)" cursor="pointer" />
+                    ))}
+                  </Pie>
+                  <Tooltip contentStyle={tooltipStyle} formatter={(v) => formatCurrency(v)} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          ) : (
+            <div style={{ flex: 1, minHeight: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <p style={{ color: '#666', fontSize: '0.9em' }}>Sem dados de corretora no momento</p>
+            </div>
+          )}
+        </div>
       </div>
 
       {uniqueAnos.length > 0 && (

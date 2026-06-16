@@ -22,7 +22,9 @@ function isCrypto(t) {
 }
 
 let ativosCache = null;
+let tabelaCache = null;
 let cachePromise = null;
+
 function loadAtivos() {
   if (ativosCache) return Promise.resolve(ativosCache);
   if (cachePromise) return cachePromise;
@@ -38,10 +40,24 @@ function loadAtivos() {
   return cachePromise;
 }
 
+function loadTabelaAtivos() {
+  if (tabelaCache) return Promise.resolve(tabelaCache);
+  return fetch('/api/db/tabela_ativos')
+    .then(r => r.ok ? r.json() : {})
+    .then(data => {
+      tabelaCache = data || {};
+      return tabelaCache;
+    })
+    .catch(() => (tabelaCache = {}));
+}
+
 if (typeof window !== 'undefined') {
   window.addEventListener('ticker-logo-updated', (e) => {
     if (ativosCache && e.detail) {
       ativosCache[e.detail.ticker.toUpperCase()] = e.detail.url;
+    }
+    if (tabelaCache && e.detail) {
+      tabelaCache[e.detail.ticker.toUpperCase()] = e.detail.url;
     }
   });
 }
@@ -94,7 +110,13 @@ function LogoImage({ ticker, fallback, style, size }) {
     if (!ticker) return;
     loadAtivos().then(map => {
       const url = map[ticker.toUpperCase()];
-      setImagemUrl(url || null);
+      if (url) {
+        setImagemUrl(url);
+      } else {
+        loadTabelaAtivos().then(tabela => {
+          setImagemUrl(tabela[ticker.toUpperCase()] || null);
+        });
+      }
     });
 
     const handleUpdate = (e) => {

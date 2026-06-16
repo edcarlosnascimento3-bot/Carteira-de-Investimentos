@@ -5,6 +5,7 @@ import { usePrices } from '../hooks/usePrices';
 import LogoImage from '../components/LogoImage';
 import Toast from '../components/Toast';
 import { getTickerInfo, saveTickerInfo } from '../services/tickerRegistry';
+import db from '../services/storage.js';
 
 const typeIcons = {
   'Ação': '📈',
@@ -49,10 +50,25 @@ function Carteira() {
   const [manualAtual, setManualAtual] = useState(() => {
     try { return JSON.parse(localStorage.getItem('investimento_rf_manual')) || {}; } catch { return {}; }
   });
+  const [rfLoaded, setRfLoaded] = useState(false);
 
   useEffect(() => {
+    db.read('rf_manual').then(data => {
+      if (data && Object.keys(data).length > 0) {
+        setManualAtual(prev => {
+          if (Object.keys(prev).length > 0) return prev;
+          return data;
+        });
+      }
+      setRfLoaded(true);
+    }).catch(() => setRfLoaded(true));
+  }, []);
+
+  useEffect(() => {
+    if (!rfLoaded) return;
     localStorage.setItem('investimento_rf_manual', JSON.stringify(manualAtual));
-  }, [manualAtual]);
+    db.write('rf_manual', manualAtual);
+  }, [manualAtual, rfLoaded]);
 
   const [restructureType, setRestructureType] = useState(null);
   const [restructureTicker, setRestructureTicker] = useState('');
@@ -137,8 +153,6 @@ function Carteira() {
     const val = parseFloat(raw);
     if (isNaN(val) || val < 0) return;
     setManualAtual(prev => ({ ...prev, [editRf.ticker]: val }));
-    const existing = JSON.parse(localStorage.getItem('investimento_rf_manual') || '{}');
-    localStorage.setItem('investimento_rf_manual', JSON.stringify({ ...existing, [editRf.ticker]: val }));
     setEditRf(null);
   };
 

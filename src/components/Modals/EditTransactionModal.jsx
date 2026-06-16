@@ -11,6 +11,7 @@ function EditTransactionModal({ data, transactions, onSave, onUpdateMultiple, on
     cnpj: data.cnpj || '',
     tipo: data.tipo || 'Ação',
     segmento: data.segmento || '',
+    corretora: data.corretora || '',
     operacao: data.operacao || 'Compra',
     data: data.data || '',
     ano: data.ano || new Date().getFullYear(),
@@ -142,6 +143,15 @@ function EditTransactionModal({ data, transactions, onSave, onUpdateMultiple, on
                 style={inputStyle}
                 value={form.segmento}
                 onChange={(e) => handleChange('segmento', e.target.value)}
+              />
+            </div>
+
+            <div style={groupStyle}>
+              <label style={labelStyle}>Corretora</label>
+              <input
+                style={inputStyle}
+                value={form.corretora}
+                onChange={(e) => handleChange('corretora', e.target.value)}
               />
             </div>
 

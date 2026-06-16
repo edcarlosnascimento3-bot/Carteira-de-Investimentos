@@ -23,12 +23,46 @@ const columns = [
   { key: 'taxa', label: 'Taxa', width: 80 },
   { key: 'investido', label: 'Investido', width: 110 },
   { key: 'patrimonio', label: 'Patrimônio', width: 110 },
+  { key: 'corretora', label: 'Corretora', width: 120 },
   { key: 'acoes', label: 'Ações', width: 80 },
 ];
 
 const requiredCols = ['ticker', 'ativo', 'tipo', 'operacao', 'data', 'quantidade', 'valor'];
 const knownCols = columns.map(c => c.key).filter(k => k !== 'imagem' && k !== 'acoes');
-const columnAliases = { nome: 'ativo', empresa: 'ativo' };
+const columnAliases = {
+  nome: 'ativo',
+  empresa: 'ativo',
+  acao: 'ticker',
+  papel: 'ticker',
+  codigo: 'ticker',
+  ativo_ticker: 'ticker',
+  preco: 'valor',
+  'preço': 'valor',
+  total: 'investido',
+  qtde: 'quantidade',
+  quant: 'quantidade',
+  natureza: 'operacao',
+  corretora: 'corretora',
+  corretor: 'corretora',
+  broker: 'corretora',
+  instituicao: 'corretora',
+  'instituição': 'corretora',
+};
+
+const corretoraPorTicker = {
+  BBAS3: 'C6', TRXF11: 'C6', GARE11: 'C6', LTBX11: 'C6', XPML11: 'C6',
+  SOFISA: 'SOFISA',
+  RBOP11: 'XP INVESTIMENTOS', FGAA11: 'XP INVESTIMENTOS',
+  MXRF11: 'XP INVESTIMENTOS', VSLH11: 'XP INVESTIMENTOS',
+  VGHF11: 'XP INVESTIMENTOS', VGIP11: 'XP INVESTIMENTOS',
+  KNCR11: 'XP INVESTIMENTOS',
+  TAEE3: 'RICO', ITSA4: 'RICO', PETR4: 'RICO', VALE3: 'RICO',
+  AMER3: 'RICO', BBDC3: 'RICO', BBDC4: 'RICO', BBSE3: 'RICO',
+  BEES3: 'RICO', BRAP3: 'RICO', CMIN3: 'RICO', COCA34: 'RICO',
+  ELET3: 'RICO', GOAU3: 'RICO', GOAU4: 'RICO', OIBR3: 'RICO',
+  SANB3: 'RICO', SAPR3: 'RICO', TAEE11: 'RICO',
+  DÓLAR: 'WISE', EURO: 'WISE',
+};
 
 const typeIcons = {
   'Ação': '📈',
@@ -95,11 +129,19 @@ function Lancamentos() {
   const [massStatus, setMassStatus] = useState(null);
   const [clearConfirm, setClearConfirm] = useState(false);
 
+  // Normalize tipo for consistent comparisons (handles "Fii" vs "FII" etc.)
+  const normalizeTipo = (t) => {
+    if (!t) return t;
+    if (t.toLowerCase() === 'fii') return 'FII';
+    return t.charAt(0).toUpperCase() + t.slice(1);
+  };
+
+  // Cascading dropdown options
   const uniqueTickers = useMemo(() => {
     let data = transactions;
-    if (filterTipo) data = data.filter(t => t.tipo === filterTipo);
+    if (filterTipo) data = data.filter(t => normalizeTipo(t.tipo) === filterTipo);
     if (filterOperacao) data = data.filter(t => t.operacao === filterOperacao);
-    if (filterAno) data = data.filter(t => Number(t.ano) === Number(filterAno));
+    if (filterAno) data = data.filter(t => String(t.ano) === String(filterAno));
     return [...new Set(data.map(t => t.ticker))].sort();
   }, [transactions, filterTipo, filterOperacao, filterAno]);
 
@@ -107,26 +149,53 @@ function Lancamentos() {
     let data = transactions;
     if (filterTicker) data = data.filter(t => t.ticker === filterTicker);
     if (filterOperacao) data = data.filter(t => t.operacao === filterOperacao);
-    if (filterAno) data = data.filter(t => Number(t.ano) === Number(filterAno));
-    return [...new Set(data.map(t => t.tipo))].sort();
+    if (filterAno) data = data.filter(t => String(t.ano) === String(filterAno));
+    return [...new Set(data.map(t => normalizeTipo(t.tipo)))].sort();
   }, [transactions, filterTicker, filterOperacao, filterAno]);
+
+  const uniqueOperacoes = useMemo(() => {
+    let data = transactions;
+    if (filterTicker) data = data.filter(t => t.ticker === filterTicker);
+    if (filterTipo) data = data.filter(t => normalizeTipo(t.tipo) === filterTipo);
+    if (filterAno) data = data.filter(t => String(t.ano) === String(filterAno));
+    return [...new Set(data.map(t => t.operacao))].sort();
+  }, [transactions, filterTicker, filterTipo, filterAno]);
 
   const uniqueAnos = useMemo(() => {
     let data = transactions;
     if (filterTicker) data = data.filter(t => t.ticker === filterTicker);
-    if (filterTipo) data = data.filter(t => t.tipo === filterTipo);
+    if (filterTipo) data = data.filter(t => normalizeTipo(t.tipo) === filterTipo);
     if (filterOperacao) data = data.filter(t => t.operacao === filterOperacao);
-    return [...new Set(data.map(t => t.ano))].sort((a, b) => b - a);
+    return [...new Set(data.map(t => String(t.ano)))].sort((a, b) => Number(b) - Number(a));
   }, [transactions, filterTicker, filterTipo, filterOperacao]);
 
+  // Reset filters if their current value is no longer valid due to cascading
+  useEffect(() => {
+    if (filterTicker && !uniqueTickers.includes(filterTicker)) setFilterTicker('');
+  }, [uniqueTickers, filterTicker]);
+
+  useEffect(() => {
+    if (filterTipo && !uniqueTipos.includes(filterTipo)) setFilterTipo('');
+  }, [uniqueTipos, filterTipo]);
+
+  useEffect(() => {
+    if (filterOperacao && !uniqueOperacoes.includes(filterOperacao)) setFilterOperacao('');
+  }, [uniqueOperacoes, filterOperacao]);
+
+  useEffect(() => {
+    if (filterAno && !uniqueAnos.includes(String(filterAno))) setFilterAno('');
+  }, [uniqueAnos, filterAno]);
+
+  // Apply ALL active filters together to produce the table data
   const filtered = useMemo(() => {
     return transactions.filter(t => {
       if (filterTicker && t.ticker !== filterTicker) return false;
-      if (filterTipo && t.tipo !== filterTipo) return false;
+      if (filterTipo && normalizeTipo(t.tipo) !== filterTipo) return false;
       if (filterOperacao && t.operacao !== filterOperacao) return false;
-      if (filterAno && Number(t.ano) !== Number(filterAno)) return false;
+      if (filterAno && String(t.ano) !== String(filterAno)) return false;
       return true;
     }).sort((a, b) => {
+      if (!a.data || !b.data) return 0;
       const [da, ma, ya] = a.data.split('/').map(Number);
       const [db, mb, yb] = b.data.split('/').map(Number);
       const ta = new Date(ya, ma - 1, da);
@@ -260,6 +329,7 @@ function Lancamentos() {
       const patrimonio = parseBrazilNumber(cell('patrimonio')) || investido;
       const cnpj = String(cell('cnpj') || '').trim();
       const segmento = String(cell('segmento') || '').trim();
+      const corretora = String(cell('corretora') || '').trim();
       const ano = cell('ano') != null ? parseInt(cell('ano'), 10) : (data ? parseInt(data.split('/')[2], 10) : new Date().getFullYear());
 
       if (!ticker || !ativo || !tipo || !operacao || !data || isNaN(quantidade) || isNaN(valor)) return;
@@ -279,6 +349,7 @@ function Lancamentos() {
         taxa,
         investido: isNaN(investido) ? 0 : investido,
         patrimonio: isNaN(patrimonio) ? 0 : patrimonio,
+        corretora,
       });
       added++;
     });
@@ -298,7 +369,7 @@ function Lancamentos() {
   };
 
   return (
-    <div style={{ marginTop: '-65px' }}>
+    <div style={{ height: '95vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', paddingTop: '10px', marginTop: '-55px' }}>
       <h1>Lançamentos</h1>
       <p className="subtitle">
         Registro de todas as operações de compra e venda
@@ -324,8 +395,7 @@ function Lancamentos() {
           </select>
           <select value={filterOperacao} onChange={e => setFilterOperacao(e.target.value)} style={selectStyle}>
             <option value="">OPERAÇÃO: Todos</option>
-            <option value="Compra">Compra</option>
-            <option value="Venda">Venda</option>
+            {uniqueOperacoes.map(o => <option key={o} value={o}>{o}</option>)}
           </select>
           <select value={filterAno} onChange={e => setFilterAno(e.target.value)} style={selectStyle}>
             <option value="">ANO: Todos</option>
@@ -428,7 +498,7 @@ function Lancamentos() {
         direction="right"
       />
 
-      <div className="table-wrapper">
+      <div className="table-wrapper" style={{ flex: 1, overflow: 'auto' }}>
         <table className="data-table">
           <thead>
             <tr>
@@ -448,12 +518,12 @@ function Lancamentos() {
               filtered.map((row) => (
                 <tr key={row.id} className={row.operacao === 'Venda' ? 'row-venda' : ''}>
                   <td className="td-imagem">
-                    <LogoImage ticker={row.ticker} fallback={row.imagem || typeIcons[row.tipo] || '📄'} size={32} />
+                    <LogoImage ticker={row.ticker} fallback={row.imagem || typeIcons[normalizeTipo(row.tipo)] || '📄'} size={32} />
                   </td>
                   <td className="td-ticker">{row.ticker}</td>
                   <td className="td-ativo">{row.ativo}</td>
                   <td className="td-cnpj">{row.cnpj}</td>
-                  <td className="td-tipo">{row.tipo.replace(/Fii/g, 'FII')}</td>
+                  <td className="td-tipo">{normalizeTipo(row.tipo)}</td>
                   <td className="td-segmento">{row.segmento}</td>
                   <td>
                     <span className={`operacao-badge ${row.operacao === 'Compra' ? 'compra' : 'venda'}`}>
@@ -467,6 +537,7 @@ function Lancamentos() {
                   <td className="td-valor">{formatCurrency(row.taxa)}</td>
                   <td className="td-valor">{formatCurrency(row.investido)}</td>
                   <td className="td-valor">{formatCurrency(row.investido - row.taxa)}</td>
+                  <td className="td-corretora">{corretoraPorTicker[row.ticker] || row.corretora || '-'}</td>
                   <td className="td-acoes">
                     <button style={actionBtnStyle} onClick={() => handleEdit(row)} title="Editar lançamento" className="btn-action edit">✏️</button>
                     <button style={actionBtnStyle} onClick={() => handleDeleteClick(row)} title="Excluir lançamento" className="btn-action delete">🗑️</button>
@@ -476,15 +547,6 @@ function Lancamentos() {
             )}
           </tbody>
         </table>
-      </div>
-
-      <div className="table-footer">
-        <span>Total de registros: {filtered.length}</span>
-        {filtered.length > 0 && (
-          <span style={{ marginLeft: '20px', color: '#666666' }}>
-            Total Investido: {formatCurrency(filtered.reduce((acc, t) => acc + t.investido, 0))}
-          </span>
-        )}
       </div>
 
       {editTarget && (
