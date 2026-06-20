@@ -1,8 +1,9 @@
-import { createContext, useContext, useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import db from '../services/storage';
 import { buildRegistryFromTransactions } from '../services/tickerRegistry';
+import { TransactionsContext } from './TransactionsContextDef';
 
-const TransactionsContext = createContext(null);
+export { TransactionsContext };
 
 const STORAGE_NAME = 'transactions';
 
@@ -103,8 +104,6 @@ export function TransactionsProvider({ children }) {
   );
 }
 
-export function useTransactions() {
-  const ctx = useContext(TransactionsContext);
-  if (!ctx) throw new Error('useTransactions deve ser usado dentro de TransactionsProvider');
-  return ctx;
-}
+// O hook useTransactions está em ./useTransactions.js — re-exportado aqui para
+// manter compatibilidade com todos os arquivos que importam de TransactionsContext.
+export { useTransactions } from './useTransactions';

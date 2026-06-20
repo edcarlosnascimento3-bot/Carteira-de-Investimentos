@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import domains from '../data/companyDomains';
 
 const indexMap = {};
@@ -18,37 +18,30 @@ const cryptoNameMap = {
 };
 
 function isCrypto(t) {
+  if (['DOLAR', 'EURO'].includes(t)) return false;
   return !/[0-9]/.test(t) && t === t.toUpperCase() && t.length <= 5;
 }
 
+const URL_UNSAFE = /[^a-zA-Z0-9]/g;
+function sanitizeTicker(t) {
+  return t.replace(URL_UNSAFE, '');
+}
+
 let ativosCache = null;
-let tabelaCache = null;
 let cachePromise = null;
 
 function loadAtivos() {
   if (ativosCache) return Promise.resolve(ativosCache);
   if (cachePromise) return cachePromise;
-  cachePromise = fetch('/api/db/ativos')
-    .then(r => r.ok ? r.json() : [])
-    .then(data => {
+  cachePromise = import('../database/TickerCatalogService').then(({ listar }) =>
+    listar().then(data => {
       const map = {};
       data.forEach(a => { if (a.TICKER) map[a.TICKER.toUpperCase()] = a.IMAGEM; });
       ativosCache = map;
       return map;
     })
-    .catch(() => (ativosCache = {}));
+  ).catch(() => (ativosCache = {}));
   return cachePromise;
-}
-
-function loadTabelaAtivos() {
-  if (tabelaCache) return Promise.resolve(tabelaCache);
-  return fetch('/api/db/tabela_ativos')
-    .then(r => r.ok ? r.json() : {})
-    .then(data => {
-      tabelaCache = data || {};
-      return tabelaCache;
-    })
-    .catch(() => (tabelaCache = {}));
 }
 
 if (typeof window !== 'undefined') {
@@ -56,13 +49,8 @@ if (typeof window !== 'undefined') {
     if (ativosCache && e.detail) {
       ativosCache[e.detail.ticker.toUpperCase()] = e.detail.url;
     }
-    if (tabelaCache && e.detail) {
-      tabelaCache[e.detail.ticker.toUpperCase()] = e.detail.url;
-    }
   });
 }
-
-const customLogos = {};
 
 function getLogoSources(ticker, imagemUrl) {
   if (!ticker) return [];
@@ -80,8 +68,9 @@ function getLogoSources(ticker, imagemUrl) {
   }
 
   if (/[0-9]/.test(t)) {
-    sources.push(`https://s3-symbol-logo.tradingview.com/brazil/${t}--big.svg`);
-    sources.push(`https://statusinvest.com.br/img/company/avatar/${t.toLowerCase()}.jpeg`);
+    const st = sanitizeTicker(t);
+    sources.push(`https://s3-symbol-logo.tradingview.com/brazil/${st}--big.svg`);
+    sources.push(`https://statusinvest.com.br/img/company/avatar/${st.toLowerCase()}.jpeg`);
   }
 
   if (isCrypto(t)) {
@@ -106,17 +95,28 @@ function LogoImage({ ticker, fallback, style, size }) {
   const s = size || 32;
   const bg = hashColor(ticker || '');
 
+  const advance = useCallback(() => {
+    setSrcIdx((i) => {
+      const next = i + 1;
+      console.debug(`[LogoImage] ${ticker} fallback ${i} -> ${next}`);
+      return next;
+    });
+  }, [ticker]);
+
+  const handleLoad = useCallback((e) => {
+    const src = e.target.currentSrc || e.target.src;
+    const phantomPixel = src && src.includes('logo.clearbit.com') &&
+      e.target.naturalWidth <= 1 && e.target.naturalHeight <= 1;
+    if (phantomPixel) {
+      console.debug(`[LogoImage] ${ticker} Clearbit phantom pixel detected, advancing`);
+      advance();
+    }
+  }, [ticker, advance]);
+
   useEffect(() => {
     if (!ticker) return;
     loadAtivos().then(map => {
-      const url = map[ticker.toUpperCase()];
-      if (url) {
-        setImagemUrl(url);
-      } else {
-        loadTabelaAtivos().then(tabela => {
-          setImagemUrl(tabela[ticker.toUpperCase()] || null);
-        });
-      }
+      setImagemUrl(map[ticker.toUpperCase()] || null);
     });
 
     const handleUpdate = (e) => {
@@ -171,7 +171,8 @@ function LogoImage({ ticker, fallback, style, size }) {
         alt={ticker}
         referrerPolicy="no-referrer"
         style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-        onError={() => setSrcIdx((i) => i + 1)}
+        onError={advance}
+        onLoad={handleLoad}
       />
     </span>
   );

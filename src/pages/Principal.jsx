@@ -81,11 +81,13 @@ function Principal() {
       const isManual = ['Renda Fixa', 'Dólar', 'Euro'].includes(tipoNorm);
       const cotacao = isManual && manualAtual[g.ticker] != null
         ? manualAtual[g.ticker] / quantidade
-        : tipoNorm === 'Dólar'
-          ? prices['USDBRL']
-          : tipoNorm === 'Euro'
-            ? prices['EURBRL']
-            : prices[g.ticker];
+        : tipoNorm === 'Renda Fixa'
+          ? precoMedio
+          : tipoNorm === 'Dólar'
+            ? prices['USDBRL']
+            : tipoNorm === 'Euro'
+              ? prices['EURBRL']
+              : prices[g.ticker];
       const atual = cotacao != null ? quantidade * cotacao : 0;
       const resultado = atual - investido;
       return { ...g, quantidade, investido, precoMedio, cotacao, atual, resultado };

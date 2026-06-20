@@ -107,6 +107,24 @@ function Compra() {
       patrimonio: total,
     });
 
+    if (form.tipo === 'Renda Fixa') {
+      try {
+        const raw = localStorage.getItem('investimento_rf_manual');
+        const manual = raw ? JSON.parse(raw) : {};
+        if (manual[ticker] != null) {
+          manual[ticker] += total;
+        } else {
+          const txTotal = transactions
+            .filter(t => t.ticker === ticker && t.operacao === 'Compra')
+            .reduce((s, t) => s + (Number(t.investido) || 0), 0);
+          manual[ticker] = txTotal + total;
+        }
+        localStorage.setItem('investimento_rf_manual', JSON.stringify(manual));
+      } catch (e) {
+        console.warn('[Compra] erro ao salvar rf_manual:', e);
+      }
+    }
+
     setSaved(true);
     setErrors([]);
     setForm({ ticker: '', nome: '', cnpj: '', tipo: '', data: '', quantidade: '', valor: '', taxas: '' });

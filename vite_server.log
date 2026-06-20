@@ -1,0 +1,53 @@
+
+  [32m[1mVITE[22m v5.4.21[39m  [2mready in [0m[1m2038[22m[2m[0m ms[22m
+
+  [32m➜[39m  [1mLocal[22m:   [36mhttp://localhost:[1m5173[22m/[39m
+  [32m➜[39m  [1mNetwork[22m: [36mhttp://192.168.10.172:[1m5173[22m/[39m
+  [32m➜[39m  [1mNetwork[22m: [36mhttp://54.232.189.113:[1m5173[22m/[39m
+  [32m➜[39m  [1mNetwork[22m: [36mhttp://172.22.144.1:[1m5173[22m/[39m
+[2m18:23:11[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/Lancamentos.jsx[22m
+[2m18:23:23[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/Lancamentos.jsx[22m
+[2m18:27:20[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/Lancamentos.jsx[22m
+[2m18:27:49[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/Lancamentos.jsx[22m
+[2m18:28:04[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/Lancamentos.jsx[22m
+[2m18:35:32[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/Lancamentos.jsx[22m
+[2m18:35:56[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/Lancamentos.jsx[22m
+[2m18:37:37[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/Lancamentos.jsx[22m
+[2m18:51:27[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/LogoImage.jsx[22m
+[2m18:51:39[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/LogoImage.jsx[22m
+[2m18:51:55[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/App.jsx, /src/pages/Venda.jsx, /src/pages/Compra.jsx, /src/pages/Bonificacao.jsx, /src/pages/Carteira.jsx[22m
+[2m18:52:09[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/App.jsx, /src/pages/Venda.jsx, /src/pages/Compra.jsx, /src/pages/Bonificacao.jsx, /src/pages/Carteira.jsx[22m
+[2m20:39:12[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/context/TransactionsContext.jsx[22m
+[2m20:39:13[22m [36m[1m[vite][22m[39m [33mhmr invalidate [39m[2m/src/context/TransactionsContext.jsx[22m Could not Fast Refresh ("useTransactions" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[2m20:39:13[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/context/TransactionsContext.jsx[22m
+[2m20:59:53[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/Lancamentos.jsx[22m
+[2m21:04:39[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/Lancamentos.jsx[22m
+[2m21:04:39[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/Lancamentos.jsx[22m
+[2m21:09:33[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/Lancamentos.jsx[22m
+[2m21:09:34[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/Lancamentos.jsx[22m
+[2m21:09:35[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/Lancamentos.jsx[22m
+[2m21:09:35[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/Lancamentos.jsx[22m
+[2m21:09:37[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/Lancamentos.jsx[22m
+[2m21:09:37[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/Lancamentos.jsx[22m
+[2m21:09:37[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/Lancamentos.jsx[22m
+[2m21:17:00[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/styles/globals.css[22m
+[2m21:43:04[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/context/TransactionsContext.jsx[22m
+[2m21:43:04[22m [36m[1m[vite][22m[39m [33mhmr invalidate [39m[2m/src/context/TransactionsContext.jsx[22m Could not Fast Refresh ("useTransactions" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[2m21:43:04[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/context/TransactionsContext.jsx[22m
+[2m21:43:26[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/context/TransactionsContext.jsx[22m
+[2m21:43:27[22m [36m[1m[vite][22m[39m [33mhmr invalidate [39m[2m/src/context/TransactionsContext.jsx[22m Could not Fast Refresh ("useTransactions" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[2m21:43:27[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/context/TransactionsContext.jsx[22m
+[2m21:46:41[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/App.jsx, /src/pages/Venda.jsx, /src/pages/Compra.jsx, /src/pages/Bonificacao.jsx, /src/pages/Carteira.jsx, /src/context/TransactionsContext.jsx[22m
+[2m21:46:42[22m [36m[1m[vite][22m[39m [33mhmr invalidate [39m[2m/src/context/TransactionsContext.jsx[22m Could not Fast Refresh ("useTransactions" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[2m21:46:42[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/context/TransactionsContext.jsx[22m
+[2m21:51:21[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/App.jsx, /src/pages/Venda.jsx, /src/pages/Compra.jsx, /src/pages/Bonificacao.jsx, /src/pages/Carteira.jsx, /src/context/TransactionsContext.jsx[22m
+[2m21:51:21[22m [36m[1m[vite][22m[39m [33mhmr invalidate [39m[2m/src/context/TransactionsContext.jsx[22m Could not Fast Refresh ("useTransactions" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[2m21:51:21[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/context/TransactionsContext.jsx[22m
+[2m22:07:02[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/context/TransactionsContext.jsx[22m
+[2m22:07:02[22m [36m[1m[vite][22m[39m [33mhmr invalidate [39m[2m/src/context/TransactionsContext.jsx[22m Could not Fast Refresh ("useTransactions" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[2m22:07:02[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/context/TransactionsContext.jsx[22m
+[2m22:23:28[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/Graficos.jsx[22m
+[2m22:25:09[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/Graficos.jsx[22m
+[2m22:33:53[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/Carteira.jsx[22m
+[2m22:34:50[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/Carteira.jsx[22m
+[2m22:35:29[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/Carteira.jsx[22m

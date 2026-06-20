@@ -120,7 +120,9 @@ function Carteira() {
       const isManual = ['Renda Fixa', 'Dólar', 'Euro'].includes(g.tipo);
       const cotacao = isManual && manualAtual[g.ticker] != null
         ? manualAtual[g.ticker] / quantidade
-        : g.tipo === 'Dólar'
+        : isManual && g.tipo === 'Renda Fixa'
+          ? precoMedio
+          : g.tipo === 'Dólar'
           ? prices['USDBRL']
           : g.tipo === 'Euro'
             ? prices['EURBRL']

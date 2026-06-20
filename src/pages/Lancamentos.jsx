@@ -6,6 +6,7 @@ import EditTransactionModal from '../components/Modals/EditTransactionModal';
 import ConfirmModal from '../components/Modals/ConfirmModal';
 import Toast from '../components/Toast';
 import LogoImage from '../components/LogoImage';
+import { listar as listarAtivos } from '../database/TickerCatalogService';
 import * as XLSX from 'xlsx';
 
 const columns = [
@@ -52,10 +53,10 @@ const columnAliases = {
 const corretoraPorTicker = {
   BBAS3: 'C6', TRXF11: 'C6', GARE11: 'C6', LTBX11: 'C6', XPML11: 'C6',
   SOFISA: 'SOFISA',
-  RBOP11: 'XP INVESTIMENTOS', FGAA11: 'XP INVESTIMENTOS',
-  MXRF11: 'XP INVESTIMENTOS', VSLH11: 'XP INVESTIMENTOS',
-  VGHF11: 'XP INVESTIMENTOS', VGIP11: 'XP INVESTIMENTOS',
-  KNCR11: 'XP INVESTIMENTOS',
+  RBOP11: 'XP', FGAA11: 'XP',
+  MXRF11: 'XP', VSLH11: 'XP',
+  VGHF11: 'XP', VGIP11: 'XP',
+  KNCR11: 'XP',
   TAEE3: 'RICO', ITSA4: 'RICO', PETR4: 'RICO', VALE3: 'RICO',
   AMER3: 'RICO', BBDC3: 'RICO', BBDC4: 'RICO', BBSE3: 'RICO',
   BEES3: 'RICO', BRAP3: 'RICO', CMIN3: 'RICO', COCA34: 'RICO',
@@ -69,6 +70,16 @@ const typeIcons = {
   'FII': '🏗️',
   'Renda Fixa': '🔒',
 };
+
+// ─── Funções auxiliares fora do componente (estáveis, sem re-criação) ────────
+function normalizeTipo(t) {
+  if (!t) return '';
+  const s = String(t).trim();
+  if (s.toLowerCase() === 'fii') return 'FII';
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 const selectStyle = {
   background: '#0D0D0D',
@@ -128,83 +139,55 @@ function Lancamentos() {
   const [massModal, setMassModal] = useState(null);
   const [massStatus, setMassStatus] = useState(null);
   const [clearConfirm, setClearConfirm] = useState(false);
+  const [ativosMap, setAtivosMap] = useState({});
 
-  // Normalize tipo for consistent comparisons (handles "Fii" vs "FII" etc.)
-  const normalizeTipo = (t) => {
-    if (!t) return t;
-    if (t.toLowerCase() === 'fii') return 'FII';
-    return t.charAt(0).toUpperCase() + t.slice(1);
-  };
+  useEffect(() => {
+    listarAtivos().then(data => {
+      const map = {};
+      data.forEach(a => { if (a.TICKER && a.IMAGEM) map[a.TICKER.toUpperCase()] = a.IMAGEM; });
+      setAtivosMap(map);
+    });
+  }, []);
 
-  // Cascading dropdown options
   const uniqueTickers = useMemo(() => {
-    let data = transactions;
-    if (filterTipo) data = data.filter(t => normalizeTipo(t.tipo) === filterTipo);
-    if (filterOperacao) data = data.filter(t => t.operacao === filterOperacao);
-    if (filterAno) data = data.filter(t => String(t.ano) === String(filterAno));
-    return [...new Set(data.map(t => t.ticker))].sort();
-  }, [transactions, filterTipo, filterOperacao, filterAno]);
+    return [...new Set(transactions.map(t => t.ticker))].filter(Boolean).sort();
+  }, [transactions]);
 
   const uniqueTipos = useMemo(() => {
-    let data = transactions;
-    if (filterTicker) data = data.filter(t => t.ticker === filterTicker);
-    if (filterOperacao) data = data.filter(t => t.operacao === filterOperacao);
-    if (filterAno) data = data.filter(t => String(t.ano) === String(filterAno));
-    return [...new Set(data.map(t => normalizeTipo(t.tipo)))].sort();
-  }, [transactions, filterTicker, filterOperacao, filterAno]);
+    return [...new Set(transactions.map(t => normalizeTipo(t.tipo)))].filter(Boolean).sort();
+  }, [transactions]);
 
   const uniqueOperacoes = useMemo(() => {
-    let data = transactions;
-    if (filterTicker) data = data.filter(t => t.ticker === filterTicker);
-    if (filterTipo) data = data.filter(t => normalizeTipo(t.tipo) === filterTipo);
-    if (filterAno) data = data.filter(t => String(t.ano) === String(filterAno));
-    return [...new Set(data.map(t => t.operacao))].sort();
-  }, [transactions, filterTicker, filterTipo, filterAno]);
+    return [...new Set(transactions.map(t => t.operacao))].filter(Boolean).sort();
+  }, [transactions]);
 
   const uniqueAnos = useMemo(() => {
-    let data = transactions;
-    if (filterTicker) data = data.filter(t => t.ticker === filterTicker);
-    if (filterTipo) data = data.filter(t => normalizeTipo(t.tipo) === filterTipo);
-    if (filterOperacao) data = data.filter(t => t.operacao === filterOperacao);
-    return [...new Set(data.map(t => String(t.ano)))].sort((a, b) => Number(b) - Number(a));
-  }, [transactions, filterTicker, filterTipo, filterOperacao]);
+    return [...new Set(transactions.map(t => t.ano))].filter(Boolean).sort((a, b) => Number(b) - Number(a));
+  }, [transactions]);
 
-  // Reset filters if their current value is no longer valid due to cascading
-  useEffect(() => {
-    if (filterTicker && !uniqueTickers.includes(filterTicker)) setFilterTicker('');
-  }, [uniqueTickers, filterTicker]);
-
-  useEffect(() => {
-    if (filterTipo && !uniqueTipos.includes(filterTipo)) setFilterTipo('');
-  }, [uniqueTipos, filterTipo]);
-
-  useEffect(() => {
-    if (filterOperacao && !uniqueOperacoes.includes(filterOperacao)) setFilterOperacao('');
-  }, [uniqueOperacoes, filterOperacao]);
-
-  useEffect(() => {
-    if (filterAno && !uniqueAnos.includes(String(filterAno))) setFilterAno('');
-  }, [uniqueAnos, filterAno]);
-
-  // Apply ALL active filters together to produce the table data
   const filtered = useMemo(() => {
-    return transactions.filter(t => {
-      if (filterTicker && t.ticker !== filterTicker) return false;
-      if (filterTipo && normalizeTipo(t.tipo) !== filterTipo) return false;
-      if (filterOperacao && t.operacao !== filterOperacao) return false;
-      if (filterAno && String(t.ano) !== String(filterAno)) return false;
-      return true;
-    }).sort((a, b) => {
-      if (!a.data || !b.data) return 0;
-      const [da, ma, ya] = a.data.split('/').map(Number);
-      const [db, mb, yb] = b.data.split('/').map(Number);
-      const ta = new Date(ya, ma - 1, da);
-      const tb = new Date(yb, mb - 1, db);
-      return tb - ta;
-    });
+    return transactions
+      .filter(t => {
+        if (filterTicker && t.ticker !== filterTicker) return false;
+        if (filterTipo && normalizeTipo(t.tipo) !== filterTipo) return false;
+        if (filterOperacao && t.operacao !== filterOperacao) return false;
+        if (filterAno && String(t.ano) !== String(filterAno)) return false;
+        return true;
+      })
+      .sort((a, b) => {
+        try {
+          if (!a.data || !b.data) return 0;
+          const [da, ma, ya] = String(a.data).split('/').map(Number);
+          const [db, mb, yb] = String(b.data).split('/').map(Number);
+          const ta = new Date(ya, ma - 1, da);
+          const tb = new Date(yb, mb - 1, db);
+          if (isNaN(ta) || isNaN(tb)) return 0;
+          return tb - ta;
+        } catch {
+          return 0;
+        }
+      });
   }, [transactions, filterTicker, filterTipo, filterOperacao, filterAno]);
-
-
 
   const formatNumber = (v) =>
     v.toLocaleString('pt-BR');
@@ -518,7 +501,11 @@ function Lancamentos() {
               filtered.map((row) => (
                 <tr key={row.id} className={row.operacao === 'Venda' ? 'row-venda' : ''}>
                   <td className="td-imagem">
-                    <LogoImage ticker={row.ticker} fallback={row.imagem || typeIcons[normalizeTipo(row.tipo)] || '📄'} size={32} />
+                    {(() => {
+                      const imgUrl = ativosMap[row.ticker?.toUpperCase()];
+                      const logo = <LogoImage ticker={row.ticker} fallback={row.imagem || typeIcons[normalizeTipo(row.tipo)]} size={32} />;
+                      return imgUrl ? <a href={imgUrl} target="_blank" rel="noopener noreferrer">{logo}</a> : logo;
+                    })()}
                   </td>
                   <td className="td-ticker">{row.ticker}</td>
                   <td className="td-ativo">{row.ativo}</td>

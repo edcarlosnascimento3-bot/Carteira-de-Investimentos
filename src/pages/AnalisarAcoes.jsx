@@ -1,10 +1,186 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useTransactions } from '../context/TransactionsContext';
-import { useProventos } from '../context/ProventosContext';
 import { fetchBrapiFundamentals, fetchBrapiQuote, fetchBrapiProfilesBatch, fetchAllStocksWithSectors } from '../services/api';
 import { formatCurrency } from '../services/format';
+import { sectoresList, subsectorsBySector } from '../data/Setores';
 
-const defaultIndicador = null;
+const sectorMapENtoPT = {
+  'Basic Materials': 'Materiais Básicos',
+  'Communication Services': 'Comunicações',
+  'Consumer Cyclical': 'Consumo Cíclico',
+  'Consumer Defensive': 'Consumo Não Cíclico',
+  'Energy': 'Petróleo, Gás e Biocombustíveis',
+  'Financial Services': 'Financeiro',
+  'Financial': 'Financeiro',
+  'Healthcare': 'Saúde',
+  'Industrials': 'Bens Industriais',
+  'Real Estate': 'Financeiro',
+  'Technology': 'Tecnologia da Informação',
+  'Utilities': 'Utilidade Pública',
+  'Consumer Goods': 'Consumo Cíclico',
+  'Services': 'Comunicações',
+  'Industrial': 'Bens Industriais',
+  'Conglomerates': 'Bens Industriais',
+};
+
+const industryMapENtoPT = {
+  'Banks': 'Bancos',
+  'Financial Data & Stock Exchanges': 'Serviços Financeiros Diversos',
+  'Credit Services': 'Serviços Financeiros Diversos',
+  'Asset Management': 'Serviços Financeiros Diversos',
+  'Capital Markets': 'Intermediários Financeiros',
+  'Insurance - Life': 'Previdência e Seguros',
+  'Insurance - Property & Casualty': 'Previdência e Seguros',
+  'Insurance - Reinsurance': 'Previdência e Seguros',
+  'Insurance - Diversified': 'Previdência e Seguros',
+  'Insurance Brokers': 'Previdência e Seguros',
+  'Mortgage Finance': 'Serviços Financeiros Diversos',
+  'Financial Conglomerates': 'Serviços Financeiros Diversos',
+  'Shell Companies': 'Serviços Financeiros Diversos',
+  'Oil & Gas Exploration & Production': 'Extração e Produção',
+  'Oil & Gas E&P': 'Extração e Produção',
+  'Oil & Gas Refining & Marketing': 'Refino e Distribuição',
+  'Oil & Gas Integrated': 'Extração e Produção',
+  'Oil & Gas Midstream': 'Refino e Distribuição',
+  'Oil & Gas Equipment & Services': 'Extração e Produção',
+  'Oil & Gas Storage & Transportation': 'Refino e Distribuição',
+  'Petrochemicals': 'Petroquímica',
+  'Industrial Metals & Mining': 'Mineração',
+  'Diversified Metals & Mining': 'Mineração',
+  'Copper': 'Mineração',
+  'Other Industrial Metals & Mining': 'Mineração',
+  'Steel': 'Siderurgia e Metalurgia',
+  'Steel Works': 'Siderurgia e Metalurgia',
+  'Metal Fabrication': 'Siderurgia e Metalurgia',
+  'Aluminum': 'Siderurgia e Metalurgia',
+  'Paper & Paper Products': 'Madeira e Papel',
+  'Lumber & Wood Production': 'Madeira e Papel',
+  'Chemicals': 'Química',
+  'Specialty Chemicals': 'Química',
+  'Agricultural Inputs': 'Química',
+  'Packaging & Containers': 'Embalagens',
+  'Building Materials': 'Construção e Engenharia',
+  'Packaged Foods': 'Alimentos Processados',
+  'Meat Products': 'Alimentos Processados',
+  'Food - Meat': 'Alimentos Processados',
+  'Food - Confectioners': 'Alimentos Processados',
+  'Food - Diversified': 'Alimentos Processados',
+  'Food - Specialty': 'Alimentos Processados',
+  'Dairy Products': 'Alimentos Processados',
+  'Farm Products': 'Agropecuária',
+  'Beverages - Alcoholic': 'Bebidas',
+  'Beverages - Non-Alcoholic': 'Bebidas',
+  'Beverages - Brewers': 'Bebidas',
+  'Beverages - Wineries & Distilleries': 'Bebidas',
+  'Beverages - Soft Drinks': 'Bebidas',
+  'Pharmaceuticals': 'Produtos Farmacêuticos e de Saúde',
+  'Drug Manufacturers - General': 'Produtos Farmacêuticos e de Saúde',
+  'Drug Manufacturers - Specialty & Generic': 'Produtos Farmacêuticos e de Saúde',
+  'Tobacco': 'Tabaco',
+  'Household & Personal Products': 'Produtos de Limpeza e Uso Pessoal',
+  'Utilities - Renewable': 'Energia Elétrica',
+  'Utilities - Independent Power Producers': 'Energia Elétrica',
+  'Utilities - Regulated Electric': 'Energia Elétrica',
+  'Utilities - Regulated Water': 'Água e Saneamento',
+  'Utilities - Regulated Gas': 'Gás',
+  'Utilities - Diversified': 'Energia Elétrica',
+  'Medical Devices': 'Equipamentos e Materiais',
+  'Medical Care Facilities': 'Serviços Médicos, Hospitalares, Análises e Diagnósticos',
+  'Health Information Services': 'Programas e Serviços',
+  'Healthcare Plans': 'Serviços Médicos, Hospitalares, Análises e Diagnósticos',
+  'Diagnostics & Research': 'Serviços Médicos, Hospitalares, Análises e Diagnósticos',
+  'Medical Distribution': 'Comércio e Distribuição',
+  'Health Care Plans': 'Serviços Médicos, Hospitalares, Análises e Diagnósticos',
+  'Medical Instruments & Supplies': 'Equipamentos e Materiais',
+  'Biotechnology': 'Medicamentos e Outros',
+  'Pharmaceutical Retailers': 'Comércio e Distribuição',
+  'Software - Application': 'Programas e Serviços',
+  'Software - Infrastructure': 'Programas e Serviços',
+  'Information Technology Services': 'Programas e Serviços',
+  'Data Storage': 'Programas e Serviços',
+  'Semiconductors': 'Computadores e Equipamentos',
+  'Semiconductor Equipment & Materials': 'Computadores e Equipamentos',
+  'Computer Hardware': 'Computadores e Equipamentos',
+  'Consumer Electronics': 'Computadores e Equipamentos',
+  'Communication Equipment': 'Computadores e Equipamentos',
+  'Internet Content & Information': 'Programas e Serviços',
+  'Scientific & Technical Instruments': 'Computadores e Equipamentos',
+  'Electronic Gaming & Multimedia': 'Programas e Serviços',
+  'Telecom Services': 'Telecomunicações',
+  'Telecom - Domestic': 'Telefonia Fixa',
+  'Telecom - Wireless': 'Telecomunicações',
+  'Entertainment': 'Lazer e Entretenimento',
+  'Broadcasting': 'Mídia',
+  'Publishing': 'Mídia',
+  'Advertising Agencies': 'Mídia',
+  'Auto Manufacturers': 'Automóveis e Motocicletas',
+  'Recreational Vehicles': 'Automóveis e Motocicletas',
+  'Auto Parts': 'Material de Transporte',
+  'Auto & Truck Dealerships': 'Comércio',
+  'Apparel Manufacturing': 'Tecidos, Vestuário e Calçados',
+  'Footwear & Accessories': 'Tecidos, Vestuário e Calçados',
+  'Apparel Retail': 'Comércio',
+  'Specialty Retail': 'Comércio',
+  'Department Stores': 'Comércio',
+  'Internet Retail': 'Comércio',
+  'Restaurants': 'Hotéis e Restaurantes',
+  'Lodging': 'Hotéis e Restaurantes',
+  'Leisure': 'Lazer e Entretenimento',
+  'Travel Services': 'Lazer e Entretenimento',
+  'Resorts & Casinos': 'Lazer e Entretenimento',
+  'Gambling': 'Lazer e Entretenimento',
+  'Home Improvement Retail': 'Comércio',
+  'Furnishings, Fixtures & Appliances': 'Mobiliário',
+  'Residential Construction': 'Construção Civil',
+  'Home Builders': 'Construção Civil',
+  'Textile Manufacturing': 'Tecidos, Vestuário e Calçados',
+  'Specialty Industrial Machinery': 'Máquinas e Equipamentos',
+  'Electrical Equipment & Parts': 'Máquinas e Equipamentos',
+  'Farm & Heavy Construction Machinery': 'Máquinas e Equipamentos',
+  'Pollution & Treatment Controls': 'Máquinas e Equipamentos',
+  'Tools & Accessories': 'Máquinas e Equipamentos',
+  'Aerospace & Defense': 'Material de Transporte',
+  'Railroads': 'Serviços e Transportes Diversos',
+  'Trucking': 'Serviços e Transportes Diversos',
+  'Airports & Air Services': 'Serviços e Transportes Diversos',
+  'Rental & Leasing Services': 'Serviços e Transportes Diversos',
+  'Freight & Logistics Services': 'Serviços e Transportes Diversos',
+  'Engineering & Construction': 'Construção e Engenharia',
+  'Infrastructure Operations': 'Construção e Engenharia',
+  'Building Products & Equipment': 'Construção e Engenharia',
+  'Waste Management': 'Serviços e Transportes Diversos',
+  'Security & Protection Services': 'Serviços e Transportes Diversos',
+  'Staffing & Employment Services': 'Serviços e Transportes Diversos',
+  'Consulting Services': 'Serviços e Transportes Diversos',
+  'Education & Training Services': 'Serviços e Transportes Diversos',
+  'Business Equipment & Supplies': 'Máquinas e Equipamentos',
+  'Personal Services': 'Diversos',
+  'Conglomerates': 'Diversos',
+  'Real Estate - Development': 'Construção Civil',
+  'Real Estate - Diversified': 'Serviços Financeiros Diversos',
+  'Real Estate Services': 'Serviços Financeiros Diversos',
+  'REIT - Industrial': 'Serviços Financeiros Diversos',
+  'REIT - Office': 'Serviços Financeiros Diversos',
+  'REIT - Retail': 'Serviços Financeiros Diversos',
+  'REIT - Residential': 'Serviços Financeiros Diversos',
+  'REIT - Healthcare Facilities': 'Serviços Financeiros Diversos',
+  'REIT - Diversified': 'Serviços Financeiros Diversos',
+  'REIT - Specialty': 'Serviços Financeiros Diversos',
+  'REIT - Hotel & Motel': 'Serviços Financeiros Diversos',
+  'REIT - Mortgage': 'Serviços Financeiros Diversos',
+};
+
+const sectorPTtoEN = {};
+for (const [en, pt] of Object.entries(sectorMapENtoPT)) {
+  if (!sectorPTtoEN[pt]) sectorPTtoEN[pt] = [];
+  sectorPTtoEN[pt].push(en);
+}
+
+const subsectorPTtoEN = {};
+for (const [en, pt] of Object.entries(industryMapENtoPT)) {
+  if (!subsectorPTtoEN[pt]) subsectorPTtoEN[pt] = [];
+  subsectorPTtoEN[pt].push(en);
+}
 
 const avaliacaoCores = {
   bom: { cor: '#00CC66', label: 'Bom' },
@@ -26,159 +202,25 @@ const selectStyle = {
   cursor: 'pointer', outline: 'none', textAlign: 'center', textAlignLast: 'center',
 };
 
-const CACHE_KEY = 'brapiSectorCache';
-const CACHE_TTL = 24 * 60 * 60 * 1000;
-const INDUSTRY_CACHE_KEY = 'brapiIndustryCache';
+
 
 function AnalisarAcoes() {
   const { transactions } = useTransactions();
-  const { proventos } = useProventos();
   const [ticker, setTicker] = useState('');
   const [indicadores, setIndicadores] = useState(null);
   const [loading, setLoading] = useState(false);
   const [apiError, setApiError] = useState(null);
   const [cotacao, setCotacao] = useState(null);
 
-  // allStocks: array de { stock, sector, name } — todas as ações da bolsa
-  const [allStocks, setAllStocks] = useState([]);
-  const [stocksLoading, setStocksLoading] = useState(false);
   const [sectorFilter, setSectorFilter] = useState('');
   const [subsectorFilter, setSubsectorFilter] = useState('');
 
-  // industryData: { ticker: { industry: string } } — carregado sob demanda por setor
-  const [industryData, setIndustryData] = useState({});
-  const [industryLoading, setIndustryLoading] = useState(false);
+  const sectors = sectoresList;
 
-  const tickersDisponiveis = useMemo(() => {
-    const acoes = [...new Set(transactions
-      .filter(t => /[0-9]/.test(t.ticker) && !t.ticker.endsWith('11'))
-      .map(t => t.ticker))].sort();
-    return acoes;
-  }, [transactions]);
-
-  // Setores únicos extraídos da lista de ações da bolsa
-  const sectors = useMemo(() => {
-    const set = new Set(allStocks.map(s => s.sector).filter(Boolean));
-    return [...set].sort();
-  }, [allStocks]);
-
-  // Subsectors: carregados sob demanda quando um setor é selecionado
   const subsectors = useMemo(() => {
     if (!sectorFilter) return [];
-    const tickersInSector = allStocks.filter(s => s.sector === sectorFilter).map(s => s.stock);
-    const industries = new Set();
-    for (const tk of tickersInSector) {
-      const ind = industryData[tk]?.industry;
-      if (ind) industries.add(ind);
-    }
-    return [...industries].sort();
-  }, [sectorFilter, allStocks, industryData]);
-
-  // Mapa rápido de ticker → setor
-  const sectorByTicker = useMemo(() => {
-    const map = {};
-    for (const s of allStocks) {
-      map[s.stock] = s.sector;
-    }
-    return map;
-  }, [allStocks]);
-
-  const filteredTickers = useMemo(() => {
-    let list = tickersDisponiveis;
-    if (sectorFilter) {
-      list = list.filter(tk => sectorByTicker[tk] === sectorFilter);
-    }
-    if (subsectorFilter) {
-      list = list.filter(tk => industryData[tk]?.industry === subsectorFilter);
-    }
-    return list;
-  }, [tickersDisponiveis, sectorByTicker, industryData, sectorFilter, subsectorFilter]);
-
-  // 1) Carrega todas as ações com setores (UMA única chamada à API)
-  useEffect(() => {
-    let cancelled = false;
-    const loadStocks = async () => {
-      // Verifica cache
-      let cached;
-      try {
-        const raw = localStorage.getItem(CACHE_KEY);
-        if (raw) {
-          const parsed = JSON.parse(raw);
-          if (Date.now() - parsed.timestamp < CACHE_TTL) {
-            cached = parsed.data;
-          }
-        }
-      } catch {}
-
-      if (cached && cached.length > 0) {
-        if (!cancelled) setAllStocks(cached);
-        return;
-      }
-
-      setStocksLoading(true);
-      const stocks = await fetchAllStocksWithSectors();
-      if (cancelled) return;
-
-      setAllStocks(stocks);
-      setStocksLoading(false);
-
-      try {
-        localStorage.setItem(CACHE_KEY, JSON.stringify({ data: stocks, timestamp: Date.now() }));
-      } catch {}
-    };
-
-    loadStocks();
-    return () => { cancelled = true; };
-  }, []);
-
-  // 2) Quando um setor é selecionado, busca os subsetores (industry) das ações daquele setor
-  useEffect(() => {
-    if (!sectorFilter) return;
-    let cancelled = false;
-
-    const tickersInSector = allStocks
-      .filter(s => s.sector === sectorFilter)
-      .map(s => s.stock);
-
-    // Filtra apenas os que ainda não temos industry
-    const missing = tickersInSector.filter(tk => !industryData[tk]);
-    if (missing.length === 0) return;
-
-    const loadIndustries = async () => {
-      setIndustryLoading(true);
-
-      const profiles = await fetchBrapiProfilesBatch(missing);
-      if (cancelled) return;
-
-      const newIndustry = {};
-      for (const [tk, profile] of Object.entries(profiles)) {
-        newIndustry[tk] = { industry: profile.industry || '' };
-      }
-
-      setIndustryData(prev => ({ ...prev, ...newIndustry }));
-      setIndustryLoading(false);
-
-      // Salva no cache
-      try {
-        const raw = localStorage.getItem(INDUSTRY_CACHE_KEY);
-        const existing = raw ? JSON.parse(raw) : {};
-        localStorage.setItem(INDUSTRY_CACHE_KEY, JSON.stringify({ ...existing, ...newIndustry }));
-      } catch {}
-    };
-
-    loadIndustries();
-    return () => { cancelled = true; };
-  }, [sectorFilter, allStocks]);
-
-  // 3) Restaura cache de industries ao carregar
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem(INDUSTRY_CACHE_KEY);
-      if (raw) {
-        setIndustryData(JSON.parse(raw));
-      }
-    } catch {}
-  }, []);
+    return subsectorsBySector(sectorFilter);
+  }, [sectorFilter]);
 
   const clearFilters = useCallback(() => {
     setSectorFilter('');
@@ -189,6 +231,76 @@ function AnalisarAcoes() {
     setSectorFilter(value);
     setSubsectorFilter('');
   }, []);
+
+  const [allStocks, setAllStocks] = useState([]);
+  const [loadingAllStocks, setLoadingAllStocks] = useState(true);
+
+  const stockLookup = useMemo(() => {
+    const map = {};
+    for (const s of allStocks) map[s.stock] = s;
+    return map;
+  }, [allStocks]);
+
+  useEffect(() => {
+    setLoadingAllStocks(true);
+    fetchAllStocksWithSectors().then(data => {
+      setAllStocks(data || []);
+      setLoadingAllStocks(false);
+    }).catch(() => {
+      setAllStocks([]);
+      setLoadingAllStocks(false);
+    });
+  }, []);
+
+  const [profiles, setProfiles] = useState({});
+  const [loadingProfiles, setLoadingProfiles] = useState(false);
+
+  useEffect(() => {
+    if (sectorFilter && subsectorFilter) {
+      const englishSectors = sectorPTtoEN[sectorFilter] || [];
+      const sectorStocks = allStocks.filter(s => englishSectors.includes(s.sector));
+      const tickers = sectorStocks.map(s => s.stock);
+      if (tickers.length === 0) {
+        setProfiles({});
+        setLoadingProfiles(false);
+        return;
+      }
+      setLoadingProfiles(true);
+      fetchBrapiProfilesBatch(tickers).then(data => {
+        setProfiles(data || {});
+        setLoadingProfiles(false);
+      }).catch(() => {
+        setProfiles({});
+        setLoadingProfiles(false);
+      });
+    } else {
+      setProfiles({});
+      setLoadingProfiles(false);
+    }
+  }, [sectorFilter, subsectorFilter, allStocks]);
+
+  const filteredTickers = useMemo(() => {
+    if (!sectorFilter || loadingAllStocks) return [];
+
+    const englishSectors = sectorPTtoEN[sectorFilter] || [];
+    if (englishSectors.length === 0) return [];
+
+    const sectorStocks = allStocks.filter(s => englishSectors.includes(s.sector));
+
+    if (!subsectorFilter) {
+      return sectorStocks.map(s => s.stock);
+    }
+
+    const englishIndustries = subsectorPTtoEN[subsectorFilter] || [];
+    if (englishIndustries.length === 0) return [];
+
+    return sectorStocks
+      .filter(s => {
+        const p = profiles[s.stock];
+        return p && englishIndustries.includes(p.industry);
+      })
+      .map(s => s.stock);
+  }, [sectorFilter, subsectorFilter, allStocks, profiles, loadingAllStocks]);
 
   useEffect(() => {
     if (!ticker) {
@@ -220,13 +332,6 @@ function AnalisarAcoes() {
     return () => { cancelled = true; };
   }, [ticker]);
 
-  const totalProventos = useMemo(() => {
-    if (!ticker) return 0;
-    return proventos
-      .filter(p => p.ticker === ticker)
-      .reduce((s, p) => s + (p.dividendos || 0) + (p.jcp || 0) + (p.rendimento || 0) + (p.reembolso || 0), 0);
-  }, [proventos, ticker]);
-
   const ativo = useMemo(() => {
     if (!ticker) return null;
     const t = transactions.find(t => t.ticker === ticker);
@@ -234,11 +339,74 @@ function AnalisarAcoes() {
   }, [transactions, ticker]);
 
   return (
-    <div>
-      <h1>Analisar Ações</h1>
+    <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start' }}>
+      <aside style={{ width: 260, flexShrink: 0 }}>
+        <div style={{
+          background: '#151515', border: '1px solid #2A2A2A', borderRadius: 10, overflow: 'hidden',
+          position: 'sticky', top: 16, maxHeight: 'calc(100vh - 120px)', display: 'flex', flexDirection: 'column',
+        }}>
+          <div style={{
+            padding: '10px 14px', borderBottom: '1px solid #2A2A2A',
+            color: '#888', fontSize: '0.72em', fontWeight: 700, letterSpacing: '1px',
+            background: '#0D0D0D',
+          }}>
+            ATIVOS ({filteredTickers.length})
+          </div>
+          <div style={{ overflowY: 'auto', flex: 1, padding: 6 }}>
+            {loadingAllStocks ? (
+              <div style={{ padding: '12px', color: '#666', fontSize: '0.85em', textAlign: 'center' }}>
+                Carregando ativos...
+              </div>
+            ) : sectorFilter && subsectorFilter && loadingProfiles ? (
+              <div style={{ padding: '12px', color: '#666', fontSize: '0.85em', textAlign: 'center' }}>
+                Carregando...
+              </div>
+            ) : filteredTickers.length === 0 ? (
+              <div style={{ padding: '12px', color: '#666', fontSize: '0.85em', textAlign: 'center' }}>
+                {sectorFilter ? 'Nenhum ativo encontrado' : 'Selecione um setor'}
+              </div>
+            ) : filteredTickers.map(t => {
+              const info = stockLookup[t];
+              const isActive = ticker === t;
+              const ptSector = info && sectorMapENtoPT[info.sector];
+              return (
+                <div
+                  key={t}
+                  onClick={() => setTicker(t)}
+                  style={{
+                    padding: '9px 12px', borderRadius: 6, cursor: 'pointer',
+                    background: isActive ? '#C8B80018' : 'transparent',
+                    border: isActive ? '1px solid #C8B80033' : '1px solid transparent',
+                    marginBottom: 2, transition: 'all 0.15s',
+                  }}
+                  onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = '#222' }}
+                  onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = 'transparent' }}
+                >
+                  <div style={{ color: isActive ? '#C8B800' : '#E0E0E0', fontWeight: 700, fontSize: '0.88em' }}>
+                    {t}
+                  </div>
+                  {info && (
+                    <div style={{ color: '#AAA', fontSize: '0.72em', marginTop: 1 }}>
+                      {info.name}
+                    </div>
+                  )}
+                  {ptSector && (
+                    <div style={{ color: '#666', fontSize: '0.68em', marginTop: 2 }}>
+                      {ptSector}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </aside>
 
-      
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16, flexWrap: 'wrap' }}>
+      <main style={{ flex: 1, minWidth: 0 }}>
+        <h1>Analisar Ações</h1>
+
+        
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16, flexWrap: 'wrap' }}>
         <span style={{ color: '#CCC', fontSize: '0.9em' }}>Setor:</span>
         <select
           value={sectorFilter}
@@ -264,7 +432,7 @@ function AnalisarAcoes() {
           ))}
         </select>
 
-        {(stocksLoading || industryLoading) && <span style={{ color: '#C8B800', fontSize: '0.85em' }}>Carregando dados...</span>}
+        
 
         {(sectorFilter || subsectorFilter) && (
           <button
@@ -280,12 +448,6 @@ function AnalisarAcoes() {
           </button>
         )}
       </div>
-
-      {filteredTickers.length > 0 && filteredTickers.length < tickersDisponiveis.length && (
-        <div style={{ marginBottom: 16, color: '#666', fontSize: '0.85em' }}>
-          {filteredTickers.length} de {tickersDisponiveis.length} ativo(s) exibidos
-        </div>
-      )}
 
       {ticker && ativo && (
         <div style={{
@@ -387,15 +549,16 @@ function AnalisarAcoes() {
             </table>
           </div>
         );
-      })}
+      }      )}
 
-      {ticker && !loading && !indicadores && !apiError && (
-        <div className="page-placeholder" style={{ height: '40%' }}>
-          <div className="icon">📊</div>
-          <h2>Sem dados disponíveis</h2>
-          <p>Não foi possível carregar os indicadores fundamentalistas para {ticker}.</p>
-        </div>
-      )}
+        {ticker && !loading && !indicadores && !apiError && (
+          <div className="page-placeholder" style={{ height: '40%' }}>
+            <div className="icon">📊</div>
+            <h2>Sem dados disponíveis</h2>
+            <p>Não foi possível carregar os indicadores fundamentalistas para {ticker}.</p>
+          </div>
+        )}
+      </main>
     </div>
   );
 }

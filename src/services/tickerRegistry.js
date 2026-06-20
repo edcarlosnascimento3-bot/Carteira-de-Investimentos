@@ -1,3 +1,5 @@
+import { listar as listarAtivos, atualizar as atualizarAtivo, adicionar as adicionarAtivo } from '../database/TickerCatalogService';
+
 const STORAGE_KEY = 'investimento_ticker_registry';
 
 let knownTickers = {};
@@ -31,12 +33,7 @@ function getRegistry() {
 export async function loadAtivosRegistry() {
   if (ativosLoaded) return;
   try {
-    const res = await fetch('/api/db/ativos');
-    if (!res.ok) {
-      console.warn('[tickerRegistry] loadAtivosRegistry fetch status:', res.status);
-      return;
-    }
-    const list = await res.json();
+    const list = await listarAtivos();
     const map = {};
     list.forEach(a => {
       if (!a.TICKER) return;
@@ -52,28 +49,6 @@ export async function loadAtivosRegistry() {
     knownTickers = map;
     cache = { ...map, ...load() };
     ativosLoaded = true;
-
-    try {
-      const tabelaRes = await fetch('/api/db/tabela_ativos');
-      if (tabelaRes.ok) {
-        const tabelaMap = await tabelaRes.json();
-        if (tabelaMap && typeof tabelaMap === 'object') {
-          Object.entries(tabelaMap).forEach(([ticker, url]) => {
-            const key = ticker.toUpperCase().trim();
-            if (knownTickers[key]) {
-              if (!knownTickers[key].imagem && url) {
-                knownTickers[key].imagem = url;
-              }
-            } else if (url) {
-              knownTickers[key] = { nome: '', cnpj: '', tipo: '', imagem: url, link: '' };
-            }
-          });
-          cache = { ...cache, ...knownTickers };
-        }
-      }
-    } catch (e) {
-      console.warn('[tickerRegistry] load tabela_ativos error:', e);
-    }
   } catch (e) {
     console.warn('[tickerRegistry] loadAtivosRegistry error:', e);
   }
@@ -100,53 +75,52 @@ export async function saveTickerInfo(ticker, info) {
   cache = reg;
   save(reg);
 
-  const imagemUrl = reg[ticker].imagem;
-
-  if (imagemUrl && info.imagem !== undefined) {
-    try {
-      const tabelaRes = await fetch('/api/db/tabela_ativos');
-      let tabelaData = {};
-      if (tabelaRes.ok) {
-        tabelaData = await tabelaRes.json();
-      }
-      tabelaData[ticker.toUpperCase()] = imagemUrl;
-      await fetch('/api/db/tabela_ativos', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(tabelaData),
-      });
-    } catch (e) {
-      console.warn('[tickerRegistry] save tabela_ativos error:', e);
-    }
-  }
-
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent('ticker-logo-updated', {
-      detail: { ticker: ticker.toUpperCase(), url: imagemUrl }
+      detail: { ticker: ticker.toUpperCase(), url: reg[ticker].imagem }
     }));
   }
 
   try {
-    const res = await fetch('/api/db/ativos', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(
-        Array.from(
-          new Map(
-            Object.entries(cache).map(([t, v]) => [
-              t,
-              { TICKER: t, NOME: v.nome, CNPJ: v.cnpj || '', TIPO: v.tipo, SEGMENTO: '', IMAGEM: v.imagem || '', LINK: v.link || '' }
-            ])
-          ).values()
-        )
-      ),
-    });
-    if (!res.ok) {
-      throw new Error(`Backend ${res.status}: ${res.statusText}`);
+    const info = reg[ticker];
+    const updated = await atualizarAtivo(ticker, info);
+    if (!updated) {
+      await adicionarAtivo({
+        TICKER: ticker,
+        NOME: info.nome || '',
+        CNPJ: info.cnpj || '',
+        TIPO: info.tipo || '',
+        IMAGEM: info.imagem || '',
+        LINK: info.link || ''
+      });
+      syncToServerJson(ticker, info);
     }
   } catch (e) {
-    console.warn('[tickerRegistry] saveTickerInfo fetch error:', e);
+    console.warn('[tickerRegistry] saveTickerInfo error:', e);
     throw e;
+  }
+}
+
+async function syncToServerJson(ticker, info) {
+  try {
+    const res = await fetch('/api/db/ativos');
+    const data = await res.json();
+    data.push({
+      TICKER: ticker,
+      NOME: info.nome || '',
+      CNPJ: info.cnpj || '',
+      TIPO: info.tipo || '',
+      IMAGEM: info.imagem || '',
+      LINK: info.link || ''
+    });
+    await fetch('/api/db/ativos', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    console.log(`[tickerRegistry] synced ${ticker} to db_ativos.json`);
+  } catch (e) {
+    console.warn('[tickerRegistry] syncToServerJson error:', e);
   }
 }
 

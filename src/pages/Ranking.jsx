@@ -2,6 +2,7 @@ import { useMemo, useState, useEffect } from 'react';
 import { useTransactions } from '../context/TransactionsContext';
 import { useProventos } from '../context/ProventosContext';
 import { formatCurrency } from '../services/format';
+import { usePrices } from '../hooks/usePrices';
 import LogoImage from '../components/LogoImage';
 
 const tabs = [
@@ -31,7 +32,8 @@ function Ranking() {
   const { transactions } = useTransactions();
   const { proventos } = useProventos();
   const [activeTab, setActiveTab] = useState('geral');
-  const [selectedAno, setSelectedAno] = useState(null);
+  const currentYear = new Date().getFullYear();
+  const [selectedAno, setSelectedAno] = useState(currentYear);
 
   const anos = useMemo(() => {
     return [...new Set(proventos.map(p => p.ano))].sort((a, b) => b - a);
@@ -39,7 +41,7 @@ function Ranking() {
 
   useEffect(() => {
     if (anos.length > 0 && selectedAno === null) {
-      setSelectedAno(anos[0]);
+      setSelectedAno(anos.includes(currentYear) ? currentYear : anos[0]);
     }
   }, [anos, selectedAno]);
 
@@ -73,6 +75,21 @@ function Ranking() {
     transactions.forEach(t => {
       if (!map[t.ticker]) map[t.ticker] = 0;
       map[t.ticker] += t.operacao === 'Compra' ? t.investido : -t.investido;
+    });
+    return map;
+  }, [transactions]);
+
+  const allTickers = useMemo(() => {
+    return [...new Set(proventos.map(p => p.ticker))];
+  }, [proventos]);
+
+  const { prices } = usePrices(allTickers);
+
+  const quantityMap = useMemo(() => {
+    const map = {};
+    transactions.forEach(t => {
+      if (!map[t.ticker]) map[t.ticker] = 0;
+      map[t.ticker] += t.operacao === 'Compra' ? t.quantidade : -t.quantidade;
     });
     return map;
   }, [transactions]);
@@ -111,16 +128,21 @@ function Ranking() {
     });
     const result = [];
     Object.entries(proventosAnoMap).forEach(([ticker, proventosTotal]) => {
+      const qtd = quantityMap[ticker] || 0;
+      const price = prices[ticker];
       const invested = investedMap[ticker] || 0;
-      if (invested > 0) {
+      const currentValue = qtd > 0 && price != null && price > 0
+        ? qtd * price
+        : invested;
+      if (currentValue > 0 && proventosTotal > 0) {
         result.push({
           ticker,
-          total: Math.round((proventosTotal / invested) * 10000) / 100,
+          total: Math.round((proventosTotal / currentValue) * 10000) / 100,
         });
       }
     });
     return result.sort((a, b) => b.total - a.total);
-  }, [proventos, investedMap, selectedAno]);
+  }, [proventos, prices, quantityMap, investedMap, selectedAno]);
 
   const currentData = useMemo(() => {
     switch (activeTab) {

@@ -1,5 +1,6 @@
 import { formatCurrency } from '../../services/format';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { listar as listarCorretoras } from '../../database/CorretoraService';
 
 const tipos = ['Ação', 'FII', 'Renda Fixa'];
 const operacoes = ['Compra', 'Venda'];
@@ -22,6 +23,11 @@ function EditTransactionModal({ data, transactions, onSave, onUpdateMultiple, on
   });
 
   const [cnpjConfirm, setCnpjConfirm] = useState(null);
+  const [corretoras, setCorretoras] = useState([]);
+
+  useEffect(() => {
+    listarCorretoras().then(setCorretoras).catch(() => {});
+  }, []);
 
   const investido = form.quantidade * form.valor + form.taxa;
 
@@ -152,7 +158,14 @@ function EditTransactionModal({ data, transactions, onSave, onUpdateMultiple, on
                 style={inputStyle}
                 value={form.corretora}
                 onChange={(e) => handleChange('corretora', e.target.value)}
+                list="corretoras-list"
+                placeholder="Digite ou selecione..."
               />
+              <datalist id="corretoras-list">
+                {corretoras.map((c) => (
+                  <option key={c.id} value={c.nome} />
+                ))}
+              </datalist>
             </div>
 
             <div style={groupStyle}>
