@@ -48,7 +48,7 @@ const pages = {
 };
 
 function App() {
-  const { user, loading } = useAuth();
+  const { user, loading, signOut } = useAuth();
   const [activePage, setActivePage] = useState('principal');
   const { userName, setUserName, avatar, setAvatar } = useUser();
   const [editing, setEditing] = useState(false);
