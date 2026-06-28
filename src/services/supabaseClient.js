@@ -5,7 +5,7 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
 if (!supabaseUrl || !supabaseAnonKey) {
   console.warn(
-    '[supabase] Credenciais ausentes. Defina VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY no .env'
+    '[supabase] Credenciais ausentes. Defina VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY'
   )
 }
 
