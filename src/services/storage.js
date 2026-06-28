@@ -68,41 +68,46 @@ async function getCurrentUserId() {
   return user?.id ?? null;
 }
 
-async function readSupabase(name) {
-  try {
-    const userId = await getCurrentUserId();
-    if (userId) {
-      const { data, error } = await supabase
-        .from('app_data')
-        .select('value')
-        .eq('key', name)
-        .eq('user_id', userId)
-        .single();
-      if (!error && data?.value) return data.value;
-    }
+async function readSupabase(name, retries = 5, delay = 600) {
+  for (let attempt = 0; attempt < retries; attempt++) {
+    try {
+      const userId = await getCurrentUserId();
 
-    const { data: legacy, error: legacyError } = await supabase
-      .from('app_data')
-      .select('value')
-      .eq('key', name)
-      .eq('user_id', PLACEHOLDER_UUID)
-      .single();
-
-    if (!legacyError && legacy?.value) {
       if (userId) {
-        await supabase.from('app_data')
-          .update({ user_id: userId })
+        const { data, error } = await supabase
+          .from('app_data')
+          .select('value')
           .eq('key', name)
-          .eq('user_id', PLACEHOLDER_UUID);
-      }
-      return legacy.value;
-    }
+          .eq('user_id', userId)
+          .maybeSingle();
+        if (!error && data?.value) return data.value;
 
-    return null;
-  } catch (e) {
-    console.warn('[storage] Supabase read falhou:', name, e.message);
-    return null;
+        // Fallback: dados ainda sob o placeholder UUID
+        const { data: legacy, error: legacyError } = await supabase
+          .from('app_data')
+          .select('value')
+          .eq('key', name)
+          .eq('user_id', PLACEHOLDER_UUID)
+          .maybeSingle();
+
+        if (!legacyError && legacy?.value) {
+          await supabase.from('app_data')
+            .upsert({ key: name, value: legacy.value, user_id: userId });
+          return legacy.value;
+        }
+
+        // Se tem userId e não achou nada, retorna null (usuário novo ou sem dados)
+        return null;
+      }
+
+      // Ainda sem sessao — aguarda e tenta de novo
+      await new Promise(r => setTimeout(r, delay));
+    } catch (e) {
+      console.warn('[storage] Supabase read tentativa', attempt, 'falhou:', name, e.message);
+      if (attempt < retries - 1) await new Promise(r => setTimeout(r, delay));
+    }
   }
+  return null;
 }
 
 async function writeSupabase(name, data) {

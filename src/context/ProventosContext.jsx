@@ -1,52 +1,48 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import db from '../services/storage';
+import { supabase } from '../services/supabaseClient';
 
 const ProventosContext = createContext(null);
 
 const STORAGE_NAME = 'proventos';
 
-function getInitialData() {
-  try {
-    const stored = localStorage.getItem('investimento_proventos');
-    if (stored) {
-      const data = JSON.parse(stored);
-      if (Array.isArray(data) && data.length > 0) return data;
-    }
-  } catch {}
-  return [];
-}
-
 let _proventoNextId = Date.now();
 
 export function ProventosProvider({ children }) {
-  const [proventos, setProventos] = useState(getInitialData);
+  const [proventos, setProventos] = useState([]);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     db.read(STORAGE_NAME).then((data) => {
       if (data && Array.isArray(data) && data.length > 0) {
         setProventos(data);
+      } else {
+        // fallback: tentar carregar do localStorage legacy (antes do escopo por user_id)
+        try {
+          const legacy = localStorage.getItem('investimento_proventos');
+          if (legacy) {
+            const parsed = JSON.parse(legacy);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              setProventos(parsed);
+              db.write(STORAGE_NAME, parsed);
+            }
+          }
+        } catch {}
       }
       setLoaded(true);
     });
   }, []);
 
-  // Failsafe beforeunload para garantir salvamento imediato síncrono no localStorage
   useEffect(() => {
-    const handleBeforeUnload = () => {
-      if (loaded) {
-        localStorage.setItem(`investimento_${STORAGE_NAME}`, JSON.stringify(proventos));
-      }
-    };
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    if (loaded && proventos.length > 0) {
+      localStorage.setItem(`investimento_proventos`, JSON.stringify(proventos));
+    }
   }, [proventos, loaded]);
 
   const addProvento = (entry) => {
     const newProv = { id: ++_proventoNextId, ...entry };
     setProventos((prev) => {
       const next = [newProv, ...prev];
-      localStorage.setItem(`investimento_${STORAGE_NAME}`, JSON.stringify(next));
       db.write(STORAGE_NAME, next);
       return next;
     });
@@ -55,7 +51,6 @@ export function ProventosProvider({ children }) {
   const updateProvento = (id, data) => {
     setProventos((prev) => {
       const next = prev.map((t) => (t.id === id ? { ...t, ...data, id } : t));
-      localStorage.setItem(`investimento_${STORAGE_NAME}`, JSON.stringify(next));
       db.write(STORAGE_NAME, next);
       return next;
     });
@@ -64,7 +59,6 @@ export function ProventosProvider({ children }) {
   const removeProvento = (id) => {
     setProventos((prev) => {
       const next = prev.filter((t) => t.id !== id);
-      localStorage.setItem(`investimento_${STORAGE_NAME}`, JSON.stringify(next));
       db.write(STORAGE_NAME, next);
       return next;
     });
@@ -72,7 +66,6 @@ export function ProventosProvider({ children }) {
 
   const clearProventos = () => {
     setProventos([]);
-    localStorage.setItem(`investimento_${STORAGE_NAME}`, JSON.stringify([]));
     db.write(STORAGE_NAME, []);
   };
 

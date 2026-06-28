@@ -1,6 +1,7 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { formatCurrency } from '../services/format';
 import { useTransactions } from '../context/TransactionsContext';
+import { useProventos } from '../context/ProventosContext';
 import { usePrices } from '../hooks/usePrices';
 import LogoImage from '../components/LogoImage';
 
@@ -30,6 +31,7 @@ const borderColors = {
 
 function Principal() {
   const { transactions } = useTransactions();
+  const { proventos } = useProventos();
 
   const tickers = useMemo(() => {
     const groups = {};
@@ -105,7 +107,17 @@ function Principal() {
     return { patrimonio, investido, diferenca, rendimentoPct, totalTax };
   }, [portfolio, transactions]);
 
-
+  const dividendosMes = useMemo(() => {
+    const agora = new Date();
+    const mes = String(agora.getMonth() + 1).padStart(2, '0');
+    const ano = agora.getFullYear();
+    return proventos
+      .filter((p) => {
+        const partes = p.data?.split('/');
+        return partes && partes[1] === mes && Number(partes[2]) === ano;
+      })
+      .reduce((soma, p) => soma + (p.dividendos || 0) + (p.jcp || 0) + (p.rendimento || 0) + (p.reembolso || 0), 0);
+  }, [proventos]);
 
   const formatNumber = (v) =>
     v.toLocaleString('pt-BR');
@@ -177,8 +189,10 @@ function Principal() {
         <div className="widget-card">
           <div className="card-content">
             <div className="label">DIVIDENDOS</div>
-            <div className="value">R$ 320,40</div>
-            <div className="change positive">último mês</div>
+            <div className="value" style={{ color: dividendosMes > 0 ? '#00E676' : '#555568' }}>
+              {formatCurrency(dividendosMes)}
+            </div>
+            <div className="change positive">este mês</div>
           </div>
           <div className="card-icon icon-bounce" style={{ fontSize: 36 }}>💵</div>
         </div>
