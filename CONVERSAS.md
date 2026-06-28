@@ -86,6 +86,19 @@
 **Decisões:**
 - Blocos Proventos Mensais e Proventos por Tipo movidos para o topo (antes de Investimento e Evolução)
 - Criado array `INTL_COLORS` separado para o gráfico Internacional (marrom escuro + verde claro)
-- `CHART_COLORS` original mantido para os demais gráficos
+ - `CHART_COLORS` original mantido para os demais gráficos
 **Pendências:**
 - Nenhuma
+
+## 2026-06-20
+
+**Foco:** Redesign do filtro setor/subsetor em AnalisarAcoes — busca ativos da B3 via brapi API em vez de filtrar transações do usuário
+**Arquivos alterados:** `src/pages/AnalisarAcoes.jsx`
+**Decisões:**
+- `sectorMapENtoPT`/`industryMapENtoPT` mapeiam inglês→português; `sectorPTtoEN`/`subsectorPTtoEN` revertem para filtrar
+- `allStocks` carregado uma vez no mount via `fetchAllStocksWithSectors()`
+- Perfis (com `industry`) buscados sob demanda apenas quando setor+subsetor selecionados
+- `uniqueTickers` (derivado de transações) removido da lógica de filtro
+- Sidebar exibe nome da empresa + setor em português; `loadingAllStocks` e `loadingProfiles` controlam loading states
+**Pendências:**
+- Testar usabilidade: clique em ativo fora do portfólio, loading states, filtro combinado setor+subsetor

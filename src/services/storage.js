@@ -1,3 +1,5 @@
+import { supabase } from './supabaseClient';
+
 const DB_NAME = 'InvestmentDB';
 const DB_VERSION = 1;
 
@@ -36,55 +38,6 @@ async function idbRead(name) {
   });
 }
 
-async function writeElectron(name, data) {
-  if (!window.electronAPI?.db) return false;
-  try {
-    return await window.electronAPI.db.write(name, data);
-  } catch (e) {
-    console.warn('[storage] Electron write falhou:', name, e);
-    return false;
-  }
-}
-
-async function readElectron(name) {
-  if (!window.electronAPI?.db) return null;
-  try {
-    return await window.electronAPI.db.read(name);
-  } catch (e) {
-    console.warn('[storage] Electron read falhou:', name, e);
-    return null;
-  }
-}
-
-async function writeVite(name, data) {
-  try {
-    const res = await fetch(`/api/db/${name}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-    });
-    if (!res.ok) console.warn('[storage] Vite write status:', res.status, name);
-    return res.ok;
-  } catch (e) {
-    console.warn('[storage] Vite write fetch falhou:', name, e);
-    return false;
-  }
-}
-
-async function readVite(name) {
-  try {
-    const res = await fetch(`/api/db/${name}`);
-    if (res.ok) {
-      const data = await res.json();
-      return data;
-    }
-    return null;
-  } catch (e) {
-    console.warn('[storage] Vite read fetch falhou:', name, e);
-    return null;
-  }
-}
-
 function writeLocalStorage(name, data) {
   try {
     localStorage.setItem(`investimento_${name}`, JSON.stringify(data));
@@ -105,27 +58,45 @@ function readLocalStorage(name) {
   }
 }
 
+async function readSupabase(name) {
+  try {
+    const { data, error } = await supabase
+      .from('app_data')
+      .select('value')
+      .eq('key', name)
+      .single();
+    if (error) throw error;
+    return data?.value ?? null;
+  } catch (e) {
+    console.warn('[storage] Supabase read falhou:', name, e.message);
+    return null;
+  }
+}
+
+async function writeSupabase(name, data) {
+  try {
+    const { error } = await supabase
+      .from('app_data')
+      .upsert({ key: name, value: data });
+    if (error) throw error;
+    return true;
+  } catch (e) {
+    console.warn('[storage] Supabase write falhou:', name, e.message);
+    return false;
+  }
+}
+
 const db = {
   async read(name) {
-    // 1. localStorage (mais recente, salvo sempre que algo muda)
-    const ls = readLocalStorage(name);
-    if (ls) return ls;
+    const cached = readLocalStorage(name);
+    if (cached) return cached;
 
-    // 2. Electron IPC
-    const electron = await readElectron(name);
-    if (electron) {
-      writeLocalStorage(name, electron);
-      return electron;
+    const remote = await readSupabase(name);
+    if (remote) {
+      writeLocalStorage(name, remote);
+      return remote;
     }
 
-    // 3. Vite / arquivo local
-    const vite = await readVite(name);
-    if (vite) {
-      writeLocalStorage(name, vite);
-      return vite;
-    }
-
-    // 4. IndexedDB (backup)
     try {
       const idb = await idbRead(name);
       if (idb) {
@@ -139,29 +110,18 @@ const db = {
     return null;
   },
 
-  async write(name, data, skipFileWrite = false) {
-    const errors = [];
-
-    // 1. localStorage (sempre, mais rápido e cache principal)
+  async write(name, data) {
     writeLocalStorage(name, data);
 
-    // 2. Electron IPC
-    await writeElectron(name, data);
+    await writeSupabase(name, data);
 
-    // 3. Vite / arquivo local
-    if (!skipFileWrite) {
-      await writeVite(name, data);
-    }
-
-    // 4. IndexedDB (backup)
     try {
       await idbWrite(name, data);
     } catch (e) {
       console.warn('[storage] IndexedDB write falhou:', name, e);
-      errors.push(e);
     }
 
-    return errors.length === 0;
+    return true;
   },
 };
 

@@ -1,15 +1,14 @@
 {
-  "name": "investment-app",
-  "version": "1.0.0",
-  "description": "Aplicativo Desktop de Investimentos",
+  "name": "carteira-investimentos",
+  "version": "2.0.0",
+  "description": "Carteira de Investimentos — Web",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview",
-    "electron": "electron .",
-    "dev:electron": "concurrently \"vite\" \"wait-on http://localhost:5173 && electron .\""
+    "preview": "vite preview"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.108.2",
     "plotly.js-dist": "^3.5.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
