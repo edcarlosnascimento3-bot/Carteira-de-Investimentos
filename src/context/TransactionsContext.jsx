@@ -7,41 +7,19 @@ export { TransactionsContext };
 
 const STORAGE_NAME = 'transactions';
 
-const initialData = [
-  {
-    id: 1, imagem: null, ticker: 'PETR4', ativo: 'Petrobras PN',
-    cnpj: '33.000.167/0001-01', tipo: 'Ação', segmento: 'Óleo e Gás',
-    operacao: 'Compra', data: '02/01/2026', ano: 2026,
-    quantidade: 200, valor: 35.12, taxa: 19.90, investido: 7043.90, patrimonio: 7684.00, corretora: 'Clear',
-  },
-  {
-    id: 2, imagem: null, ticker: 'VALE3', ativo: 'Vale ON',
-    cnpj: '33.592.510/0001-54', tipo: 'Ação', segmento: 'Mineração',
-    operacao: 'Compra', data: '15/01/2026', ano: 2026,
-    quantidade: 100, valor: 62.80, taxa: 9.90, investido: 6289.90, patrimonio: 6815.00, corretora: 'XP Investimentos',
-  },
-  {
-    id: 3, imagem: null, ticker: 'HGLG11', ativo: 'CSHG Logística FII',
-    cnpj: '10.287.354/0001-36', tipo: 'FII', segmento: 'Logística',
-    operacao: 'Compra', data: '20/02/2026', ano: 2026,
-    quantidade: 50, valor: 172.50, taxa: 0, investido: 8625.00, patrimonio: 8940.00, corretora: 'Nu Invest',
-  },
-  {
-    id: 4, imagem: null, ticker: 'ITUB4', ativo: 'Itaú Unibanco PN',
-    cnpj: '60.872.504/0001-23', tipo: 'Ação', segmento: 'Financeiro',
-    operacao: 'Compra', data: '05/03/2026', ano: 2026,
-    quantidade: 150, valor: 32.40, taxa: 14.90, investido: 4874.90, patrimonio: 4864.50, corretora: 'Itaú',
-  },
-  {
-    id: 5, imagem: null, ticker: 'PETR4', ativo: 'Petrobras PN',
-    cnpj: '33.000.167/0001-01', tipo: 'Ação', segmento: 'Óleo e Gás',
-    operacao: 'Venda', data: '10/04/2026', ano: 2026,
-    quantidade: 50, valor: 38.42, taxa: 9.90, investido: 1911.10, patrimonio: 1921.00, corretora: 'Clear',
-  },
-];
+function getInitialData() {
+  try {
+    const stored = localStorage.getItem('investimento_transactions');
+    if (stored) {
+      const data = JSON.parse(stored);
+      if (Array.isArray(data) && data.length > 0) return data;
+    }
+  } catch {}
+  return [];
+}
 
 export function TransactionsProvider({ children }) {
-  const [transactions, setTransactions] = useState(initialData);
+  const [transactions, setTransactions] = useState(getInitialData);
   const [loaded, setLoaded] = useState(false);
   const transactionsRef = useRef(transactions);
 
@@ -51,13 +29,10 @@ export function TransactionsProvider({ children }) {
 
   useEffect(() => {
     db.read(STORAGE_NAME).then((data) => {
-      if (data !== null && Array.isArray(data)) {
+      if (data !== null && Array.isArray(data) && data.length > 0) {
         setTransactions(data);
-        buildRegistryFromTransactions(data);
-        buildRegistryFromTransactions(initialData);
-      } else {
-        buildRegistryFromTransactions(initialData);
       }
+      buildRegistryFromTransactions(data && Array.isArray(data) && data.length > 0 ? data : transactions);
       setLoaded(true);
     });
   }, []);

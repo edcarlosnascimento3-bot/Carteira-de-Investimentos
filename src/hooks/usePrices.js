@@ -1,33 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { fetchStockQuotes } from '../services/api';
 
-const mockData = {
-  PETR4: { price: 38.42, change: 2.45 },
-  VALE3: { price: 68.15, change: 1.98 },
-  HGLG11: { price: 178.80, change: 0.52 },
-  ITUB4: { price: 32.90, change: -0.34 },
-  ABEV3: { price: 14.28, change: -0.55 },
-  BBAS3: { price: 52.30, change: 0.89 },
-  WEGE3: { price: 42.15, change: 1.23 },
-  KNRI11: { price: 145.20, change: -0.42 },
-  MXRF11: { price: 9.87, change: 0.35 },
-  BTC: { price: 425000.00, change: 3.15 },
-  ETH: { price: 28500.00, change: 2.78 },
-  USDBRL: { price: 5.87, change: -0.18 },
-  EURBRL: { price: 6.42, change: 0.25 },
-};
-
 export function usePrices(tickers = []) {
-  const [prices, setPrices] = useState(() => {
-    const initial = {};
-    tickers.forEach((t) => { initial[t] = mockData[t]?.price ?? null; });
-    return initial;
-  });
-  const [changes, setChanges] = useState(() => {
-    const initial = {};
-    tickers.forEach((t) => { if (mockData[t]) initial[t] = mockData[t].change; });
-    return initial;
-  });
+  const [prices, setPrices] = useState({});
+  const [changes, setChanges] = useState({});
   const [loading, setLoading] = useState(false);
   const mountedRef = useRef(true);
 
@@ -44,8 +20,6 @@ export function usePrices(tickers = []) {
       unique.forEach((t) => {
         if (result[t]?.price) {
           next[t] = result[t].price;
-        } else if (next[t] === null) {
-          next[t] = mockData[t]?.price ?? null;
         }
       });
       return next;
@@ -56,8 +30,6 @@ export function usePrices(tickers = []) {
       unique.forEach((t) => {
         if (result[t]?.change !== undefined) {
           next[t] = result[t].change;
-        } else if (next[t] === undefined && mockData[t]) {
-          next[t] = mockData[t].change;
         }
       });
       return next;

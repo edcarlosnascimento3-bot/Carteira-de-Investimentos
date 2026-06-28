@@ -1,10 +1,8 @@
 import { useMemo, useState } from 'react';
-import { formatCurrency, formatNumber } from '../services/format';
+import { formatCurrency } from '../services/format';
 import { useTransactions } from '../context/TransactionsContext';
 import { usePrices } from '../hooks/usePrices';
 import LogoImage from '../components/LogoImage';
-
-const defaultTickers = ['PETR4', 'VALE3', 'ITUB4', 'ABEV3', 'BBAS3', 'WEGE3', 'HGLG11', 'KNRI11', 'BTC', 'ETH'];
 
 const typeIcons = {
   'Ação': '📈',
@@ -48,7 +46,7 @@ function Principal() {
     if (tipos.has('Dólar') && !portfolioTickers.includes('USDBRL')) portfolioTickers.push('USDBRL');
     if (tipos.has('Euro') && !portfolioTickers.includes('EURBRL')) portfolioTickers.push('EURBRL');
     
-    return [...new Set([...defaultTickers, ...portfolioTickers])];
+    return [...new Set(portfolioTickers)];
   }, [transactions]);
 
   const { prices, changes } = usePrices(tickers);

@@ -5,18 +5,21 @@ const ProventosContext = createContext(null);
 
 const STORAGE_NAME = 'proventos';
 
-const initialData = [
-  { id: 1, ticker: 'PETR4', nome: 'Petrobras PN', tipo: 'Ação', data: '15/01/2026', ano: 2026, dividendos: 0, jcp: 350.00, rendimento: 0, reembolso: 0, observacao: 'JCP referente ao 3T25' },
-  { id: 2, ticker: 'VALE3', nome: 'Vale ON', tipo: 'Ação', data: '20/02/2026', ano: 2026, dividendos: 420.50, jcp: 0, rendimento: 0, reembolso: 0, observacao: 'Dividendos' },
-  { id: 3, ticker: 'HGLG11', nome: 'CSHG Logística FII', tipo: 'FII', data: '10/03/2026', ano: 2026, dividendos: 85.00, jcp: 0, rendimento: 0, reembolso: 0, observacao: '' },
-  { id: 4, ticker: 'ITUB4', nome: 'Itaú Unibanco PN', tipo: 'Ação', data: '05/04/2026', ano: 2026, dividendos: 0, jcp: 0, rendimento: 120.00, reembolso: 0, observacao: '' },
-  { id: 5, ticker: 'PETR4', nome: 'Petrobras PN', tipo: 'Ação', data: '02/05/2026', ano: 2026, dividendos: 0, jcp: 0, rendimento: 0, reembolso: 50.00, observacao: 'Reembolso taxa' },
-];
+function getInitialData() {
+  try {
+    const stored = localStorage.getItem('investimento_proventos');
+    if (stored) {
+      const data = JSON.parse(stored);
+      if (Array.isArray(data) && data.length > 0) return data;
+    }
+  } catch {}
+  return [];
+}
 
 let _proventoNextId = Date.now();
 
 export function ProventosProvider({ children }) {
-  const [proventos, setProventos] = useState(initialData);
+  const [proventos, setProventos] = useState(getInitialData);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {

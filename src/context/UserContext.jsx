@@ -6,8 +6,19 @@ const UserContext = createContext(null);
 const STORAGE_NAME = 'user';
 const AVATAR_IDB_KEY = 'investimento_user_avatar';
 
+function getInitialName() {
+  try {
+    const stored = localStorage.getItem('investimento_user');
+    if (stored) {
+      const data = JSON.parse(stored);
+      if (data?.userName) return data.userName;
+    }
+  } catch {}
+  return '';
+}
+
 export function UserProvider({ children }) {
-  const [userName, setUserName] = useState('Investidor');
+  const [userName, setUserName] = useState(getInitialName);
   const [avatar, setAvatar] = useState(null);
   const [loaded, setLoaded] = useState(false);
 
