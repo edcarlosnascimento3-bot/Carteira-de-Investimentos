@@ -94,6 +94,23 @@ body {
   background: #1A1A00;
   cursor: text;
 }
+
+.btn-sair {
+  background: transparent;
+  border: 1px solid #C8B80044;
+  color: #C8B800;
+  font-family: inherit;
+  font-size: 0.8em;
+  padding: 6px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.btn-sair:hover {
+  background: #C8B80018;
+  border-color: #C8B800;
+}
+
 .user-name.editing {
   background: #1A1A00;
   border: 1px solid #C8B80044;

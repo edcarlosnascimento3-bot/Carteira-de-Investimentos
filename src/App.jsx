@@ -125,6 +125,10 @@ function App() {
             👤
           </label>
         )}
+
+        <button className="btn-sair" onClick={signOut}>
+          Sair
+        </button>
       </div>
 
       <main className="main-content">
