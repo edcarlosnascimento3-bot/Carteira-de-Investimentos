@@ -1,5 +1,7 @@
 import { useRef, useEffect } from 'react';
 import { useUser } from './context/UserContext';
+import { useAuth } from './context/AuthContext';
+import LoginPage from './pages/LoginPage';
 import { loadAtivosRegistry } from './services/tickerRegistry';
 import Sidebar from './components/Layout/Sidebar';
 import Principal from './pages/Principal';
@@ -46,12 +48,19 @@ const pages = {
 };
 
 function App() {
+  const { user, loading } = useAuth();
   const [activePage, setActivePage] = useState('principal');
   const { userName, setUserName, avatar, setAvatar } = useUser();
   const [editing, setEditing] = useState(false);
   const inputRef = useRef(null);
 
   useEffect(() => { loadAtivosRegistry(); }, []);
+
+  if (loading) return null;
+
+  if (!user) {
+    return <LoginPage />;
+  }
 
   const PageComponent = pages[activePage] || Principal;
 

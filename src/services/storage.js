@@ -1,5 +1,6 @@
 import { supabase } from './supabaseClient';
 
+const PLACEHOLDER_UUID = '00000000-0000-0000-0000-000000000000';
 const DB_NAME = 'InvestmentDB';
 const DB_VERSION = 1;
 
@@ -38,9 +39,13 @@ async function idbRead(name) {
   });
 }
 
-function writeLocalStorage(name, data) {
+function lsKey(name, userId) {
+  return userId ? `investimento_${userId}_${name}` : `investimento_${name}`;
+}
+
+function writeLocalStorage(name, data, userId) {
   try {
-    localStorage.setItem(`investimento_${name}`, JSON.stringify(data));
+    localStorage.setItem(lsKey(name, userId), JSON.stringify(data));
     return true;
   } catch (e) {
     console.warn('[storage] localStorage write falhou:', name, e);
@@ -48,9 +53,9 @@ function writeLocalStorage(name, data) {
   }
 }
 
-function readLocalStorage(name) {
+function readLocalStorage(name, userId) {
   try {
-    const raw = localStorage.getItem(`investimento_${name}`);
+    const raw = localStorage.getItem(lsKey(name, userId));
     return raw ? JSON.parse(raw) : null;
   } catch (e) {
     console.warn('[storage] localStorage read falhou:', name, e);
@@ -58,15 +63,42 @@ function readLocalStorage(name) {
   }
 }
 
+async function getCurrentUserId() {
+  const { data: { user } } = await supabase.auth.getUser();
+  return user?.id ?? null;
+}
+
 async function readSupabase(name) {
   try {
-    const { data, error } = await supabase
+    const userId = await getCurrentUserId();
+    if (userId) {
+      const { data, error } = await supabase
+        .from('app_data')
+        .select('value')
+        .eq('key', name)
+        .eq('user_id', userId)
+        .single();
+      if (!error && data?.value) return data.value;
+    }
+
+    const { data: legacy, error: legacyError } = await supabase
       .from('app_data')
       .select('value')
       .eq('key', name)
+      .eq('user_id', PLACEHOLDER_UUID)
       .single();
-    if (error) throw error;
-    return data?.value ?? null;
+
+    if (!legacyError && legacy?.value) {
+      if (userId) {
+        await supabase.from('app_data')
+          .update({ user_id: userId })
+          .eq('key', name)
+          .eq('user_id', PLACEHOLDER_UUID);
+      }
+      return legacy.value;
+    }
+
+    return null;
   } catch (e) {
     console.warn('[storage] Supabase read falhou:', name, e.message);
     return null;
@@ -75,9 +107,11 @@ async function readSupabase(name) {
 
 async function writeSupabase(name, data) {
   try {
+    const userId = await getCurrentUserId();
+    if (!userId) return false;
     const { error } = await supabase
       .from('app_data')
-      .upsert({ key: name, value: data });
+      .upsert({ key: name, value: data, user_id: userId });
     if (error) throw error;
     return true;
   } catch (e) {
@@ -88,19 +122,20 @@ async function writeSupabase(name, data) {
 
 const db = {
   async read(name) {
-    const cached = readLocalStorage(name);
+    const userId = await getCurrentUserId();
+    const cached = readLocalStorage(name, userId);
     if (cached) return cached;
 
     const remote = await readSupabase(name);
     if (remote) {
-      writeLocalStorage(name, remote);
+      writeLocalStorage(name, remote, userId);
       return remote;
     }
 
     try {
       const idb = await idbRead(name);
       if (idb) {
-        writeLocalStorage(name, idb);
+        writeLocalStorage(name, idb, userId);
         return idb;
       }
     } catch (e) {
@@ -111,7 +146,8 @@ const db = {
   },
 
   async write(name, data) {
-    writeLocalStorage(name, data);
+    const userId = await getCurrentUserId();
+    writeLocalStorage(name, data, userId);
 
     await writeSupabase(name, data);
 
