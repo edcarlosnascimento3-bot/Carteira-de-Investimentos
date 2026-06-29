@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import db from '../services/storage';
 import { supabase } from '../services/supabaseClient';
+import { useAuth } from './AuthContext';
 
 const ProventosContext = createContext(null);
 
@@ -9,10 +10,13 @@ const STORAGE_NAME = 'proventos';
 let _proventoNextId = Date.now();
 
 export function ProventosProvider({ children }) {
+  const { user } = useAuth();
   const [proventos, setProventos] = useState([]);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
+    if (!user) return;
+
     db.read(STORAGE_NAME).then((data) => {
       if (data && Array.isArray(data) && data.length > 0) {
         setProventos(data);
@@ -31,7 +35,7 @@ export function ProventosProvider({ children }) {
       }
       setLoaded(true);
     });
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     if (loaded && proventos.length > 0) {

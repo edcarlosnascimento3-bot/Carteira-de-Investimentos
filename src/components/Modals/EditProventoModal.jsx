@@ -110,8 +110,14 @@ function EditProventoModal({ data, onSave, onClose, tickerList, tickerNomeMap, t
   };
 
   const handleConfirmSim = () => {
+    console.log('handleConfirmSim chamado');
+    setForm({ ...INITIAL_FORM });
+    setFilterText('');
     setShowConfirm(false);
-    resetForm();
+    setTimeout(() => {
+      console.log('focus timeout');
+      inputRef.current?.focus();
+    }, 50);
   };
 
   const handleConfirmNao = () => {

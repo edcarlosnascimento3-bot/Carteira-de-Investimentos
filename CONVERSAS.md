@@ -102,3 +102,14 @@
 - Sidebar exibe nome da empresa + setor em português; `loadingAllStocks` e `loadingProfiles` controlam loading states
 **Pendências:**
 - Testar usabilidade: clique em ativo fora do portfólio, loading states, filtro combinado setor+subsetor
+
+## 2026-06-28
+
+**Foco:** Deploy Vercel + correção tela preta pós-login
+**Arquivos alterados:** `src/App.jsx`
+**Decisões:**
+- `signOut` faltava no destructuring de `useAuth()` — causava ReferenceError ao renderizar o app após login
+- Env vars do Vercel estavam vazias (causa do Invalid API key) — deletadas e recriadas via API
+- Link correto: `https://carteira-de-investimentos-beryl.vercel.app`
+**Pendências:**
+- Testar login do seed user e confirmar que dados carregam

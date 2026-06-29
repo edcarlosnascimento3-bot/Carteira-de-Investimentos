@@ -128,13 +128,26 @@ async function writeSupabase(name, data) {
 const db = {
   async read(name) {
     const userId = await getCurrentUserId();
+
+    // 1) Tenta localStorage escopado por userId
     const cached = readLocalStorage(name, userId);
     if (cached) return cached;
 
+    // 2) Tenta Supabase
     const remote = await readSupabase(name);
     if (remote) {
       writeLocalStorage(name, remote, userId);
       return remote;
+    }
+
+    // 3) Tenta localStorage legacy (sem userId) e sincroniza pro Supabase
+    if (userId) {
+      const legacy = readLocalStorage(name, null);
+      if (legacy) {
+        await writeSupabase(name, legacy);
+        writeLocalStorage(name, legacy, userId);
+        return legacy;
+      }
     }
 
     try {
