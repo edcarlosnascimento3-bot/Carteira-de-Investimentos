@@ -1,6 +1,7 @@
 import { useMemo, useState, useCallback, useRef, useLayoutEffect, useEffect } from 'react';
 import { useTransactions } from '../context/TransactionsContext';
 import { useProventos } from '../context/ProventosContext';
+import { useRfManual } from '../context/RfManualContext';
 import { formatCurrency } from '../services/format';
 import { usePrices } from '../hooks/usePrices';
 import * as CorretoraService from '../database/CorretoraService';
@@ -246,10 +247,9 @@ function Graficos() {
     setSelectedTicker(prev => prev === ticker ? null : ticker);
   }, []);
 
-  const portfolioBase = useMemo(() => {
-    let manualAtual = {};
-    try { manualAtual = JSON.parse(localStorage.getItem('investimento_rf_manual')) || {}; } catch {}
+  const { rfManual } = useRfManual();
 
+  const portfolioBase = useMemo(() => {
     const groups = {};
     transactions.forEach(t => {
       if (!groups[t.ticker]) {
@@ -271,8 +271,8 @@ function Graficos() {
       const precoMedio = quantidade > 0 ? investido / quantidade : 0;
       const tipoNorm = g.tipo;
       const isManual = ['Renda Fixa', 'Dólar', 'Euro'].includes(tipoNorm);
-      const cotacao = isManual && manualAtual[g.ticker] != null
-        ? manualAtual[g.ticker] / quantidade
+      const cotacao = isManual && rfManual[g.ticker] != null
+        ? rfManual[g.ticker] / quantidade
         : tipoNorm === 'Renda Fixa'
           ? precoMedio
           : tipoNorm === 'Dólar'
@@ -283,7 +283,7 @@ function Graficos() {
       const atual = cotacao != null ? quantidade * cotacao : 0;
       return { ...g, quantidade, investido, precoMedio, atual };
     }).filter(g => g.quantidade > 0);
-  }, [transactions, prices]);
+  }, [transactions, prices, rfManual]);
 
   const qtdData = useMemo(() => {
     return [...portfolioBase]

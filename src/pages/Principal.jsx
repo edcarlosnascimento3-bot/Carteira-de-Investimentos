@@ -1,7 +1,8 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { formatCurrency } from '../services/format';
 import { useTransactions } from '../context/TransactionsContext';
 import { useProventos } from '../context/ProventosContext';
+import { useRfManual } from '../context/RfManualContext';
 import { usePrices } from '../hooks/usePrices';
 import LogoImage from '../components/LogoImage';
 
@@ -32,6 +33,7 @@ const borderColors = {
 function Principal() {
   const { transactions } = useTransactions();
   const { proventos } = useProventos();
+  const { rfManual } = useRfManual();
 
   const tickers = useMemo(() => {
     const groups = {};
@@ -54,8 +56,6 @@ function Principal() {
   const { prices, changes } = usePrices(tickers);
 
   const portfolio = useMemo(() => {
-    let manualAtual = {};
-    try { manualAtual = JSON.parse(localStorage.getItem('investimento_rf_manual')) || {}; } catch {}
     const groups = {};
     transactions.forEach((t) => {
       if (!groups[t.ticker]) {
@@ -79,8 +79,8 @@ function Principal() {
       const precoMedio = quantidade > 0 ? investido / quantidade : 0;
       const tipoNorm = g.tipo.replace(/Fii/g, 'FII');
       const isManual = ['Renda Fixa', 'Dólar', 'Euro'].includes(tipoNorm);
-      const cotacao = isManual && manualAtual[g.ticker] != null
-        ? manualAtual[g.ticker] / quantidade
+      const cotacao = isManual && rfManual[g.ticker] != null
+        ? rfManual[g.ticker] / quantidade
         : tipoNorm === 'Renda Fixa'
           ? precoMedio
           : tipoNorm === 'Dólar'
@@ -92,7 +92,7 @@ function Principal() {
       const resultado = atual - investido;
       return { ...g, quantidade, investido, precoMedio, cotacao, atual, resultado };
     }).filter((g) => g.quantidade > 0);
-  }, [transactions, prices]);
+  }, [transactions, prices, rfManual]);
 
   const sortedPortfolio = useMemo(() => {
     return [...portfolio].sort((a, b) => b.atual - a.atual);
@@ -121,6 +121,30 @@ function Principal() {
 
   const formatNumber = (v) =>
     v.toLocaleString('pt-BR');
+
+  const [selectedTicker, setSelectedTicker] = useState(null);
+
+  const assetModalInfo = useMemo(() => {
+    if (!selectedTicker) return null;
+    const txList = transactions.filter(t => t.ticker === selectedTicker && t.operacao === 'Compra');
+    const compraDates = txList.map(t => t.data).filter(Boolean);
+    const precos = txList.map(t => t.valor).filter(v => v != null);
+    const qtdTotal = portfolio.find(a => a.ticker === selectedTicker)?.quantidade || 0;
+    const firstDate = compraDates.length > 0 ? compraDates.sort((a, b) => a.split('/').reverse().join('').localeCompare(b.split('/').reverse().join('')))[0] : '—';
+    const lastDate = compraDates.length > 0 ? compraDates.sort((a, b) => b.split('/').reverse().join('').localeCompare(a.split('/').reverse().join('')))[0] : '—';
+    const maxPreco = precos.length > 0 ? Math.max(...precos) : null;
+    const minPreco = precos.length > 0 ? Math.min(...precos) : null;
+
+    const provList = proventos.filter(p => p.ticker === selectedTicker);
+    const divsPorCota = provList.map(p => {
+      const total = (p.dividendos || 0) + (p.jcp || 0) + (p.rendimento || 0) + (p.reembolso || 0);
+      return qtdTotal > 0 ? total / qtdTotal : 0;
+    }).filter(v => v > 0);
+    const maxDiv = divsPorCota.length > 0 ? Math.max(...divsPorCota) : null;
+    const minDiv = divsPorCota.length > 0 ? Math.min(...divsPorCota) : null;
+
+    return { ticker: selectedTicker, qtdTotal, firstDate, lastDate, maxPreco, minPreco, maxDiv, minDiv };
+  }, [selectedTicker, transactions, proventos, portfolio]);
 
   const tickerItems = tickers.map((t) => ({
     ticker: t,
@@ -232,7 +256,7 @@ function Principal() {
               const tipoNorm = asset.tipo.replace(/Fii/g, 'FII');
               const accent = borderColors[tipoNorm] || '#555568';
               return (
-                <div key={asset.ticker} className="asset-card" style={{ '--card-accent': accent }}>
+                <div key={asset.ticker} className="asset-card" style={{ '--card-accent': accent }} onClick={() => setSelectedTicker(asset.ticker)}>
                   <div className="asset-card-bar"></div>
                   <div className="asset-card-left">
                     <LogoImage
@@ -283,6 +307,45 @@ function Principal() {
             })}
           </div>
         </>
+      )}
+
+      {assetModalInfo && (
+        <div className="asset-modal-overlay" onClick={() => setSelectedTicker(null)}>
+          <div className="asset-modal-content" onClick={e => e.stopPropagation()}>
+            <div className="asset-modal-title">{assetModalInfo.ticker}</div>
+
+            <div className="asset-modal-row">
+              <span className="asset-modal-label">Quantidade total de ativos</span>
+              <span className="asset-modal-value">{formatNumber(assetModalInfo.qtdTotal)}</span>
+            </div>
+            <div className="asset-modal-row">
+              <span className="asset-modal-label">Primeira compra</span>
+              <span className="asset-modal-value">{assetModalInfo.firstDate}</span>
+            </div>
+            <div className="asset-modal-row">
+              <span className="asset-modal-label">Última compra</span>
+              <span className="asset-modal-value">{assetModalInfo.lastDate}</span>
+            </div>
+            <div className="asset-modal-row">
+              <span className="asset-modal-label">Maior preço</span>
+              <span className="asset-modal-value">{assetModalInfo.maxPreco != null ? formatCurrency(assetModalInfo.maxPreco) : '—'}</span>
+            </div>
+            <div className="asset-modal-row">
+              <span className="asset-modal-label">Menor preço</span>
+              <span className="asset-modal-value">{assetModalInfo.minPreco != null ? formatCurrency(assetModalInfo.minPreco) : '—'}</span>
+            </div>
+            <div className="asset-modal-row">
+              <span className="asset-modal-label">Maior dividendo por cota</span>
+              <span className="asset-modal-value">{assetModalInfo.maxDiv != null ? formatCurrency(assetModalInfo.maxDiv) : '—'}</span>
+            </div>
+            <div className="asset-modal-row">
+              <span className="asset-modal-label">Menor dividendo por cota</span>
+              <span className="asset-modal-value">{assetModalInfo.minDiv != null ? formatCurrency(assetModalInfo.minDiv) : '—'}</span>
+            </div>
+
+            <button className="asset-modal-ok" onClick={() => setSelectedTicker(null)}>OK</button>
+          </div>
+        </div>
       )}
     </div>
   );

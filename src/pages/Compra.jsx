@@ -2,6 +2,7 @@ import { formatCurrency } from '../services/format';
 import { useState, useCallback } from 'react';
 import { useTransactions } from '../context/TransactionsContext';
 import { useUser } from '../context/UserContext';
+import { useRfManual } from '../context/RfManualContext';
 import ConfirmModal from '../components/Modals/ConfirmModal';
 import Toast from '../components/Toast';
 import { getTickerInfo, saveTickerInfo } from '../services/tickerRegistry';
@@ -9,6 +10,7 @@ import { getTickerInfo, saveTickerInfo } from '../services/tickerRegistry';
 function Compra() {
   const { transactions, addTransaction } = useTransactions();
   const { userName } = useUser();
+  const { updateRfManual } = useRfManual();
 
   const [form, setForm] = useState({
     ticker: '',
@@ -108,21 +110,17 @@ function Compra() {
     });
 
     if (form.tipo === 'Renda Fixa') {
-      try {
-        const raw = localStorage.getItem('investimento_rf_manual');
-        const manual = raw ? JSON.parse(raw) : {};
-        if (manual[ticker] != null) {
-          manual[ticker] += total;
+      updateRfManual((prev) => {
+        if (prev[ticker] != null) {
+          prev[ticker] += total;
         } else {
           const txTotal = transactions
             .filter(t => t.ticker === ticker && t.operacao === 'Compra')
             .reduce((s, t) => s + (Number(t.investido) || 0), 0);
-          manual[ticker] = txTotal + total;
+          prev[ticker] = txTotal + total;
         }
-        localStorage.setItem('investimento_rf_manual', JSON.stringify(manual));
-      } catch (e) {
-        console.warn('[Compra] erro ao salvar rf_manual:', e);
-      }
+        return { ...prev };
+      });
     }
 
     setSaved(true);

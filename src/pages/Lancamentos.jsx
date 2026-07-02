@@ -85,7 +85,7 @@ const selectStyle = {
   background: '#0D0D0D',
   color: '#E0E0E0',
   border: '1px solid #C8B800AA',
-  borderRadius: 6,
+  borderRadius: 8,
   padding: '5px 8px',
   fontSize: '0.75em',
   fontFamily: 'inherit',
@@ -165,29 +165,27 @@ function Lancamentos() {
     return [...new Set(transactions.map(t => t.ano))].filter(Boolean).sort((a, b) => Number(b) - Number(a));
   }, [transactions]);
 
-  const filtered = useMemo(() => {
-    return transactions
-      .filter(t => {
-        if (filterTicker && t.ticker !== filterTicker) return false;
-        if (filterTipo && normalizeTipo(t.tipo) !== filterTipo) return false;
-        if (filterOperacao && t.operacao !== filterOperacao) return false;
-        if (filterAno && String(t.ano) !== String(filterAno)) return false;
-        return true;
-      })
-      .sort((a, b) => {
-        try {
-          if (!a.data || !b.data) return 0;
-          const [da, ma, ya] = String(a.data).split('/').map(Number);
-          const [db, mb, yb] = String(b.data).split('/').map(Number);
-          const ta = new Date(ya, ma - 1, da);
-          const tb = new Date(yb, mb - 1, db);
-          if (isNaN(ta) || isNaN(tb)) return 0;
-          return tb - ta;
-        } catch {
-          return 0;
-        }
-      });
-  }, [transactions, filterTicker, filterTipo, filterOperacao, filterAno]);
+  const filtered = transactions
+    .filter(t => {
+      if (filterTicker && t.ticker !== filterTicker) return false;
+      if (filterTipo && normalizeTipo(t.tipo) !== filterTipo) return false;
+      if (filterOperacao && t.operacao !== filterOperacao) return false;
+      if (filterAno && String(t.ano) !== String(filterAno)) return false;
+      return true;
+    })
+    .sort((a, b) => {
+      try {
+        if (!a.data || !b.data) return 0;
+        const [da, ma, ya] = String(a.data).split('/').map(Number);
+        const [db, mb, yb] = String(b.data).split('/').map(Number);
+        const ta = new Date(ya, ma - 1, da);
+        const tb = new Date(yb, mb - 1, db);
+        if (isNaN(ta) || isNaN(tb)) return 0;
+        return tb - ta;
+      } catch {
+        return 0;
+      }
+    });
 
   const formatNumber = (v) =>
     v.toLocaleString('pt-BR');
@@ -490,7 +488,7 @@ function Lancamentos() {
               ))}
             </tr>
           </thead>
-          <tbody>
+          <tbody key={`${filterTicker}|${filterTipo}|${filterOperacao}|${filterAno}`}>
             {filtered.length === 0 ? (
               <tr>
                 <td colSpan={columns.length} className="table-empty">

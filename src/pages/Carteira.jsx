@@ -1,11 +1,11 @@
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState } from 'react';
 import { formatCurrency, formatNumber } from '../services/format';
 import { useTransactions } from '../context/TransactionsContext';
 import { usePrices } from '../hooks/usePrices';
 import LogoImage from '../components/LogoImage';
 import Toast from '../components/Toast';
 import { getTickerInfo, saveTickerInfo } from '../services/tickerRegistry';
-import db from '../services/storage.js';
+import { useRfManual } from '../context/RfManualContext';
 
 const typeIcons = {
   'Ação': '📈',
@@ -47,28 +47,7 @@ function Carteira() {
   const [linkValue, setLinkValue] = useState('');
   const [imageValue, setImageValue] = useState('');
 
-  const [manualAtual, setManualAtual] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('investimento_rf_manual')) || {}; } catch { return {}; }
-  });
-  const [rfLoaded, setRfLoaded] = useState(false);
-
-  useEffect(() => {
-    db.read('rf_manual').then(data => {
-      if (data && Object.keys(data).length > 0) {
-        setManualAtual(prev => {
-          if (Object.keys(prev).length > 0) return prev;
-          return data;
-        });
-      }
-      setRfLoaded(true);
-    }).catch(() => setRfLoaded(true));
-  }, []);
-
-  useEffect(() => {
-    if (!rfLoaded) return;
-    localStorage.setItem('investimento_rf_manual', JSON.stringify(manualAtual));
-    db.write('rf_manual', manualAtual);
-  }, [manualAtual, rfLoaded]);
+  const { rfManual, updateRfManual } = useRfManual();
 
   const [restructureType, setRestructureType] = useState(null);
   const [restructureTicker, setRestructureTicker] = useState('');
@@ -118,8 +97,8 @@ function Carteira() {
       const investido = g.investidoCompra - g.investidoVenda;
       const precoMedio = quantidade > 0 ? investido / quantidade : 0;
       const isManual = ['Renda Fixa', 'Dólar', 'Euro'].includes(g.tipo);
-      const cotacao = isManual && manualAtual[g.ticker] != null
-        ? manualAtual[g.ticker] / quantidade
+      const cotacao = isManual && rfManual[g.ticker] != null
+        ? rfManual[g.ticker] / quantidade
         : isManual && g.tipo === 'Renda Fixa'
           ? precoMedio
           : g.tipo === 'Dólar'
@@ -137,7 +116,7 @@ function Carteira() {
 
       return { ...g, quantidade, investido, precoMedio, cotacao, variacao, changeKey, atual, rendimento, resultado };
     }).filter((g) => g.quantidade > 0);
-  }, [transactions, prices, changes, manualAtual]);
+  }, [transactions, prices, changes, rfManual]);
 
 
 
@@ -154,7 +133,7 @@ function Carteira() {
     const raw = editRfValue.replace(/[R$\s.]/g, '').replace(',', '.');
     const val = parseFloat(raw);
     if (isNaN(val) || val < 0) return;
-    setManualAtual(prev => ({ ...prev, [editRf.ticker]: val }));
+    updateRfManual(prev => ({ ...prev, [editRf.ticker]: val }));
     setEditRf(null);
   };
 
