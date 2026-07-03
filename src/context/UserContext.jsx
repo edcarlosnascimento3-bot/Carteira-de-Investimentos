@@ -34,12 +34,10 @@ export function UserProvider({ children }) {
     });
   }, []);
 
-  // Persiste apenas o userName (sem o base64 do avatar que é muito grande)
   useEffect(() => {
-    if (loaded) db.write(STORAGE_NAME, { userName });
-  }, [userName, loaded]);
+    if (loaded) db.write(STORAGE_NAME, { userName, avatar });
+  }, [userName, avatar, loaded]);
 
-  // Persiste o avatar diretamente no IndexedDB ao trocar
   useEffect(() => {
     if (loaded) saveAvatarToIDB(avatar);
   }, [avatar, loaded]);

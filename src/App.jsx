@@ -1,4 +1,4 @@
-import { useRef, useEffect } from 'react';
+import { useEffect } from 'react';
 import { useUser } from './context/UserContext';
 import { useAuth } from './context/AuthContext';
 import LoginPage from './pages/LoginPage';
@@ -51,8 +51,6 @@ function App() {
   const { user, loading, signOut } = useAuth();
   const [activePage, setActivePage] = useState('principal');
   const { userName, setUserName, avatar, setAvatar } = useUser();
-  const [editing, setEditing] = useState(false);
-  const inputRef = useRef(null);
 
   useEffect(() => { loadAtivosRegistry(); }, []);
 
@@ -73,23 +71,6 @@ function App() {
     }
   };
 
-  const handleNameClick = () => {
-    setEditing(true);
-    setTimeout(() => inputRef.current?.focus(), 50);
-  };
-
-  const handleNameBlur = (e) => {
-    const val = e.target.value.trim();
-    if (val) setUserName(val);
-    setEditing(false);
-  };
-
-  const handleNameKeyDown = (e) => {
-    if (e.key === 'Enter') {
-      inputRef.current?.blur();
-    }
-  };
-
   return (
     <div className="app">
       <Sidebar activePage={activePage} onNavigate={setActivePage} />
@@ -97,15 +78,10 @@ function App() {
       <div className="user-header">
         <input
           type="text"
-          ref={inputRef}
-          className={`user-name ${editing ? 'editing' : ''}`}
+          className="user-name"
           value={userName}
           onChange={(e) => setUserName(e.target.value)}
-          onBlur={handleNameBlur}
-          onKeyDown={handleNameKeyDown}
-          readOnly={!editing}
-          onClick={handleNameClick}
-          title="Clique para editar o nome"
+          placeholder="Digite seu nome"
         />
 
         <input
