@@ -6,37 +6,29 @@ const UserContext = createContext(null);
 const STORAGE_NAME = 'user';
 const AVATAR_IDB_KEY = 'investimento_user_avatar';
 
-function getInitialName() {
-  try {
-    const stored = localStorage.getItem('investimento_user');
-    if (stored) {
-      const data = JSON.parse(stored);
-      if (data?.userName) return data.userName;
-    }
-  } catch {}
-  return '';
-}
-
 export function UserProvider({ children }) {
-  const [userName, setUserName] = useState(getInitialName);
+  const [userName, setUserName] = useState('');
   const [avatar, setAvatar] = useState(null);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    // Carrega userName do storage principal
-    db.read(STORAGE_NAME).then((data) => {
+    let active = true;
+    // Carrega userName e avatar juntos para evitar gravar userName vazio
+    // antes da leitura do storage principal terminar (race condition).
+    Promise.all([db.read(STORAGE_NAME), loadAvatarFromIDB()]).then(([data, saved]) => {
+      if (!active) return;
       if (data?.userName) setUserName(data.userName);
-    });
-    // Carrega avatar do IndexedDB separadamente para evitar QuotaExceededError
-    loadAvatarFromIDB().then((saved) => {
       if (saved) setAvatar(saved);
       setLoaded(true);
     });
+    return () => { active = false; };
   }, []);
 
+  // Nome gravado sem o avatar — o dataURL da foto estoura a quota do
+  // localStorage e o payload do Supabase, derrubando a gravação inteira.
   useEffect(() => {
-    if (loaded) db.write(STORAGE_NAME, { userName, avatar });
-  }, [userName, avatar, loaded]);
+    if (loaded && userName) db.write(STORAGE_NAME, { userName });
+  }, [userName, loaded]);
 
   useEffect(() => {
     if (loaded) saveAvatarToIDB(avatar);

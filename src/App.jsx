@@ -64,11 +64,29 @@ function App() {
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (ev) => setAvatar(ev.target.result);
-      reader.readAsDataURL(file);
-    }
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const img = new Image();
+      img.onload = () => {
+        const MAX = 256;
+        let { width, height } = img;
+        if (width > MAX || height > MAX) {
+          const scale = Math.min(MAX / width, MAX / height);
+          width = Math.round(width * scale);
+          height = Math.round(height * scale);
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        setAvatar(canvas.toDataURL('image/jpeg', 0.85));
+      };
+      img.onerror = () => setAvatar(ev.target.result);
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
   };
 
   return (
