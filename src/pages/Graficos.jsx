@@ -507,7 +507,7 @@ function Graficos() {
   const renderPatrimonioLabel = (props) => {
     const { x, y, value } = props;
     return (
-      <text x={x} y={y - 18} fill="#2E7D32" fontSize={12} fontWeight={700} textAnchor="middle">
+      <text x={x} y={y - 18} fill="var(--gold)" fontSize={12} fontWeight={700} textAnchor="middle">
         {formatCurrency(value)}
       </text>
     );
