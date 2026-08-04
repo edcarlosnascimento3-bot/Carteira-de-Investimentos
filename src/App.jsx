@@ -50,9 +50,17 @@ const pages = {
 function App() {
   const { user, loading, signOut } = useAuth();
   const [activePage, setActivePage] = useState('principal');
+  const [theme, setTheme] = useState(() => localStorage.getItem('app-theme') || 'dark');
   const { userName, setUserName, avatar, setAvatar } = useUser();
 
   useEffect(() => { loadAtivosRegistry(); }, []);
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('app-theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => setTheme((t) => (t === 'dark' ? 'light' : 'dark'));
 
   if (loading) return null;
 
@@ -119,6 +127,17 @@ function App() {
             👤
           </label>
         )}
+
+        <button
+          className="theme-toggle"
+          data-theme={theme}
+          onClick={toggleTheme}
+          title={theme === 'dark' ? 'Mudar para tema claro' : 'Mudar para tema escuro'}
+        >
+          <span className="theme-toggle-sun">☀️</span>
+          <span className="theme-toggle-knob">{theme === 'dark' ? '🌙' : '☀️'}</span>
+          <span className="theme-toggle-moon">🌙</span>
+        </button>
 
         <button className="btn-sair" onClick={signOut}>
           Sair
