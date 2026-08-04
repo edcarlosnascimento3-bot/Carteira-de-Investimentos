@@ -7,12 +7,37 @@ export { TransactionsContext };
 
 const STORAGE_NAME = 'transactions';
 
+// Id único: randomUUID (navegadores modernos) com fallback para timestamp + aleatório.
+// Nunca usar apenas Date.now() — importações em massa criam ids duplicados no mesmo ms.
+function makeId() {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+// Corrige ids duplicados/nulos reatribuindo ids únicos (migração de dados legados).
+function dedupeIds(list) {
+  const seen = new Set();
+  let changed = false;
+  const out = list.map((t) => {
+    let id = t.id;
+    if (id == null || seen.has(id)) {
+      id = makeId();
+      changed = true;
+    }
+    seen.add(id);
+    return { ...t, id };
+  });
+  return changed ? out : list;
+}
+
 function getInitialData() {
   try {
     const stored = localStorage.getItem('investimento_transactions');
     if (stored) {
       const data = JSON.parse(stored);
-      if (Array.isArray(data) && data.length > 0) return data;
+      if (Array.isArray(data) && data.length > 0) return dedupeIds(data);
     }
   } catch {}
   return [];
@@ -30,7 +55,7 @@ export function TransactionsProvider({ children }) {
   useEffect(() => {
     db.read(STORAGE_NAME).then((data) => {
       if (data !== null && Array.isArray(data) && data.length > 0) {
-        setTransactions(data);
+        setTransactions(dedupeIds(data));
       }
       buildRegistryFromTransactions(data && Array.isArray(data) && data.length > 0 ? data : transactions);
       setLoaded(true);
@@ -54,7 +79,7 @@ export function TransactionsProvider({ children }) {
   }, [loaded]);
 
   const addTransaction = (entry) => {
-    const newTx = { id: Date.now(), ...entry };
+    const newTx = { id: makeId(), ...entry };
     setTransactions((prev) => [newTx, ...prev]);
   };
 
