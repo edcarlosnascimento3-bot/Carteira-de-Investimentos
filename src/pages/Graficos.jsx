@@ -369,6 +369,45 @@ function Graficos() {
       .map(([name, value]) => ({ name: String(name), value: Math.round(value * 100) / 100 }));
   }, [transactions]);
 
+  const patrimonioEvolData = useMemo(() => {
+    const years = [...new Set(transactions.map(t => t.ano))].sort((a, b) => a - b);
+    return years.map(year => {
+      const groups = {};
+      transactions.forEach(t => {
+        if (Number(t.ano) > Number(year)) return;
+        if (!groups[t.ticker]) {
+          groups[t.ticker] = {
+            ticker: t.ticker, ativo: t.ativo, tipo: t.tipo.replace(/Fii/g, 'FII'),
+            qtdCompra: 0, qtdVenda: 0, investidoCompra: 0, investidoVenda: 0,
+          };
+        }
+        const g = groups[t.ticker];
+        if (t.operacao === 'Compra') { g.qtdCompra += t.quantidade; g.investidoCompra += t.investido; }
+        else { g.qtdVenda += t.quantidade; g.investidoVenda += t.investido; }
+      });
+      let patrimonio = 0;
+      Object.values(groups).forEach(g => {
+        const quantidade = g.qtdCompra - g.qtdVenda;
+        const investido = g.investidoCompra - g.investidoVenda;
+        if (quantidade <= 0) return;
+        const precoMedio = investido / quantidade;
+        const tipoNorm = g.tipo;
+        const isManual = ['Renda Fixa', 'Dólar', 'Euro'].includes(tipoNorm);
+        const cotacao = isManual && rfManual[g.ticker] != null
+          ? rfManual[g.ticker] / quantidade
+          : tipoNorm === 'Renda Fixa'
+            ? precoMedio
+            : tipoNorm === 'Dólar'
+              ? prices['USDBRL']
+              : tipoNorm === 'Euro'
+                ? prices['EURBRL']
+                : prices[g.ticker];
+        if (cotacao != null) patrimonio += quantidade * cotacao;
+      });
+      return { name: String(year), value: Math.round(patrimonio * 100) / 100 };
+    });
+  }, [transactions, prices, rfManual]);
+
   const proventosEvolData = useMemo(() => {
     const map = {};
     proventos.forEach(p => {
@@ -1208,7 +1247,7 @@ function Graficos() {
 
       {evolData.length > 0 && (
         <div className="chart-card" style={{ display: 'flex', flexDirection: 'column', position: 'relative', gridColumn: '1 / -1' }}>
-          <h2 style={{ textAlign: 'center' }}>Evolução Do Patrimônio Ano a Ano</h2>
+          <h2 style={{ textAlign: 'center' }}>Investimento Ano a Ano</h2>
           <div style={{ flex: 1, minHeight: 0 }}>
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={evolData} margin={{ left: 30, right: 30, top: 30, bottom: 10 }} barSize={60}>
@@ -1219,6 +1258,23 @@ function Graficos() {
                   <LabelList dataKey="value" content={renderEvolLabel} />
                 </Bar>
               </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
+
+      {patrimonioEvolData.length > 0 && (
+        <div className="chart-card" style={{ display: 'flex', flexDirection: 'column', position: 'relative', gridColumn: '1 / -1' }}>
+          <h2 style={{ textAlign: 'center' }}>Evolução do Patrimônio Ano a Ano</h2>
+          <div style={{ flex: 1, minHeight: 0 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={patrimonioEvolData} margin={{ left: 30, right: 30, top: 30, bottom: 10 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                <XAxis dataKey="name" tick={{ fill: 'var(--gold-soft)', fontSize: 13, fontWeight: 700 }} axisLine={{ stroke: 'var(--border)' }} tickLine={false} />
+                <YAxis tick={{ fill: 'var(--text-muted)', fontSize: 11 }} axisLine={{ stroke: 'var(--border)' }} tickLine={false} />
+                <Tooltip contentStyle={tooltipStyle} formatter={(v) => formatCurrency(v)} />
+                <Line type="monotone" dataKey="value" stroke="var(--gold)" strokeWidth={3} dot={{ r: 5, fill: 'var(--gold)', stroke: 'var(--gold-soft)', strokeWidth: 2 }} animationDuration={2000} />
+              </LineChart>
             </ResponsiveContainer>
           </div>
         </div>
