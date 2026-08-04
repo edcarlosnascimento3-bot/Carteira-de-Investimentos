@@ -27,7 +27,7 @@
   --card-border: rgba(255,255,255,0.07);
   --card-shadow: inset 0 1px 0 rgba(255,255,255,0.06), 0 4px 16px rgba(0, 0, 0, 0.35);
   --widget-shadow: inset 0 1px 0 rgba(255,255,255,0.07), 0 4px 20px rgba(0, 0, 0, 0.4), 0 1px 3px rgba(0, 0, 0, 0.3);
-  --modal-bg: rgba(10, 25, 60, 0.92);
+  --modal-bg: rgba(10, 25, 60, 0.72);
   --sidebar-bg: #0A0A0A;
   --sidebar-text: #C8B800;
   --sidebar-subtitle: #E0E0E0;
@@ -62,7 +62,7 @@
   --card-border: #D6DAE4;
   --card-shadow: inset 0 1px 0 rgba(255,255,255,0.7), 0 4px 16px rgba(40, 50, 100, 0.08);
   --widget-shadow: inset 0 1px 0 rgba(255,255,255,0.7), 0 4px 20px rgba(40, 50, 100, 0.08), 0 1px 3px rgba(40, 50, 100, 0.05);
-  --modal-bg: rgba(255, 255, 255, 0.97);
+  --modal-bg: rgba(255, 255, 255, 0.78);
   --sidebar-bg: #FFFFFF;
   --sidebar-text: #6B6200;
   --sidebar-subtitle: #5C6272;
