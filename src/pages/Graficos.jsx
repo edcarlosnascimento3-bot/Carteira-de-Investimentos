@@ -526,6 +526,15 @@ function Graficos() {
     );
   };
 
+  const renderPatrimonioLabel = (props) => {
+    const { x, y, value } = props;
+    return (
+      <text x={x} y={y - 10} fill="var(--gold-soft)" fontSize={12} fontWeight={700} textAnchor="middle">
+        {formatCurrency(value)}
+      </text>
+    );
+  };
+
   const renderProventosLabel = (props) => {
     const { x, y, width, value } = props;
     return (
@@ -1273,7 +1282,9 @@ function Graficos() {
                 <XAxis dataKey="name" tick={{ fill: 'var(--gold-soft)', fontSize: 13, fontWeight: 700 }} axisLine={{ stroke: 'var(--border)' }} tickLine={false} />
                 <YAxis tick={{ fill: 'var(--text-muted)', fontSize: 11 }} axisLine={{ stroke: 'var(--border)' }} tickLine={false} />
                 <Tooltip contentStyle={tooltipStyle} formatter={(v) => formatCurrency(v)} />
-                <Line type="monotone" dataKey="value" stroke="var(--gold)" strokeWidth={3} dot={{ r: 5, fill: 'var(--gold)', stroke: 'var(--gold-soft)', strokeWidth: 2 }} animationDuration={2000} />
+                <Line type="monotone" dataKey="value" stroke="var(--gold)" strokeWidth={3} dot={{ r: 5, fill: 'var(--gold)', stroke: 'var(--gold-soft)', strokeWidth: 2 }} animationDuration={2000}>
+                  <LabelList dataKey="value" content={renderPatrimonioLabel} />
+                </Line>
               </LineChart>
             </ResponsiveContainer>
           </div>
