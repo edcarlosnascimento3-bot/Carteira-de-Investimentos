@@ -95,9 +95,13 @@ export function TransactionsProvider({ children }) {
     setTransactions([]);
   };
 
+  const replaceAllTransactions = (data) => {
+    setTransactions(dedupeIds(Array.isArray(data) ? data : []));
+  };
+
   return (
     <TransactionsContext.Provider
-      value={{ transactions, addTransaction, updateTransaction, removeTransaction, clearTransactions }}
+      value={{ transactions, addTransaction, updateTransaction, removeTransaction, clearTransactions, replaceAllTransactions }}
     >
       {children}
     </TransactionsContext.Provider>

@@ -127,9 +127,10 @@ function parseDate(v) {
 }
 
 function Lancamentos() {
-  const { transactions, addTransaction, updateTransaction, removeTransaction, clearTransactions } = useTransactions();
+  const { transactions, addTransaction, updateTransaction, removeTransaction, clearTransactions, replaceAllTransactions } = useTransactions();
   const { userName } = useUser();
   const fileInputRef = useRef(null);
+  const backupInputRef = useRef(null);
   const [editTarget, setEditTarget] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [filterTicker, setFilterTicker] = useState('');
@@ -338,6 +339,26 @@ function Lancamentos() {
     setMassStatus({ type: 'success', msg: `${added} lançamento(s) importado(s) com sucesso!` });
   };
 
+  const handleBackupRestore = (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const parsed = JSON.parse(reader.result);
+        if (!Array.isArray(parsed)) throw new Error('O arquivo não contém uma lista de lançamentos.');
+        const valid = parsed.filter((t) => t && (t.ticker || t.ativo));
+        replaceAllTransactions(valid);
+        setMassStatus({ type: 'success', msg: `Backup restaurado: ${valid.length} lançamento(s).` });
+      } catch (err) {
+        setMassStatus({ type: 'error', msg: `Falha ao restaurar backup: ${err.message}` });
+      }
+    };
+    reader.onerror = () => setMassStatus({ type: 'error', msg: 'Falha ao ler o arquivo de backup.' });
+    reader.readAsText(file);
+  };
+
   const actionBtnStyle = {
     background: 'transparent',
     border: 'none',
@@ -411,6 +432,19 @@ function Lancamentos() {
           >
             IMPORTAR<br />PLANILHA
           </button>
+          <button
+            onClick={() => backupInputRef.current?.click()}
+            style={{
+              background: '#3A7BD5', color: '#FFFFFF', border: 'none', borderRadius: 6,
+              padding: '6px 14px', fontSize: '0.75em', fontWeight: 700, fontFamily: 'inherit',
+              cursor: 'pointer', letterSpacing: '1px', lineHeight: 1.3,
+              transition: 'all 0.2s ease',
+            }}
+            onMouseOver={e => e.target.style.background = '#5A9BE5'}
+            onMouseOut={e => e.target.style.background = '#3A7BD5'}
+          >
+            RESTAURAR<br />BACKUP
+          </button>
         </div>
         <input
           ref={fileInputRef}
@@ -418,6 +452,13 @@ function Lancamentos() {
           accept=".xlsx,.xls,.csv"
           style={{ display: 'none' }}
           onChange={handleFileChange}
+        />
+        <input
+          ref={backupInputRef}
+          type="file"
+          accept=".json,application/json"
+          style={{ display: 'none' }}
+          onChange={handleBackupRestore}
         />
       </div>
 
