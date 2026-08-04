@@ -370,43 +370,21 @@ function Graficos() {
   }, [transactions]);
 
   const patrimonioEvolData = useMemo(() => {
-    const years = [...new Set(transactions.map(t => t.ano))].sort((a, b) => a - b);
-    return years.map(year => {
-      const groups = {};
-      transactions.forEach(t => {
-        if (Number(t.ano) > Number(year)) return;
-        if (!groups[t.ticker]) {
-          groups[t.ticker] = {
-            ticker: t.ticker, ativo: t.ativo, tipo: t.tipo.replace(/Fii/g, 'FII'),
-            qtdCompra: 0, qtdVenda: 0, investidoCompra: 0, investidoVenda: 0,
-          };
-        }
-        const g = groups[t.ticker];
-        if (t.operacao === 'Compra') { g.qtdCompra += t.quantidade; g.investidoCompra += t.investido; }
-        else { g.qtdVenda += t.quantidade; g.investidoVenda += t.investido; }
-      });
-      let patrimonio = 0;
-      Object.values(groups).forEach(g => {
-        const quantidade = g.qtdCompra - g.qtdVenda;
-        const investido = g.investidoCompra - g.investidoVenda;
-        if (quantidade <= 0) return;
-        const precoMedio = investido / quantidade;
-        const tipoNorm = g.tipo;
-        const isManual = ['Renda Fixa', 'Dólar', 'Euro'].includes(tipoNorm);
-        const cotacao = isManual && rfManual[g.ticker] != null
-          ? rfManual[g.ticker] / quantidade
-          : tipoNorm === 'Renda Fixa'
-            ? precoMedio
-            : tipoNorm === 'Dólar'
-              ? prices['USDBRL']
-              : tipoNorm === 'Euro'
-                ? prices['EURBRL']
-                : prices[g.ticker];
-        if (cotacao != null) patrimonio += quantidade * cotacao;
-      });
-      return { name: String(year), value: Math.round(patrimonio * 100) / 100 };
+    const map = {};
+    transactions.forEach(t => {
+      const year = t.ano;
+      if (!map[year]) map[year] = 0;
+      if (t.operacao === 'Compra') map[year] += t.investido;
+      else map[year] -= t.investido;
     });
-  }, [transactions, prices, rfManual]);
+    let acc = 0;
+    return Object.entries(map)
+      .sort(([a], [b]) => a - b)
+      .map(([name, value]) => {
+        acc += value;
+        return { name: String(name), value: Math.round(acc * 100) / 100 };
+      });
+  }, [transactions]);
 
   const proventosEvolData = useMemo(() => {
     const map = {};
