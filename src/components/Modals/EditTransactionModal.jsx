@@ -2,7 +2,7 @@ import { formatCurrency } from '../../services/format';
 import { useState, useEffect } from 'react';
 import { listar as listarCorretoras } from '../../database/CorretoraService';
 
-const tipos = ['Ação', 'FII', 'Renda Fixa'];
+const tipos = ['Ação', 'FII', 'Renda Fixa', 'Dólar', 'Euro', 'Bitcoin', 'Libra'];
 const operacoes = ['Compra', 'Venda'];
 
 function EditTransactionModal({ data, transactions, onSave, onUpdateMultiple, onClose }) {
