@@ -1,24 +1,25 @@
 /* ============================================================
    SIDEBAR - Menu lateral esquerdo
-   Fundo preto com amarelo suave
+   Fundo segue o tema (variáveis --sidebar-*)
    ============================================================ */
 .sidebar {
   width: 250px;
-  background-color: #0A0A0A;
-  color: #C8B800;
+  background-color: var(--sidebar-bg);
+  color: var(--sidebar-text);
   height: 100vh;
   position: fixed;
   left: 0;
   top: 0;
   display: flex;
   flex-direction: column;
-  border-right: 1px solid #2A2A2A;
+  border-right: 1px solid var(--sidebar-border);
   z-index: 100;
+  transition: background-color 0.35s ease, color 0.35s ease, border-color 0.35s ease;
 }
 
 .sidebar-header {
   padding: 25px 20px 15px;
-  border-bottom: 1px solid #2A2A2A;
+  border-bottom: 1px solid var(--sidebar-border);
   margin-bottom: 10px;
 }
 
@@ -32,7 +33,7 @@
   font-size: 0.75em;
   opacity: 0.6;
   letter-spacing: 1px;
-  color: #E0E0E0;
+  color: var(--sidebar-subtitle);
 }
 
 .menu {
@@ -53,7 +54,7 @@
   padding: 12px 12px;
   background: transparent;
   border: none;
-  color: #C8B800;
+  color: var(--sidebar-text);
   font-size: 0.95em;
   font-weight: 500;
   cursor: pointer;
@@ -64,16 +65,16 @@
 }
 
 .menu-item:hover {
-  background-color: #1A1A00;
-  color: #E8D844;
+  background-color: var(--sidebar-hover-bg);
+  color: var(--sidebar-hover-text);
   padding-left: 18px;
 }
 
 .menu-item.active {
-  background-color: #1A1A00;
-  color: #E8D844;
+  background-color: var(--sidebar-hover-bg);
+  color: var(--sidebar-hover-text);
   font-weight: 600;
-  border-left: 3px solid #C8B800;
+  border-left: 3px solid var(--gold);
 }
 
 .menu-item-icon {
@@ -113,7 +114,7 @@
   padding: 8px 12px;
   background: transparent;
   border: none;
-  color: #8A7E00;
+  color: var(--sidebar-submenu-text);
   font-size: 0.82em;
   cursor: pointer;
   border-radius: 6px;
@@ -123,15 +124,15 @@
 }
 
 .submenu-item:hover {
-  color: #E8D844;
-  background-color: #1A1A00;
+  color: var(--sidebar-hover-text);
+  background-color: var(--sidebar-hover-bg);
   padding-left: 16px;
 }
 
 .sidebar-footer {
   padding: 15px 20px;
-  border-top: 1px solid #2A2A2A;
+  border-top: 1px solid var(--sidebar-border);
   text-align: center;
   font-size: 0.75em;
-  color: #555555;
+  color: var(--sidebar-footer-text);
 }

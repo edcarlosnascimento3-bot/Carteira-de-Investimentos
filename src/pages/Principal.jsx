@@ -213,7 +213,7 @@ function Principal() {
         <div className="widget-card">
           <div className="card-content">
             <div className="label">DIVIDENDOS</div>
-            <div className="value" style={{ color: dividendosMes > 0 ? '#00E676' : '#555568' }}>
+            <div className="value" style={{ color: dividendosMes > 0 ? '#00E676' : 'var(--text-faint)' }}>
               {formatCurrency(dividendosMes)}
             </div>
             <div className="change positive">este mês</div>
@@ -246,15 +246,15 @@ function Principal() {
       {sortedPortfolio.length > 0 && (
         <>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6, marginTop: 4 }}>
-            <span style={{ fontSize: '0.65em', textTransform: 'uppercase', letterSpacing: '2px', color: '#555568', fontWeight: 600 }}>Portfólio</span>
+            <span style={{ fontSize: '0.65em', textTransform: 'uppercase', letterSpacing: '2px', color: 'var(--text-faint)', fontWeight: 600 }}>Portfólio</span>
             <div style={{ flex: 1, height: 1, background: 'linear-gradient(90deg, rgba(255,255,255,0.06), transparent)' }} />
-            <span style={{ fontSize: '0.65em', color: '#555568' }}>{sortedPortfolio.length} ativos</span>
+            <span style={{ fontSize: '0.65em', color: 'var(--text-faint)' }}>{sortedPortfolio.length} ativos</span>
           </div>
           <div className="asset-cards-grid">
             {sortedPortfolio.map((asset) => {
               const isProfit = asset.resultado >= 0;
               const tipoNorm = asset.tipo.replace(/Fii/g, 'FII');
-              const accent = borderColors[tipoNorm] || '#555568';
+              const accent = borderColors[tipoNorm] || 'var(--text-faint)';
               return (
                 <div key={asset.ticker} className="asset-card" style={{ '--card-accent': accent }} onClick={() => setSelectedTicker(asset.ticker)}>
                   <div className="asset-card-bar"></div>
@@ -294,7 +294,7 @@ function Principal() {
                     <div className="info-row">
                       <span className="info-label">Hoje</span>
                       <span className="info-value">
-                        {asset.cotacao != null ? formatCurrency(asset.cotacao) : <span style={{ color: '#333345' }}>—</span>}
+                        {asset.cotacao != null ? formatCurrency(asset.cotacao) : <span style={{ color: 'var(--text-faint)' }}>—</span>}
                       </span>
                     </div>
                   </div>

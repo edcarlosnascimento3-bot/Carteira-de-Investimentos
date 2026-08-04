@@ -82,8 +82,8 @@ function normalizeTipo(t) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 const selectStyle = {
-  background: '#0D0D0D',
-  color: '#E0E0E0',
+  background: 'var(--surface-dark)',
+  color: 'var(--text)',
   border: '1px solid #C8B800AA',
   borderRadius: 8,
   padding: '5px 8px',
@@ -376,7 +376,7 @@ function Lancamentos() {
       <p className="subtitle">
         Registro de todas as operações de compra e venda
         {transactions.length > 0 && (
-          <span style={{ color: '#666666', marginLeft: '8px' }}>
+          <span style={{ color: 'var(--text-faint)', marginLeft: '8px' }}>
             — {transactions.length} registro(s)
           </span>
         )}
@@ -422,13 +422,13 @@ function Lancamentos() {
           <button
             onClick={() => fileInputRef.current?.click()}
             style={{
-              background: '#C8B800', color: '#0A0A0A', border: 'none', borderRadius: 6,
+              background: 'var(--gold)', color: 'var(--ink)', border: 'none', borderRadius: 6,
               padding: '6px 14px', fontSize: '0.75em', fontWeight: 700, fontFamily: 'inherit',
               cursor: 'pointer', letterSpacing: '1px', lineHeight: 1.3,
               transition: 'all 0.2s ease',
             }}
-            onMouseOver={e => e.target.style.background = '#E8D844'}
-            onMouseOut={e => e.target.style.background = '#C8B800'}
+            onMouseOver={e => e.target.style.background = 'var(--gold-soft)'}
+            onMouseOut={e => e.target.style.background = 'var(--gold)'}
           >
             IMPORTAR<br />PLANILHA
           </button>
@@ -471,15 +471,15 @@ function Lancamentos() {
               <button className="modal-close" onClick={() => setMassModal(null)}>✕</button>
             </div>
             <div className="modal-body">
-              <p style={{ color: '#E0E0E0', marginBottom: 16, lineHeight: 1.6 }}>
+              <p style={{ color: 'var(--text)', marginBottom: 16, lineHeight: 1.6 }}>
                 A planilha deve conter no mínimo as colunas:{' '}
                 <strong style={{ color: '#C8B800' }}>{requiredCols.map(c => c === 'ativo' ? 'nome' : c).join(', ')}</strong>
               </p>
-              <div style={{ background: '#0D0D0D', borderRadius: 8, padding: 16, marginBottom: 16 }}>
-                <p style={{ color: '#E0E0E0', marginBottom: 8 }}>
+              <div style={{ background: 'var(--surface-dark)', borderRadius: 8, padding: 16, marginBottom: 16 }}>
+                <p style={{ color: 'var(--text)', marginBottom: 8 }}>
                   <strong>{massModal.totalRows}</strong> linha(s) encontrada(s)
                 </p>
-                <p style={{ color: '#999999', fontSize: '0.9em', marginBottom: 4 }}>
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.9em', marginBottom: 4 }}>
                   Colunas encontradas: <span style={{ color: '#00CC66' }}>{massModal.foundCols.map(c => c === 'ativo' ? 'nome' : c).join(', ') || '—'}</span>
                 </p>
                 {massModal.missingReq.length > 0 && (
@@ -498,7 +498,7 @@ function Lancamentos() {
                   As colunas obrigatórias ausentes serão ignoradas. Deseja continuar mesmo assim?
                 </p>
               )}
-              <p style={{ color: '#E0E0E0', fontSize: '0.95em' }}>
+              <p style={{ color: 'var(--text)', fontSize: '0.95em' }}>
                 {userName}, deseja importar {massModal.totalRows} lançamento(s)?
               </p>
             </div>
@@ -601,7 +601,7 @@ function Lancamentos() {
               <button className="modal-close" onClick={() => setClearConfirm(false)}>✕</button>
             </div>
             <div className="modal-body">
-              <p style={{ color: '#E0E0E0', lineHeight: 1.6 }}>
+              <p style={{ color: 'var(--text)', lineHeight: 1.6 }}>
                 Todas as informações da tabela serão excluídas definitivamente sem possibilidade de desfazer, deseja realmente continuar?
               </p>
             </div>

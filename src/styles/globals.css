@@ -4,30 +4,38 @@
    VARIÁVEIS DE TEMA (escuro padrão / claro)
    ============================================================ */
 :root {
-  --bg: var(--bg);
-  --surface: var(--surface);
-  --surface-hover: var(--surface-hover);
+  --bg: #080810;
+  --surface: #151515;
+  --surface-hover: #1A1A1A;
   --surface-void: #0A0A0A;
-  --surface-dark: var(--surface-dark);
-  --surface-raised: var(--surface-raised);
-  --border: var(--border);
-  --border-strong: var(--border-strong);
-  --text: var(--text);
+  --surface-dark: #0D0D0D;
+  --surface-raised: #252525;
+  --border: #2A2A2A;
+  --border-strong: #444444;
+  --text: #E0E0E0;
   --text-strong: #FFFFFF;
-  --text-soft: var(--text-soft);
-  --text-muted: var(--text-muted);
-  --text-faint: var(--text-faint);
+  --text-soft: #E8E8F0;
+  --text-muted: #999999;
+  --text-faint: #555568;
   --ink: #0A0A0A;
-  --gold: var(--gold);
-  --gold-soft: var(--gold-soft);
-  --gold-muted: var(--gold-muted);
-  --gold-hover: var(--gold-hover);
+  --gold: #C8B800;
+  --gold-soft: #E8D844;
+  --gold-muted: #8A7E00;
+  --gold-hover: #1A1A00;
   --card-bg: linear-gradient(145deg, rgba(255,255,255,0.045) 0%, rgba(255,255,255,0.018) 100%);
   --widget-bg: linear-gradient(135deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.015) 100%);
   --card-border: rgba(255,255,255,0.07);
   --card-shadow: inset 0 1px 0 rgba(255,255,255,0.06), 0 4px 16px rgba(0, 0, 0, 0.35);
   --widget-shadow: inset 0 1px 0 rgba(255,255,255,0.07), 0 4px 20px rgba(0, 0, 0, 0.4), 0 1px 3px rgba(0, 0, 0, 0.3);
   --modal-bg: rgba(10, 25, 60, 0.92);
+  --sidebar-bg: #0A0A0A;
+  --sidebar-text: #C8B800;
+  --sidebar-subtitle: #E0E0E0;
+  --sidebar-border: #2A2A2A;
+  --sidebar-hover-bg: #1A1A00;
+  --sidebar-hover-text: #E8D844;
+  --sidebar-submenu-text: #8A7E00;
+  --sidebar-footer-text: #555555;
 }
 
 [data-theme='light'] {
@@ -55,6 +63,14 @@
   --card-shadow: inset 0 1px 0 rgba(255,255,255,0.7), 0 4px 16px rgba(40, 50, 100, 0.08);
   --widget-shadow: inset 0 1px 0 rgba(255,255,255,0.7), 0 4px 20px rgba(40, 50, 100, 0.08), 0 1px 3px rgba(40, 50, 100, 0.05);
   --modal-bg: rgba(255, 255, 255, 0.97);
+  --sidebar-bg: #FFFFFF;
+  --sidebar-text: #6B6200;
+  --sidebar-subtitle: #5C6272;
+  --sidebar-border: #D6DAE4;
+  --sidebar-hover-bg: #F2EDCB;
+  --sidebar-hover-text: #4A4000;
+  --sidebar-submenu-text: #6B6200;
+  --sidebar-footer-text: #878EA0;
 }
 
 /* ============================================================
@@ -674,7 +690,7 @@ body {
 
 .data-table td {
   padding: 12px;
-  border-bottom: 1px solid var(--surface-hover);
+  border-bottom: 1px solid var(--border);
   vertical-align: middle;
   text-align: center;
   color: var(--text);
@@ -686,6 +702,11 @@ body {
 
 .data-table tbody tr.row-venda {
   opacity: 0.7;
+}
+
+/* Tabelas com estilos inline (AnalisarAcoes, IRRF, Ranking): linhas suaves */
+table:not(.data-table) tr {
+  border-bottom: 1px solid var(--border);
 }
 
 .data-table tbody tr.row-venda:hover {
@@ -1235,11 +1256,11 @@ body {
    ============================================================ */
 .ticker-tape {
   background: linear-gradient(90deg,
-    rgba(8,8,16,0) 0%,
-    rgba(12,12,22,0.95) 3%,
-    rgba(12,12,22,0.95) 97%,
-    rgba(8,8,16,0) 100%);
-  border: 1px solid rgba(200, 184, 0, 0.12);
+    color-mix(in srgb, var(--surface) 0%, transparent) 0%,
+    color-mix(in srgb, var(--surface) 95%, transparent) 3%,
+    color-mix(in srgb, var(--surface) 95%, transparent) 97%,
+    color-mix(in srgb, var(--surface) 0%, transparent) 100%);
+  border: 1px solid var(--border);
   border-radius: 12px;
   overflow: hidden;
   padding: 9px 0;
@@ -1286,7 +1307,7 @@ body {
   font-family: 'JetBrains Mono', 'Consolas', monospace;
   font-size: 16px;
   padding: 0 4px;
-  border-right: 1px solid rgba(255,255,255,0.05);
+  border-right: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
 }
 
 .ticker-symbol {
@@ -1779,40 +1800,53 @@ body {
 }
 
 /* ============================================================
-   TOGGLE TEMA CLARO/ESCURO (sol/lua)
+   TOGGLE TEMA CLARO/ESCURO (sol | slider | lua)
    ============================================================ */
+.theme-selector {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  border-radius: 30px;
+  background: var(--surface-void);
+  border: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.theme-icon {
+  font-size: 14px;
+  line-height: 1;
+  pointer-events: none;
+  user-select: none;
+}
+
 .theme-toggle {
   display: inline-flex;
   align-items: center;
-  width: 60px;
-  height: 30px;
-  border: 1px solid #C8B80044;
-  border-radius: 30px;
-  background: var(--surface-void);
+  width: 52px;
+  height: 26px;
+  border: none;
+  border-radius: 26px;
+  background: var(--surface-dark);
   padding: 0;
   cursor: pointer;
   position: relative;
   flex-shrink: 0;
-  transition: background 0.35s ease, border-color 0.35s ease;
+  transition: background 0.35s ease;
 }
 
 .theme-toggle:hover {
-  border-color: var(--gold);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--gold) 35%, transparent);
 }
 
 .theme-toggle-knob {
   position: absolute;
   top: 3px;
   left: 3px;
-  width: 22px;
-  height: 22px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
   background: var(--gold);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-  line-height: 1;
   transition: transform 0.35s cubic-bezier(0.23, 1, 0.32, 1), background 0.35s ease;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
   user-select: none;
@@ -1820,24 +1854,6 @@ body {
 }
 
 .theme-toggle[data-theme='dark'] .theme-toggle-knob {
-  transform: translateX(30px);
-}
-
-.theme-toggle .theme-toggle-sun {
-  position: absolute;
-  left: 7px;
-  font-size: 13px;
-  opacity: 0.9;
-  pointer-events: none;
-  z-index: 0;
-}
-
-.theme-toggle .theme-toggle-moon {
-  position: absolute;
-  right: 7px;
-  font-size: 13px;
-  opacity: 0.9;
-  pointer-events: none;
-  z-index: 0;
+  transform: translateX(26px);
 }
 

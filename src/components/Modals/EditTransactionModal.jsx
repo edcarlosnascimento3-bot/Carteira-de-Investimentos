@@ -68,10 +68,10 @@ function EditTransactionModal({ data, transactions, onSave, onUpdateMultiple, on
   const inputStyle = {
     width: '100%',
     padding: '10px 12px',
-    background: '#0A0A0A',
-    border: '1px solid #2A2A2A',
+    background: 'var(--surface-void)',
+    border: '1px solid var(--border)',
     borderRadius: '6px',
-    color: '#E0E0E0',
+    color: 'var(--text)',
     fontSize: '0.9em',
     fontFamily: 'inherit',
     outline: 'none',
@@ -80,7 +80,7 @@ function EditTransactionModal({ data, transactions, onSave, onUpdateMultiple, on
 
   const labelStyle = {
     display: 'block',
-    color: '#999999',
+    color: 'var(--text-muted)',
     fontSize: '0.8em',
     marginBottom: '4px',
     fontWeight: 500,
@@ -247,16 +247,16 @@ function EditTransactionModal({ data, transactions, onSave, onUpdateMultiple, on
           <div style={{
             marginTop: '16px',
             padding: '14px',
-            background: '#0D0D0D',
+            background: 'var(--surface-dark)',
             borderRadius: '8px',
-            border: '1px solid #2A2A2A',
+            border: '1px solid var(--border)',
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
           }}>
-            <span style={{ color: '#999999' }}>Valor Investido (calculado):</span>
+            <span style={{ color: 'var(--text-muted)' }}>Valor Investido (calculado):</span>
             <span style={{
-              color: '#FFFFFF',
+              color: 'var(--text-strong)',
               fontSize: '1.2em',
               fontWeight: 'bold',
               fontFamily: 'Consolas, monospace',
@@ -269,7 +269,7 @@ function EditTransactionModal({ data, transactions, onSave, onUpdateMultiple, on
         <div className="modal-footer">
           {cnpjConfirm ? (
             <>
-              <span style={{ color: '#E0E0E0', fontSize: '0.85em', flex: 1 }}>
+              <span style={{ color: 'var(--text)', fontSize: '0.85em', flex: 1 }}>
                 Deseja alterar o CNPJ para <strong>{cnpjConfirm}</strong> em todos os lançamentos de <strong>{form.ticker}</strong>?
               </span>
               <button className="btn btn-cancel" onClick={handleCnpjKeep} style={{ marginRight: '8px' }}>

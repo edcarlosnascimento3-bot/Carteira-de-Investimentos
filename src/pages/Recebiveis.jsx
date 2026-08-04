@@ -27,8 +27,8 @@ const requiredCols = ['ticker', 'nome', 'tipo', 'data', 'dividendos', 'jcp', 're
 const knownCols = columns.map(c => c.key).filter(k => k !== 'montante' && k !== 'acoes');
 
 const selectStyle = {
-  background: '#0D0D0D',
-  color: '#E0E0E0',
+  background: 'var(--surface-dark)',
+  color: 'var(--text)',
   border: '1px solid #C8B800AA',
   borderRadius: 8,
   padding: '5px 8px',
@@ -325,7 +325,7 @@ function Proventos() {
       <p className="subtitle">
         Registro de dividendos, JCP, rendimentos e reembolsos
         {proventos.length > 0 && (
-          <span style={{ color: '#666666', marginLeft: '8px' }}>
+          <span style={{ color: 'var(--text-faint)', marginLeft: '8px' }}>
             {hasActiveFilters
               ? <>— <span style={{ color: '#C8B800' }}>{filtered.length}</span> de {proventos.length} registro(s)</>
               : <>— {proventos.length} registro(s)</>
@@ -401,7 +401,7 @@ function Proventos() {
           <button
             onClick={() => fileInputRef.current?.click()}
             style={{
-              background: '#C8B800', color: '#0A0A0A', border: 'none', borderRadius: 6,
+              background: 'var(--gold)', color: 'var(--ink)', border: 'none', borderRadius: 6,
               padding: '6px 12px', fontSize: '0.68em', fontWeight: 700, fontFamily: 'inherit',
               cursor: 'pointer', letterSpacing: '0.5px', lineHeight: 1.3,
               transition: 'all 0.2s ease',
@@ -442,15 +442,15 @@ function Proventos() {
               <button className="modal-close" onClick={() => setMassModal(null)}>✕</button>
             </div>
             <div className="modal-body">
-              <p style={{ color: '#E0E0E0', marginBottom: 16, lineHeight: 1.6 }}>
+              <p style={{ color: 'var(--text)', marginBottom: 16, lineHeight: 1.6 }}>
                 A planilha deve conter no mínimo as colunas:{' '}
                 <strong style={{ color: '#C8B800' }}>{requiredCols.join(', ')}</strong>
               </p>
-              <div style={{ background: '#0D0D0D', borderRadius: 8, padding: 16, marginBottom: 16 }}>
-                <p style={{ color: '#E0E0E0', marginBottom: 8 }}>
+              <div style={{ background: 'var(--surface-dark)', borderRadius: 8, padding: 16, marginBottom: 16 }}>
+                <p style={{ color: 'var(--text)', marginBottom: 8 }}>
                   <strong>{massModal.totalRows}</strong> linha(s) encontrada(s)
                 </p>
-                <p style={{ color: '#999999', fontSize: '0.9em', marginBottom: 4 }}>
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.9em', marginBottom: 4 }}>
                   Colunas encontradas: <span style={{ color: '#00CC66' }}>{massModal.foundCols.join(', ') || '—'}</span>
                 </p>
                 {massModal.missingReq.length > 0 && (
@@ -464,7 +464,7 @@ function Proventos() {
                   As colunas obrigatórias ausentes serão ignoradas. Deseja continuar mesmo assim?
                 </p>
               )}
-              <p style={{ color: '#E0E0E0', fontSize: '0.95em' }}>
+              <p style={{ color: 'var(--text)', fontSize: '0.95em' }}>
                 {userName}, deseja importar {massModal.totalRows} provento(s)?
               </p>
             </div>
@@ -508,7 +508,7 @@ function Proventos() {
                 return (
                   <tr key={idx}>
                     <td className="td-ticker">{row.ticker}</td>
-                    <td style={{ textAlign: 'center', color: '#E0E0E0' }}>{row.nome}</td>
+                    <td style={{ textAlign: 'center', color: 'var(--text)' }}>{row.nome}</td>
                     <td className="td-tipo">{row.tipo}</td>
                     <td className="td-data">{formatDate(row.data)}</td>
                     <td className="td-ano">{row.ano}</td>
@@ -527,7 +527,7 @@ function Proventos() {
                     <td className="td-valor" style={montante > 0 ? { ...greenCellStyle, color: '#C8B800' } : {}}>
                       {formatCurrency(montante)}
                     </td>
-                    <td style={{ textAlign: 'center', color: '#999999', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <td style={{ textAlign: 'center', color: 'var(--text-muted)', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {row.observacao || '—'}
                     </td>
                     <td className="td-acoes">
@@ -545,7 +545,7 @@ function Proventos() {
       <div className="table-footer">
         <span>Total de registros: {filtered.length}</span>
         {filtered.length > 0 && (
-          <span style={{ marginLeft: '20px', color: '#666666' }}>
+          <span style={{ marginLeft: '20px', color: 'var(--text-faint)' }}>
             Total em Proventos: {formatCurrency(filtered.reduce((acc, p) => acc + (p.dividendos || 0) + (p.jcp || 0) + (p.rendimento || 0) + (p.reembolso || 0), 0))}
           </span>
         )}
@@ -590,7 +590,7 @@ function Proventos() {
               <button className="modal-close" onClick={() => setClearConfirm(false)}>✕</button>
             </div>
             <div className="modal-body">
-              <p style={{ color: '#E0E0E0', lineHeight: 1.6 }}>
+              <p style={{ color: 'var(--text)', lineHeight: 1.6 }}>
                 Todas as informações da tabela serão excluídas definitivamente sem possibilidade de desfazer, deseja realmente continuar?
               </p>
             </div>

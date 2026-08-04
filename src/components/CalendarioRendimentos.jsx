@@ -187,8 +187,8 @@ function CalendarioRendimentos() {
 
   const btnStyle = {
     background: 'none',
-    border: '1px solid rgba(255,255,255,0.15)',
-    color: '#ccc',
+    border: '1px solid var(--border-strong)',
+    color: 'var(--text-muted)',
     fontSize: '1.1em',
     padding: '4px 12px',
     borderRadius: '6px',
@@ -289,7 +289,7 @@ function CalendarioRendimentos() {
       <div className="eventos-lista">
         <h4>{tituloTabela}</h4>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-          <span style={{ fontSize: '0.75em', color: '#888' }}>
+          <span style={{ fontSize: '0.75em', color: 'var(--text-faint)' }}>
             {eventosAgrupados.filter(e => Object.values(e.fontes || {}).every(f => f === 'api')).length > 0
               ? '🔄 Dados automáticos via brapi.dev'
               : ''}
@@ -299,7 +299,7 @@ function CalendarioRendimentos() {
               onClick={fetchDividends}
               disabled={apiLoading}
               style={{
-                background: 'transparent', border: '1px solid #444', color: '#aaa',
+                background: 'transparent', border: '1px solid var(--border)', color: 'var(--text-muted)',
                 borderRadius: 6, padding: '3px 10px', fontSize: '0.7em', cursor: 'pointer',
                 fontFamily: 'inherit', fontWeight: 600,
               }}
@@ -309,7 +309,7 @@ function CalendarioRendimentos() {
           )}
         </div>
         {eventosAgrupados.length === 0 ? (
-          <p style={{ color: '#888', fontSize: '0.9em' }}>
+          <p style={{ color: 'var(--text-faint)', fontSize: '0.9em' }}>
             {apiLoading ? 'Buscando dividendos da internet...' : 'Nenhum provento neste mês.'}
           </p>
         ) : (
@@ -348,7 +348,7 @@ function CalendarioRendimentos() {
                         <div key={tipo} className="evento-provento-item" style={{ borderLeft: `3px solid ${cfg.cor}`, background: cfg.bg }}>
                           <span className="evento-provento-label" style={{ color: cfg.cor }}>{tipo}</span>
                           <span className="evento-provento-valor" style={{ color: cfg.cor }}>
-                            {valorStr ?? <em style={{ color: '#555', fontStyle: 'italic', fontWeight: 400 }}>A definir</em>}
+                            {valorStr ?? <em style={{ color: 'var(--text-faint)', fontStyle: 'italic', fontWeight: 400 }}>A definir</em>}
                           </span>
                         </div>
                       );

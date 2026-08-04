@@ -20,7 +20,7 @@ class PlotlyErrorBoundary extends Component {
       return (
         <div style={{
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          height: 200, color: '#555', fontSize: '0.9em', flexDirection: 'column', gap: 8,
+          height: 200, color: 'var(--text-faint)', fontSize: '0.9em', flexDirection: 'column', gap: 8,
         }}>
           <span style={{ fontSize: '2em' }}>📊</span>
           <span>Gráfico 3D indisponível neste ambiente</span>
@@ -95,21 +95,21 @@ function GraficoInvestidoPorTipo3DInner({ portfolio }) {
     try {
       const maxVal = Math.max(...agrupado.map(d => d.valor));
       const traces = agrupado.map((d, i) =>
-        makeBar3D(d.tipo, d.valor, tipoCores[d.tipo] || '#888888', i, maxVal)
+        makeBar3D(d.tipo, d.valor, tipoCores[d.tipo] || 'var(--text-muted)', i, maxVal)
       );
       const layout = {
-        title: { text: 'Investido por Tipo', font: { color: '#E0E0E0', size: 16 } },
+        title: { text: 'Investido por Tipo', font: { color: 'var(--text)', size: 16 } },
         scene: {
-          xaxis: { title: { text: 'Tipo', font: { color: '#999' } }, tickfont: { color: '#999' }, gridcolor: '#2A2A2A', zerolinecolor: '#2A2A2A' },
-          yaxis: { title: { text: '', font: { color: '#999' } }, tickfont: { color: '#999' }, gridcolor: '#2A2A2A', zerolinecolor: '#2A2A2A' },
-          zaxis: { title: { text: 'Investido (R$)', font: { color: '#999' } }, tickfont: { color: '#999' }, gridcolor: '#2A2A2A', zerolinecolor: '#2A2A2A' },
+          xaxis: { title: { text: 'Tipo', font: { color: 'var(--text-muted)' } }, tickfont: { color: 'var(--text-muted)' }, gridcolor: 'var(--border)', zerolinecolor: 'var(--border)' },
+          yaxis: { title: { text: '', font: { color: 'var(--text-muted)' } }, tickfont: { color: 'var(--text-muted)' }, gridcolor: 'var(--border)', zerolinecolor: 'var(--border)' },
+          zaxis: { title: { text: 'Investido (R$)', font: { color: 'var(--text-muted)' } }, tickfont: { color: 'var(--text-muted)' }, gridcolor: 'var(--border)', zerolinecolor: 'var(--border)' },
           camera: { eye: { x: 1.8, y: 1.8, z: 1.2 } },
           bgcolor: 'rgba(0,0,0,0)',
         },
         paper_bgcolor: 'rgba(0,0,0,0)',
         plot_bgcolor: 'rgba(0,0,0,0)',
-        font: { color: '#E0E0E0' },
-        legend: { font: { color: '#E0E0E0' }, bgcolor: 'rgba(0,0,0,0)' },
+        font: { color: 'var(--text)' },
+        legend: { font: { color: 'var(--text)' }, bgcolor: 'rgba(0,0,0,0)' },
         margin: { l: 0, r: 0, b: 0, t: 40 },
         autosize: true,
       };
@@ -128,7 +128,7 @@ function GraficoInvestidoPorTipo3DInner({ portfolio }) {
     return (
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        height: 200, color: '#555', fontSize: '0.9em', flexDirection: 'column', gap: 8,
+        height: 200, color: 'var(--text-faint)', fontSize: '0.9em', flexDirection: 'column', gap: 8,
       }}>
         <span style={{ fontSize: '2em' }}>📊</span>
         <span>Gráfico 3D indisponível — biblioteca não carregada</span>
@@ -138,7 +138,7 @@ function GraficoInvestidoPorTipo3DInner({ portfolio }) {
 
   return (
     <div style={{ marginTop: 30 }}>
-      <h2 style={{ color: '#E0E0E0', fontSize: '1.2em', marginBottom: 16 }}>
+      <h2 style={{ color: 'var(--text)', fontSize: '1.2em', marginBottom: 16 }}>
         📊 Investido por Tipo (3D)
       </h2>
       <div ref={chartRef} style={{ width: '100%', height: 450 }} />

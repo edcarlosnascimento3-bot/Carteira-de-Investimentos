@@ -8,7 +8,7 @@ function ConfirmModal({ message, onConfirm, onCancel }) {
 
         <div className="modal-body" style={{ textAlign: 'center', padding: '30px 20px' }}>
           <div style={{ fontSize: '3em', marginBottom: '16px' }}>🗑️</div>
-          <p style={{ color: '#E0E0E0', fontSize: '1.1em', lineHeight: 1.6 }}>
+          <p style={{ color: 'var(--text)', fontSize: '1.1em', lineHeight: 1.6 }}>
             {message}
           </p>
         </div>

@@ -14,17 +14,17 @@ const tabs = [
 const thStyle = {
   padding: '10px 14px',
   textAlign: 'left',
-  color: '#666666',
+  color: 'var(--text-faint)',
   fontWeight: 500,
   fontSize: '0.8em',
   textTransform: 'uppercase',
   letterSpacing: '1px',
-  borderBottom: '1px solid #2A2A2A',
+  borderBottom: '1px solid var(--border)',
 };
 
 const tdStyle = {
   padding: '10px 14px',
-  borderBottom: '1px solid #1A1A1A',
+  borderBottom: '1px solid var(--border)',
 };
 
 function parseDate(dateStr) {
@@ -285,7 +285,7 @@ function IRRF() {
         display: 'flex',
         gap: '4px',
         marginBottom: '25px',
-        borderBottom: '1px solid #2A2A2A',
+        borderBottom: '1px solid var(--border)',
         paddingBottom: '2px',
         flexWrap: 'wrap',
       }}>
@@ -294,10 +294,10 @@ function IRRF() {
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
             style={{
-              background: activeTab === tab.id ? '#151515' : 'transparent',
+              background: activeTab === tab.id ? 'var(--surface)' : 'transparent',
               border: 'none',
               borderBottom: activeTab === tab.id ? '2px solid #C8B800' : '2px solid transparent',
-              color: activeTab === tab.id ? '#FFFFFF' : '#999999',
+              color: activeTab === tab.id ? 'var(--text-strong)' : 'var(--text-muted)',
               padding: '10px 18px',
               cursor: 'pointer',
               fontSize: '0.9em',
@@ -315,7 +315,7 @@ function IRRF() {
       {(activeTab === 'isentos' || activeTab === 'tributacao') && (
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
-            <span style={{ color: '#E0E0E0', fontSize: '0.95em', fontWeight: 600 }}>
+            <span style={{ color: 'var(--text)', fontSize: '0.95em', fontWeight: 600 }}>
               Selecione o ano desejado
             </span>
             <span style={{ color: '#FF0000', fontSize: '2em', lineHeight: 1 }}>➡</span>
@@ -323,7 +323,7 @@ function IRRF() {
               value={selectedAno || ''}
               onChange={e => setSelectedAno(Number(e.target.value))}
               style={{
-                background: '#0D0D0D', color: '#E0E0E0', border: '1px solid #2A2A2A', borderRadius: 6,
+                background: 'var(--surface-dark)', color: 'var(--text)', border: '1px solid var(--border)', borderRadius: 6,
                 padding: '6px 12px', fontSize: '1em', cursor: 'pointer', fontFamily: 'inherit',
               }}
             >
@@ -334,8 +334,8 @@ function IRRF() {
           </div>
 
           <div style={{
-            background: '#151515',
-            border: '1px solid #2A2A2A',
+            background: 'var(--surface)',
+            border: '1px solid var(--border)',
             borderRadius: 12,
             overflow: 'hidden',
           }}>
@@ -360,14 +360,14 @@ function IRRF() {
               <tbody>
                   {activeTab === 'isentos' && isentosData.length === 0 && (
                     <tr>
-                      <td colSpan={activeTab === 'isentos' ? 9 : 8} style={{ ...tdStyle, textAlign: 'center', color: '#666', padding: 30 }}>
+                      <td colSpan={activeTab === 'isentos' ? 9 : 8} style={{ ...tdStyle, textAlign: 'center', color: 'var(--text-faint)', padding: 30 }}>
                         Nenhum rendimento encontrado para {selectedAno}
                       </td>
                     </tr>
                   )}
                   {activeTab === 'tributacao' && tributacaoData.length === 0 && (
                     <tr>
-                      <td colSpan={activeTab === 'isentos' ? 9 : 8} style={{ ...tdStyle, textAlign: 'center', color: '#666', padding: 30 }}>
+                      <td colSpan={activeTab === 'isentos' ? 9 : 8} style={{ ...tdStyle, textAlign: 'center', color: 'var(--text-faint)', padding: 30 }}>
                         Nenhum rendimento encontrado para {selectedAno}
                       </td>
                     </tr>
@@ -376,16 +376,16 @@ function IRRF() {
                   <tr
                     key={item.ticker}
                     style={{ transition: 'background 0.2s ease' }}
-                    onMouseEnter={(e) => e.currentTarget.style.background = '#1A1A00'}
+                    onMouseEnter={(e) => e.currentTarget.style.background = 'var(--gold-hover)'}
                     onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
                   >
                     <td style={tdStyle}>{i + 1}</td>
                     <td style={tdStyle}>{item.tipo !== 'Ação' ? '99 - Outros' : '09 - Lucros e Dividendos Recebidos'}</td>
-                    <td style={{ ...tdStyle, fontWeight: 600, color: '#FFFFFF' }}>{item.ticker}</td>
+                    <td style={{ ...tdStyle, fontWeight: 600, color: 'var(--text-strong)' }}>{item.ticker}</td>
                     <td style={tdStyle}>{item.nome}</td>
                     <td style={tdStyle}>{item.tipo && item.tipo.includes('FII') ? 'Aplicações financeiras em fundos de investimento imobiliario' : ''}</td>
                     <td style={{ ...tdStyle, textAlign: 'center' }}>
-                      <span style={{ color: '#E0E0E0', fontFamily: "'Consolas', monospace" }}>
+                      <span style={{ color: 'var(--text)', fontFamily: "'Consolas', monospace" }}>
                         {item.cnpj || '—'}
                       </span>
                     </td>
@@ -393,9 +393,9 @@ function IRRF() {
                       {item.cnpj && (
                         <span
                           onClick={() => navigator.clipboard.writeText(item.cnpj)}
-                          style={{ cursor: 'pointer', display: 'inline-flex', color: '#999999', transition: 'color 0.2s' }}
+                          style={{ cursor: 'pointer', display: 'inline-flex', color: 'var(--text-muted)', transition: 'color 0.2s' }}
                           onMouseEnter={(e) => e.currentTarget.style.color = '#C8B800'}
-                          onMouseLeave={(e) => e.currentTarget.style.color = '#999999'}
+                          onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-muted)'}
                           title="Copiar CNPJ"
                         >
                           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -411,9 +411,9 @@ function IRRF() {
                     <td style={{ ...tdStyle, textAlign: 'center' }}>
                       <span
                         onClick={() => navigator.clipboard.writeText(formatNumber(item.total))}
-                          style={{ cursor: 'pointer', display: 'inline-flex', color: '#999999', transition: 'color 0.2s' }}
+                          style={{ cursor: 'pointer', display: 'inline-flex', color: 'var(--text-muted)', transition: 'color 0.2s' }}
                           onMouseEnter={(e) => e.currentTarget.style.color = '#C8B800'}
-                          onMouseLeave={(e) => e.currentTarget.style.color = '#999999'}
+                          onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-muted)'}
                           title="Copiar valor"
                         >
                           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -428,15 +428,15 @@ function IRRF() {
                     <tr
                       key={`${item.ticker}-${item.tipo}`}
                       style={{ transition: 'background 0.2s ease' }}
-                      onMouseEnter={(e) => e.currentTarget.style.background = '#1A1A00'}
+                      onMouseEnter={(e) => e.currentTarget.style.background = 'var(--gold-hover)'}
                       onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
                     >
                       <td style={tdStyle}>{i + 1}</td>
                       <td style={tdStyle}>{item.tipo === 'JCP' ? '10 - Juros sobre capital próprio' : '06 - Rendimentos sobre aplicações financeiras'}</td>
-                      <td style={{ ...tdStyle, fontWeight: 600, color: '#FFFFFF' }}>{item.ticker}</td>
+                      <td style={{ ...tdStyle, fontWeight: 600, color: 'var(--text-strong)' }}>{item.ticker}</td>
                       <td style={tdStyle}>{item.nome}</td>
                       <td style={{ ...tdStyle, textAlign: 'center' }}>
-                        <span style={{ color: '#E0E0E0', fontFamily: "'Consolas', monospace" }}>
+                        <span style={{ color: 'var(--text)', fontFamily: "'Consolas', monospace" }}>
                           {item.cnpj || '—'}
                         </span>
                       </td>
@@ -444,9 +444,9 @@ function IRRF() {
                         {item.cnpj && (
                           <span
                             onClick={() => navigator.clipboard.writeText(item.cnpj)}
-                            style={{ cursor: 'pointer', display: 'inline-flex', color: '#999999', transition: 'color 0.2s' }}
+                            style={{ cursor: 'pointer', display: 'inline-flex', color: 'var(--text-muted)', transition: 'color 0.2s' }}
                             onMouseEnter={(e) => e.currentTarget.style.color = '#C8B800'}
-                            onMouseLeave={(e) => e.currentTarget.style.color = '#999999'}
+                            onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-muted)'}
                             title="Copiar CNPJ"
                           >
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -462,9 +462,9 @@ function IRRF() {
                       <td style={{ ...tdStyle, textAlign: 'center' }}>
                         <span
                           onClick={() => navigator.clipboard.writeText(formatNumber(item.total))}
-                        style={{ cursor: 'pointer', display: 'inline-flex', color: '#999999', transition: 'color 0.2s' }}
+                        style={{ cursor: 'pointer', display: 'inline-flex', color: 'var(--text-muted)', transition: 'color 0.2s' }}
                         onMouseEnter={(e) => e.currentTarget.style.color = '#C8B800'}
-                        onMouseLeave={(e) => e.currentTarget.style.color = '#999999'}
+                        onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-muted)'}
                         title="Copiar valor"
                       >
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -484,7 +484,7 @@ function IRRF() {
       {activeTab === 'bens' && (
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
-            <span style={{ color: '#E0E0E0', fontSize: '0.95em', fontWeight: 600 }}>
+            <span style={{ color: 'var(--text)', fontSize: '0.95em', fontWeight: 600 }}>
               Selecione o ano desejado
             </span>
             <span style={{ color: '#FF0000', fontSize: '2em', lineHeight: 1 }}>➡</span>
@@ -492,7 +492,7 @@ function IRRF() {
               value={selectedAno || ''}
               onChange={e => setSelectedAno(Number(e.target.value))}
               style={{
-                background: '#0D0D0D', color: '#E0E0E0', border: '1px solid #2A2A2A', borderRadius: 6,
+                background: 'var(--surface-dark)', color: 'var(--text)', border: '1px solid var(--border)', borderRadius: 6,
                 padding: '6px 12px', fontSize: '1em', cursor: 'pointer', fontFamily: 'inherit',
               }}
             >
@@ -503,8 +503,8 @@ function IRRF() {
           </div>
 
           <div style={{
-            background: '#151515',
-            border: '1px solid #2A2A2A',
+            background: 'var(--surface)',
+            border: '1px solid var(--border)',
             borderRadius: 12,
             overflow: 'auto',
           }}>
@@ -529,7 +529,7 @@ function IRRF() {
               <tbody>
                 {bensData.length === 0 && (
                   <tr>
-                    <td colSpan={9} style={{ ...tdStyle, textAlign: 'center', color: '#666', padding: 30 }}>
+                    <td colSpan={9} style={{ ...tdStyle, textAlign: 'center', color: 'var(--text-faint)', padding: 30 }}>
                       Nenhum ativo encontrado
                     </td>
                   </tr>
@@ -538,11 +538,11 @@ function IRRF() {
                   <tr
                     key={item.ticker}
                     style={{ transition: 'background 0.2s ease' }}
-                    onMouseEnter={(e) => e.currentTarget.style.background = '#1A1A00'}
+                    onMouseEnter={(e) => e.currentTarget.style.background = 'var(--gold-hover)'}
                     onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
                   >
                     <td style={{ ...tdStyle, textAlign: 'center' }}>{i + 1}</td>
-                    <td style={{ ...tdStyle, textAlign: 'center', fontWeight: 600, color: '#FFFFFF' }}>{item.ticker}</td>
+                    <td style={{ ...tdStyle, textAlign: 'center', fontWeight: 600, color: 'var(--text-strong)' }}>{item.ticker}</td>
                     <td style={{ ...tdStyle, textAlign: 'center' }}>{item.grupo}</td>
                     <td style={{ ...tdStyle, textAlign: 'center' }}>{item.codigoReceita}</td>
                     <td style={{ ...tdStyle, textAlign: 'center' }}>105 - Brasil</td>
@@ -554,9 +554,9 @@ function IRRF() {
                     <td style={{ ...tdStyle, textAlign: 'center' }}>
                       <span
                         onClick={() => navigator.clipboard.writeText(item.discriminacao)}
-                        style={{ cursor: 'pointer', display: 'inline-flex', color: '#999999', transition: 'color 0.2s' }}
+                        style={{ cursor: 'pointer', display: 'inline-flex', color: 'var(--text-muted)', transition: 'color 0.2s' }}
                         onMouseEnter={(e) => e.currentTarget.style.color = '#C8B800'}
-                        onMouseLeave={(e) => e.currentTarget.style.color = '#999999'}
+                        onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-muted)'}
                         title="Copiar discriminação"
                       >
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -575,17 +575,17 @@ function IRRF() {
 
       {(activeTab !== 'isentos' && activeTab !== 'tributacao' && activeTab !== 'bens' && activeTab !== 'ganhos') && (
         <div style={{
-          background: '#151515',
-          border: '1px solid #2A2A2A',
+          background: 'var(--surface)',
+          border: '1px solid var(--border)',
           borderRadius: 12,
           padding: '40px',
           textAlign: 'center',
         }}>
           <div style={{ fontSize: '3em', marginBottom: 16 }}>📄</div>
-          <h3 style={{ color: '#E0E0E0', marginBottom: 8, fontWeight: 600 }}>
+          <h3 style={{ color: 'var(--text)', marginBottom: 8, fontWeight: 600 }}>
             {tabs.find(t => t.id === activeTab)?.label}
           </h3>
-          <p style={{ color: '#999999', fontSize: '0.95em', maxWidth: 500, margin: '0 auto' }}>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.95em', maxWidth: 500, margin: '0 auto' }}>
             Em desenvolvimento
           </p>
         </div>
@@ -594,7 +594,7 @@ function IRRF() {
       {activeTab === 'ganhos' && (
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
-            <span style={{ color: '#E0E0E0', fontSize: '0.95em', fontWeight: 600 }}>
+            <span style={{ color: 'var(--text)', fontSize: '0.95em', fontWeight: 600 }}>
               Selecione o ano desejado
             </span>
             <span style={{ color: '#FF0000', fontSize: '2em', lineHeight: 1 }}>➡</span>
@@ -602,7 +602,7 @@ function IRRF() {
               value={selectedAno || ''}
               onChange={e => setSelectedAno(Number(e.target.value))}
               style={{
-                background: '#0D0D0D', color: '#E0E0E0', border: '1px solid #2A2A2A', borderRadius: 6,
+                background: 'var(--surface-dark)', color: 'var(--text)', border: '1px solid var(--border)', borderRadius: 6,
                 padding: '6px 12px', fontSize: '1em', cursor: 'pointer', fontFamily: 'inherit',
               }}
             >
@@ -613,8 +613,8 @@ function IRRF() {
           </div>
 
           <div style={{
-            background: '#151515',
-            border: '1px solid #2A2A2A',
+            background: 'var(--surface)',
+            border: '1px solid var(--border)',
             borderRadius: 12,
             overflow: 'auto',
           }}>
@@ -632,7 +632,7 @@ function IRRF() {
             <tbody>
               {ganhosData.length === 0 && (
                 <tr>
-                  <td colSpan={6} style={{ textAlign: 'center', color: '#666', padding: 30 }}>
+                  <td colSpan={6} style={{ textAlign: 'center', color: 'var(--text-faint)', padding: 30 }}>
                     Nenhum ativo encontrado
                   </td>
                 </tr>
@@ -641,15 +641,15 @@ function IRRF() {
                 <tr
                   key={item.ticker}
                   style={{ transition: 'background 0.2s ease' }}
-                  onMouseEnter={(e) => e.currentTarget.style.background = '#1A1A00'}
+                  onMouseEnter={(e) => e.currentTarget.style.background = 'var(--gold-hover)'}
                   onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
                 >
                   <td style={{ ...tdStyle, textAlign: 'center' }}>{i + 1}</td>
-                  <td style={{ ...tdStyle, textAlign: 'center', fontWeight: 600, color: '#FFFFFF' }}>{item.ticker}</td>
+                  <td style={{ ...tdStyle, textAlign: 'center', fontWeight: 600, color: 'var(--text-strong)' }}>{item.ticker}</td>
                   <td style={{ ...tdStyle, textAlign: 'right', color: '#00CC66', fontWeight: 600 }}>{formatCurrency(item.compra)}</td>
                   <td style={{ ...tdStyle, textAlign: 'right', color: '#FF5555', fontWeight: 600 }}>{formatCurrency(item.venda)}</td>
                   <td style={{ ...tdStyle, textAlign: 'right', color: item.saldo >= 0 ? '#00CC66' : '#FF5555', fontWeight: 600 }}>{formatCurrency(item.saldo)}</td>
-                  <td style={{ ...tdStyle, textAlign: 'center', color: '#E0E0E0' }}>{item.anoVenda || '—'}</td>
+                  <td style={{ ...tdStyle, textAlign: 'center', color: 'var(--text)' }}>{item.anoVenda || '—'}</td>
                 </tr>
               ))}
             </tbody>

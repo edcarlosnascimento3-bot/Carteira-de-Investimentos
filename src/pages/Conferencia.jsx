@@ -18,7 +18,7 @@ const statusCores = {
   ok: { bg: '#00CC6622', color: '#00CC66', label: 'OK' },
   parcial: { bg: '#C8B80022', color: '#C8B800', label: 'Parcial' },
   faltando: { bg: '#FF555522', color: '#FF5555', label: 'Faltando' },
-  pendente: { bg: '#88888822', color: '#888888', label: 'Pendente' },
+  pendente: { bg: '#88888822', color: 'var(--text-faint)', label: 'Pendente' },
 };
 
 function Conferencia() {
@@ -135,12 +135,12 @@ function Conferencia() {
       </p>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24, flexWrap: 'wrap' }}>
-        <span style={{ color: '#CCC', fontSize: '0.9em' }}>Selecione o ativo:</span>
+        <span style={{ color: 'var(--text-soft)', fontSize: '0.9em' }}>Selecione o ativo:</span>
         <select
           value={selectedTicker}
           onChange={e => setSelectedTicker(e.target.value)}
           style={{
-            background: '#0D0D0D', color: '#E0E0E0', border: '1px solid #C8B800AA',
+            background: 'var(--surface-dark)', color: 'var(--text)', border: '1px solid #C8B800AA',
             borderRadius: 8, padding: '8px 14px', fontSize: '0.9em', fontFamily: 'inherit',
             cursor: 'pointer', outline: 'none', minWidth: 160, textAlign: 'center',
           }}
@@ -187,15 +187,15 @@ function Conferencia() {
           <div style={{
             display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16,
           }}>
-            <span style={{ color: '#888', fontSize: '0.85em' }}>Ordenar por:</span>
+            <span style={{ color: 'var(--text-faint)', fontSize: '0.85em' }}>Ordenar por:</span>
             {['year', 'diff', 'status'].map(s => (
               <button
                 key={s}
                 onClick={() => setSortBy(s)}
                 style={{
                   background: sortBy === s ? '#C8B80022' : 'transparent',
-                  color: sortBy === s ? '#C8B800' : '#888',
-                  border: `1px solid ${sortBy === s ? '#C8B80066' : '#333'}`,
+                  color: sortBy === s ? '#C8B800' : 'var(--text-faint)',
+                  border: `1px solid ${sortBy === s ? '#C8B80066' : 'var(--border)'}`,
                   borderRadius: 6, padding: '4px 12px', fontSize: '0.78em',
                   fontWeight: 700, fontFamily: 'inherit', cursor: 'pointer',
                   textTransform: 'uppercase', letterSpacing: '0.5px',
@@ -213,9 +213,9 @@ function Conferencia() {
                 <tr>
                   <th style={{ minWidth: 70 }}>ANO</th>
                   <th style={{ minWidth: 120 }}>REGISTRADO</th>
-                  <th style={{ minWidth: 40, color: '#666' }}>Qtd</th>
+                  <th style={{ minWidth: 40, color: 'var(--text-faint)' }}>Qtd</th>
                   <th style={{ minWidth: 120 }}>OFICIAL</th>
-                  <th style={{ minWidth: 40, color: '#666' }}>Qtd</th>
+                  <th style={{ minWidth: 40, color: 'var(--text-faint)' }}>Qtd</th>
                   <th style={{ minWidth: 120 }}>DIFERENÇA</th>
                   <th style={{ minWidth: 90 }}>STATUS</th>
                 </tr>
@@ -232,13 +232,13 @@ function Conferencia() {
                       <td className="td-valor" style={{ color: '#00CC66' }}>
                         {row.userTotal > 0 ? formatCurrency(row.userTotal) : '—'}
                       </td>
-                      <td style={{ textAlign: 'center', color: '#666', fontSize: '0.85em' }}>
+                      <td style={{ textAlign: 'center', color: 'var(--text-faint)', fontSize: '0.85em' }}>
                         {row.userCount || '—'}
                       </td>
                       <td className="td-valor" style={{ color: '#C8B800' }}>
                         {row.apiTotal > 0 ? formatCurrency(row.apiTotal) : '—'}
                       </td>
-                      <td style={{ textAlign: 'center', color: '#666', fontSize: '0.85em' }}>
+                      <td style={{ textAlign: 'center', color: 'var(--text-faint)', fontSize: '0.85em' }}>
                         {row.apiCount || '—'}
                       </td>
                       <td className="td-valor" style={{ color: row.status === 'ok' ? '#00CC66' : '#FF5555' }}>
@@ -262,7 +262,7 @@ function Conferencia() {
           </div>
 
           {apiDividends.length > 0 && (
-            <details style={{ marginTop: 24, background: '#151515', borderRadius: 10, border: '1px solid #2A2A2A', padding: 16 }}>
+            <details style={{ marginTop: 24, background: 'var(--surface)', borderRadius: 10, border: '1px solid var(--border)', padding: 16 }}>
               <summary style={{ color: '#C8B800', fontWeight: 700, cursor: 'pointer', fontSize: '0.9em', letterSpacing: '1px' }}>
                 📋 Histórico Oficial ({apiDividends.length} registro(s))
               </summary>
@@ -287,7 +287,7 @@ function Conferencia() {
                     ))}
                     {apiDividends.length > 50 && (
                       <tr>
-                        <td colSpan={3} style={{ textAlign: 'center', color: '#666', padding: 12 }}>
+                        <td colSpan={3} style={{ textAlign: 'center', color: 'var(--text-faint)', padding: 12 }}>
                           ...e mais {apiDividends.length - 50} registro(s)
                         </td>
                       </tr>

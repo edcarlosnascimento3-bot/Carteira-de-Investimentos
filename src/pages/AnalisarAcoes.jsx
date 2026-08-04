@@ -197,7 +197,7 @@ const secaoConfig = [
 ];
 
 const selectStyle = {
-  background: '#0D0D0D', color: '#E0E0E0', border: '1px solid #C8B800AA',
+  background: 'var(--surface-dark)', color: 'var(--text)', border: '1px solid #C8B800AA',
   borderRadius: 8, padding: '8px 14px', fontSize: '0.9em', fontFamily: 'inherit',
   cursor: 'pointer', outline: 'none', textAlign: 'center', textAlignLast: 'center',
 };
@@ -342,27 +342,27 @@ function AnalisarAcoes() {
     <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start' }}>
       <aside style={{ width: 260, flexShrink: 0 }}>
         <div style={{
-          background: '#151515', border: '1px solid #2A2A2A', borderRadius: 10, overflow: 'hidden',
+          background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, overflow: 'hidden',
           position: 'sticky', top: 16, maxHeight: 'calc(100vh - 120px)', display: 'flex', flexDirection: 'column',
         }}>
           <div style={{
-            padding: '10px 14px', borderBottom: '1px solid #2A2A2A',
-            color: '#888', fontSize: '0.72em', fontWeight: 700, letterSpacing: '1px',
-            background: '#0D0D0D',
+            padding: '10px 14px', borderBottom: '1px solid var(--border)',
+            color: 'var(--text-faint)', fontSize: '0.72em', fontWeight: 700, letterSpacing: '1px',
+            background: 'var(--surface-dark)',
           }}>
             ATIVOS ({filteredTickers.length})
           </div>
           <div style={{ overflowY: 'auto', flex: 1, padding: 6 }}>
             {loadingAllStocks ? (
-              <div style={{ padding: '12px', color: '#666', fontSize: '0.85em', textAlign: 'center' }}>
+              <div style={{ padding: '12px', color: 'var(--text-faint)', fontSize: '0.85em', textAlign: 'center' }}>
                 Carregando ativos...
               </div>
             ) : sectorFilter && subsectorFilter && loadingProfiles ? (
-              <div style={{ padding: '12px', color: '#666', fontSize: '0.85em', textAlign: 'center' }}>
+              <div style={{ padding: '12px', color: 'var(--text-faint)', fontSize: '0.85em', textAlign: 'center' }}>
                 Carregando...
               </div>
             ) : filteredTickers.length === 0 ? (
-              <div style={{ padding: '12px', color: '#666', fontSize: '0.85em', textAlign: 'center' }}>
+              <div style={{ padding: '12px', color: 'var(--text-faint)', fontSize: '0.85em', textAlign: 'center' }}>
                 {sectorFilter ? 'Nenhum ativo encontrado' : 'Selecione um setor'}
               </div>
             ) : filteredTickers.map(t => {
@@ -379,19 +379,19 @@ function AnalisarAcoes() {
                     border: isActive ? '1px solid #C8B80033' : '1px solid transparent',
                     marginBottom: 2, transition: 'all 0.15s',
                   }}
-                  onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = '#222' }}
+                  onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = 'var(--surface-hover)' }}
                   onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = 'transparent' }}
                 >
-                  <div style={{ color: isActive ? '#C8B800' : '#E0E0E0', fontWeight: 700, fontSize: '0.88em' }}>
+                  <div style={{ color: isActive ? '#C8B800' : 'var(--text-soft)', fontWeight: 700, fontSize: '0.88em' }}>
                     {t}
                   </div>
                   {info && (
-                    <div style={{ color: '#AAA', fontSize: '0.72em', marginTop: 1 }}>
+                    <div style={{ color: 'var(--text-muted)', fontSize: '0.72em', marginTop: 1 }}>
                       {info.name}
                     </div>
                   )}
                   {ptSector && (
-                    <div style={{ color: '#666', fontSize: '0.68em', marginTop: 2 }}>
+                    <div style={{ color: 'var(--text-faint)', fontSize: '0.68em', marginTop: 2 }}>
                       {ptSector}
                     </div>
                   )}
@@ -407,7 +407,7 @@ function AnalisarAcoes() {
 
         
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16, flexWrap: 'wrap' }}>
-        <span style={{ color: '#CCC', fontSize: '0.9em' }}>Setor:</span>
+        <span style={{ color: 'var(--text-soft)', fontSize: '0.9em' }}>Setor:</span>
         <select
           value={sectorFilter}
           onChange={e => handleSectorChange(e.target.value)}
@@ -419,7 +419,7 @@ function AnalisarAcoes() {
           ))}
         </select>
 
-        <span style={{ color: '#CCC', fontSize: '0.9em' }}>Subsetor:</span>
+        <span style={{ color: 'var(--text-soft)', fontSize: '0.9em' }}>Subsetor:</span>
         <select
           value={subsectorFilter}
           onChange={e => setSubsectorFilter(e.target.value)}
@@ -451,20 +451,20 @@ function AnalisarAcoes() {
 
       {ticker && ativo && (
         <div style={{
-          background: '#151515', border: '1px solid #2A2A2A', borderRadius: 10,
+          background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10,
           padding: '14px 20px', marginBottom: 24,
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
             <span style={{ fontSize: '1.3em', fontWeight: 700, color: '#C8B800' }}>{ticker}</span>
-            <span style={{ color: '#888', fontSize: '0.85em' }}>{ativo.ativo}</span>
+            <span style={{ color: 'var(--text-faint)', fontSize: '0.85em' }}>{ativo.ativo}</span>
             <span style={{
               fontSize: '0.75em', padding: '3px 10px', borderRadius: 6,
-              background: '#2A2A2A', color: '#CCC',
+              background: 'var(--surface-hover)', color: 'var(--text-soft)',
             }}>{ativo.tipo}</span>
             <span style={{
               fontSize: '0.75em', padding: '3px 10px', borderRadius: 6,
-              background: ativo.segmento ? '#2A2A2A' : 'transparent',
-              color: '#888',
+              background: ativo.segmento ? 'var(--surface-hover)' : 'transparent',
+              color: 'var(--text-faint)',
             }}>{ativo.segmento || ativo.cnpj ? `CNPJ: ${ativo.cnpj}` : ''}</span>
             {cotacao && (
               <span style={{
@@ -486,11 +486,11 @@ function AnalisarAcoes() {
         if (!itens || itens.length === 0) return null;
         return (
           <div key={secao.key} style={{
-            background: '#151515', border: '1px solid #2A2A2A', borderRadius: 10,
+            background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10,
             marginBottom: 14, overflow: 'hidden',
           }}>
             <div style={{
-              padding: '12px 20px', borderBottom: '1px solid #2A2A2A',
+              padding: '12px 20px', borderBottom: '1px solid var(--border)',
               display: 'flex', alignItems: 'center', gap: 8,
             }}>
               <span>{secao.icone}</span>
@@ -500,14 +500,14 @@ function AnalisarAcoes() {
             </div>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
-                <tr style={{ background: '#0D0D0D' }}>
-                  <th style={{ padding: '8px 20px', textAlign: 'left', color: '#888', fontSize: '0.8em', fontWeight: 600, borderBottom: '1px solid #2A2A2A' }}>
+                <tr style={{ background: 'var(--surface-dark)' }}>
+                  <th style={{ padding: '8px 20px', textAlign: 'left', color: 'var(--text-faint)', fontSize: '0.8em', fontWeight: 600, borderBottom: '1px solid var(--border)' }}>
                     Indicador
                   </th>
-                  <th style={{ padding: '8px 20px', textAlign: 'center', color: '#888', fontSize: '0.8em', fontWeight: 600, borderBottom: '1px solid #2A2A2A', width: 120 }}>
+                  <th style={{ padding: '8px 20px', textAlign: 'center', color: 'var(--text-faint)', fontSize: '0.8em', fontWeight: 600, borderBottom: '1px solid var(--border)', width: 120 }}>
                     Valor
                   </th>
-                  <th style={{ padding: '8px 20px', textAlign: 'center', color: '#888', fontSize: '0.8em', fontWeight: 600, borderBottom: '1px solid #2A2A2A', width: 100 }}>
+                  <th style={{ padding: '8px 20px', textAlign: 'center', color: 'var(--text-faint)', fontSize: '0.8em', fontWeight: 600, borderBottom: '1px solid var(--border)', width: 100 }}>
                     Avaliação
                   </th>
                 </tr>
@@ -520,18 +520,18 @@ function AnalisarAcoes() {
                       background: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.02)',
                       transition: 'background 0.2s',
                     }}>
-                      <td style={{ padding: '8px 20px', color: '#E0E0E0', fontSize: '0.88em', borderBottom: '1px solid #1A1A1A' }}>
+                      <td style={{ padding: '8px 20px', color: 'var(--text)', fontSize: '0.88em', borderBottom: '1px solid var(--border)' }}>
                         {ind.nome}
                       </td>
                       <td style={{
-                        padding: '8px 20px', textAlign: 'center', color: '#FFF',
+                        padding: '8px 20px', textAlign: 'center', color: 'var(--text-strong)',
                         fontSize: '0.9em', fontWeight: 700, fontFamily: "'Consolas', monospace",
-                        borderBottom: '1px solid #1A1A1A',
+                        borderBottom: '1px solid var(--border)',
                       }}>
                         {ind.valor}
                       </td>
                       <td style={{
-                        padding: '8px 20px', textAlign: 'center', borderBottom: '1px solid #1A1A1A',
+                        padding: '8px 20px', textAlign: 'center', borderBottom: '1px solid var(--border)',
                       }}>
                         <span style={{
                           display: 'inline-block', padding: '2px 12px', borderRadius: 6,

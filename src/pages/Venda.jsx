@@ -131,10 +131,10 @@ function Venda() {
   const inputStyle = {
     flex: 1,
     padding: '10px 14px',
-    background: '#0A0A0A',
-    border: '1px solid #2A2A2A',
+    background: 'var(--surface-void)',
+    border: '1px solid var(--border)',
     borderRadius: '8px',
-    color: '#E0E0E0',
+    color: 'var(--text)',
     fontSize: '0.95em',
     fontFamily: 'inherit',
     outline: 'none',
@@ -150,7 +150,7 @@ function Venda() {
 
   const labelStyle = {
     width: '140px',
-    color: '#CCCCCC',
+    color: 'var(--text-soft)',
     fontSize: '0.9em',
     fontWeight: 500,
     flexShrink: 0,
@@ -202,7 +202,7 @@ function Venda() {
         <div style={rowStyle}>
           <label style={labelStyle}>Tipo</label>
           <select
-            style={{ ...inputStyle, color: form.tipo ? '#E0E0E0' : '#666666' }}
+            style={{ ...inputStyle, color: form.tipo ? 'var(--text)' : 'var(--text-faint)' }}
             value={form.tipo}
             onChange={(e) => handleChange('tipo', e.target.value)}
           >
@@ -272,7 +272,7 @@ function Venda() {
         <div style={rowStyle}>
           <label style={labelStyle}>Tipo de Venda</label>
           <select
-            style={{ ...inputStyle, color: form.tipoVenda ? '#E0E0E0' : '#666666' }}
+            style={{ ...inputStyle, color: form.tipoVenda ? 'var(--text)' : 'var(--text-faint)' }}
             value={form.tipoVenda}
             onChange={(e) => handleChange('tipoVenda', e.target.value)}
           >

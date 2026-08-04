@@ -129,10 +129,10 @@ function EditProventoModal({ data, onSave, onClose, tickerList, tickerNomeMap, t
   const inputStyle = {
     width: '100%',
     padding: '10px 12px',
-    background: '#0A0A0A',
-    border: '1px solid #2A2A2A',
+    background: 'var(--surface-void)',
+    border: '1px solid var(--border)',
     borderRadius: '6px',
-    color: '#E0E0E0',
+    color: 'var(--text)',
     fontSize: '0.9em',
     fontFamily: 'inherit',
     outline: 'none',
@@ -141,7 +141,7 @@ function EditProventoModal({ data, onSave, onClose, tickerList, tickerNomeMap, t
 
   const labelStyle = {
     display: 'block',
-    color: '#999999',
+    color: 'var(--text-muted)',
     fontSize: '0.8em',
     marginBottom: '4px',
     fontWeight: 500,
@@ -178,12 +178,12 @@ function EditProventoModal({ data, onSave, onClose, tickerList, tickerNomeMap, t
               />
               {showDropdown && tickerList && tickerList.length > 0 && (
                 <div style={{
-                  position: 'absolute', zIndex: 100, background: '#0A0A0A',
-                  border: '1px solid #2A2A2A', borderRadius: '6px', maxHeight: '200px',
+                  position: 'absolute', zIndex: 100, background: 'var(--surface-void)',
+                  border: '1px solid var(--border)', borderRadius: '6px', maxHeight: '200px',
                   overflowY: 'auto', width: 'calc(100% - 2px)', marginTop: '2px',
                 }}>
                   {filteredTickers.length === 0 ? (
-                    <div style={{ padding: '10px 12px', color: '#666', fontSize: '0.85em' }}>
+                    <div style={{ padding: '10px 12px', color: 'var(--text-faint)', fontSize: '0.85em' }}>
                       Nenhum ativo encontrado
                     </div>
                   ) : (
@@ -191,12 +191,12 @@ function EditProventoModal({ data, onSave, onClose, tickerList, tickerNomeMap, t
                       <div
                         key={t}
                         style={{
-                          padding: '8px 12px', cursor: 'pointer', color: '#E0E0E0',
-                          fontSize: '0.9em', borderBottom: '1px solid #1A1A1A',
-                          background: form.ticker === t ? '#1A1A00' : 'transparent',
+                          padding: '8px 12px', cursor: 'pointer', color: 'var(--text)',
+                          fontSize: '0.9em', borderBottom: '1px solid var(--border)',
+                          background: form.ticker === t ? 'var(--gold-hover)' : 'transparent',
                         }}
-                        onMouseOver={e => e.target.style.background = '#222'}
-                        onMouseOut={e => e.target.style.background = form.ticker === t ? '#1A1A00' : 'transparent'}
+                        onMouseOver={e => e.target.style.background = 'var(--surface-hover)'}
+                        onMouseOut={e => e.target.style.background = form.ticker === t ? 'var(--gold-hover)' : 'transparent'}
                         onClick={() => {
                           setFilterText(t);
                           handleChange('ticker', t);
@@ -214,7 +214,7 @@ function EditProventoModal({ data, onSave, onClose, tickerList, tickerNomeMap, t
             <div style={groupStyle}>
               <label style={labelStyle}>Nome</label>
               <input
-                style={{ ...inputStyle, color: '#E0E0E0' }}
+                style={{ ...inputStyle, color: 'var(--text)' }}
                 value={form.nome}
                 readOnly
               />
@@ -223,7 +223,7 @@ function EditProventoModal({ data, onSave, onClose, tickerList, tickerNomeMap, t
             <div style={groupStyle}>
               <label style={labelStyle}>Tipo</label>
               <input
-                style={{ ...inputStyle, color: '#E0E0E0' }}
+                style={{ ...inputStyle, color: 'var(--text)' }}
                 value={form.tipo}
                 readOnly
               />
@@ -242,7 +242,7 @@ function EditProventoModal({ data, onSave, onClose, tickerList, tickerNomeMap, t
             <div style={groupStyle}>
               <label style={labelStyle}>Ano</label>
               <input
-                style={{ ...inputStyle, color: '#666666', background: '#050505' }}
+                style={{ ...inputStyle, color: 'var(--text-faint)', background: 'var(--surface-void)' }}
                 value={form.ano}
                 readOnly
               />
@@ -309,16 +309,16 @@ function EditProventoModal({ data, onSave, onClose, tickerList, tickerNomeMap, t
           <div style={{
             marginTop: '16px',
             padding: '14px',
-            background: '#0D0D0D',
+            background: 'var(--surface-dark)',
             borderRadius: '8px',
-            border: '1px solid #2A2A2A',
+            border: '1px solid var(--border)',
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
           }}>
-            <span style={{ color: '#999999' }}>Montante (calculado):</span>
+            <span style={{ color: 'var(--text-muted)' }}>Montante (calculado):</span>
             <span style={{
-              color: '#FFFFFF',
+              color: 'var(--text-strong)',
               fontSize: '1.2em',
               fontWeight: 'bold',
               fontFamily: 'Consolas, monospace',
@@ -342,7 +342,7 @@ function EditProventoModal({ data, onSave, onClose, tickerList, tickerNomeMap, t
             </div>
             <div className="modal-body" style={{ textAlign: 'center', padding: '30px 20px' }}>
               <div style={{ fontSize: '3em', marginBottom: '16px' }}>✅</div>
-              <p style={{ color: '#E0E0E0', fontSize: '1.1em', lineHeight: 1.6 }}>
+              <p style={{ color: 'var(--text)', fontSize: '1.1em', lineHeight: 1.6 }}>
                 Deseja adicionar outros proventos?
               </p>
             </div>

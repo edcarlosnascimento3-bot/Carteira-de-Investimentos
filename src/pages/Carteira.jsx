@@ -207,7 +207,7 @@ function Carteira() {
         <p className="subtitle" style={{ margin: 0, flex: 1 }}>
           Posição consolidada por ativo
           {portfolio.length > 0 && (
-            <span style={{ color: '#666666', marginLeft: '8px' }}>
+            <span style={{ color: 'var(--text-faint)', marginLeft: '8px' }}>
               — {portfolio.length} ativo(s)
               {loading && <span style={{ color: '#C8B800', marginLeft: '8px' }}>atualizando...</span>}
             </span>
@@ -283,7 +283,7 @@ function Carteira() {
                     />
                   </td>
                   <td className="td-ticker">{row.ticker}</td>
-                  <td style={{ textAlign: 'center', color: '#E0E0E0' }}>{row.ativo}</td>
+                  <td style={{ textAlign: 'center', color: 'var(--text)' }}>{row.ativo}</td>
                   <td className="td-tipo">{row.tipo}</td>
                   <td className="td-numero">{formatNumber(row.quantidade)}</td>
                   <td className="td-valor">{formatCurrency(row.precoMedio)}</td>
@@ -302,7 +302,7 @@ function Carteira() {
                         )}
                       </>
                     ) : (
-                      <span style={{ color: '#666666' }}>—</span>
+                      <span style={{ color: 'var(--text-faint)' }}>—</span>
                     )}
                   </td>
                   <td className="td-valor">{formatCurrency(row.investido)}</td>
@@ -317,7 +317,7 @@ function Carteira() {
                     <button
                       style={{
                         ...actionBtnStyle,
-                        color: getTickerInfo(row.ticker)?.link ? '#00E5FF' : '#888899',
+                        color: getTickerInfo(row.ticker)?.link ? '#00E5FF' : 'var(--text-faint)',
                         filter: getTickerInfo(row.ticker)?.link ? 'drop-shadow(0 0 4px rgba(0,229,255,0.4))' : 'none'
                       }}
                       onClick={() => handleOpenLinkAsset(row)}
@@ -348,11 +348,11 @@ function Carteira() {
         <span>Total de ativos: {portfolio.length}</span>
         {portfolio.length > 0 && (
           <>
-            <span style={{ marginLeft: '20px', color: '#666666' }}>
+            <span style={{ marginLeft: '20px', color: 'var(--text-faint)' }}>
               Total Investido:{' '}
               {formatCurrency(portfolio.reduce((acc, r) => acc + r.investido, 0))}
             </span>
-            <span style={{ marginLeft: '20px', color: '#666666' }}>
+            <span style={{ marginLeft: '20px', color: 'var(--text-faint)' }}>
               Total Atual:{' '}
               {formatCurrency(portfolio.reduce((acc, r) => acc + r.atual, 0))}
             </span>
@@ -369,15 +369,15 @@ function Carteira() {
             </div>
             <div className="modal-body">
               <div style={{ marginBottom: 16 }}>
-                <label style={{ display: 'block', color: '#999999', fontSize: '0.8em', marginBottom: 4 }}>
+                <label style={{ display: 'block', color: 'var(--text-muted)', fontSize: '0.8em', marginBottom: 4 }}>
                   Selecione o ativo
                 </label>
                 <select
                   value={restructureTicker}
                   onChange={e => setRestructureTicker(e.target.value)}
                   style={{
-                    width: '100%', padding: '10px 12px', background: '#0A0A0A',
-                    border: '1px solid #2A2A2A', borderRadius: 6, color: '#E0E0E0',
+                    width: '100%', padding: '10px 12px', background: 'var(--surface-void)',
+                    border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text)',
                     fontSize: '0.9em', fontFamily: 'inherit', outline: 'none', cursor: 'pointer',
                   }}
                 >
@@ -388,7 +388,7 @@ function Carteira() {
 
               {restructureType === 'agrupamento' ? (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
-                  <span style={{ color: '#E0E0E0', fontWeight: 600 }}>Converter</span>
+                  <span style={{ color: 'var(--text)', fontWeight: 600 }}>Converter</span>
                   <input
                     type="number"
                     min="1"
@@ -396,37 +396,37 @@ function Carteira() {
                     value={restructureFactor}
                     onChange={e => setRestructureFactor(Number(e.target.value) || 1)}
                     style={{
-                      width: 80, padding: '8px 10px', background: '#0A0A0A',
-                      border: '1px solid #C8B800AA', borderRadius: 6, color: '#E0E0E0',
+                      width: 80, padding: '8px 10px', background: 'var(--surface-void)',
+                      border: '1px solid #C8B800AA', borderRadius: 6, color: 'var(--text)',
                       fontSize: '1em', fontFamily: 'inherit', textAlign: 'center', outline: 'none',
                     }}
                   />
-                  <span style={{ color: '#E0E0E0', fontWeight: 600 }}>ativos em</span>
+                  <span style={{ color: 'var(--text)', fontWeight: 600 }}>ativos em</span>
                   <input
                     type="number"
                     value={1}
                     disabled
                     style={{
-                      width: 60, padding: '8px 10px', background: '#1A1A1A',
-                      border: '1px solid #2A2A2A', borderRadius: 6, color: '#666666',
+                      width: 60, padding: '8px 10px', background: 'var(--surface-hover)',
+                      border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text-faint)',
                       fontSize: '1em', fontFamily: 'inherit', textAlign: 'center', outline: 'none',
                     }}
                   />
                 </div>
               ) : (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
-                  <span style={{ color: '#E0E0E0', fontWeight: 600 }}>Converter</span>
+                  <span style={{ color: 'var(--text)', fontWeight: 600 }}>Converter</span>
                   <input
                     type="number"
                     value={1}
                     disabled
                     style={{
-                      width: 60, padding: '8px 10px', background: '#1A1A1A',
-                      border: '1px solid #2A2A2A', borderRadius: 6, color: '#666666',
+                      width: 60, padding: '8px 10px', background: 'var(--surface-hover)',
+                      border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text-faint)',
                       fontSize: '1em', fontFamily: 'inherit', textAlign: 'center', outline: 'none',
                     }}
                   />
-                  <span style={{ color: '#E0E0E0', fontWeight: 600 }}>ativo em</span>
+                  <span style={{ color: 'var(--text)', fontWeight: 600 }}>ativo em</span>
                   <input
                     type="number"
                     min="1"
@@ -434,15 +434,15 @@ function Carteira() {
                     value={restructureFactor}
                     onChange={e => setRestructureFactor(Number(e.target.value) || 1)}
                     style={{
-                      width: 80, padding: '8px 10px', background: '#0A0A0A',
-                      border: '1px solid #C8B800AA', borderRadius: 6, color: '#E0E0E0',
+                      width: 80, padding: '8px 10px', background: 'var(--surface-void)',
+                      border: '1px solid #C8B800AA', borderRadius: 6, color: 'var(--text)',
                       fontSize: '1em', fontFamily: 'inherit', textAlign: 'center', outline: 'none',
                     }}
                   />
                 </div>
               )}
 
-              <p style={{ color: '#E0E0E0', fontSize: '0.9em', lineHeight: 1.6, background: '#0D0D0D', borderRadius: 8, padding: 12 }}>
+              <p style={{ color: 'var(--text)', fontSize: '0.9em', lineHeight: 1.6, background: 'var(--surface-dark)', borderRadius: 8, padding: 12 }}>
                 {restructureType === 'agrupamento' ? (
                   <>Você está agrupando <strong style={{ color: '#C8B800' }}>{restructureFactor}</strong> cotas do ativo <strong style={{ color: '#C8B800' }}>{restructureTicker}</strong> em apenas <strong style={{ color: '#C8B800' }}>1</strong> cota. Todos os lançamentos anteriores serão convertidos para essa nova condição.</>
                 ) : (
@@ -466,7 +466,7 @@ function Carteira() {
               <button className="modal-close" onClick={() => { setShowRestructureConfirm(false); setRestructureType(null); }}>✕</button>
             </div>
             <div className="modal-body">
-              <p style={{ color: '#E0E0E0', lineHeight: 1.6 }}>
+              <p style={{ color: 'var(--text)', lineHeight: 1.6 }}>
                 {restructureType === 'agrupamento'
                   ? `Deseja realmente agrupar ${restructureFactor} cotas de ${restructureTicker} em 1 cota?`
                   : `Deseja realmente desdobrar 1 cota de ${restructureTicker} em ${restructureFactor} cotas?`}
@@ -498,24 +498,24 @@ function Carteira() {
             <div className="modal-body">
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.8em', color: '#999', marginBottom: 4 }}>Ticker</label>
-                  <input type="text" value={editRf.ticker} disabled style={{ width: '100%', padding: '10px 14px', background: '#0D0D0D', border: '1px solid #2A2A2A', borderRadius: 8, color: '#666', fontFamily: 'inherit' }} />
+                  <label style={{ display: 'block', fontSize: '0.8em', color: 'var(--text-muted)', marginBottom: 4 }}>Ticker</label>
+                  <input type="text" value={editRf.ticker} disabled style={{ width: '100%', padding: '10px 14px', background: 'var(--surface-dark)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--text-faint)', fontFamily: 'inherit' }} />
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.8em', color: '#999', marginBottom: 4 }}>Nome</label>
-                  <input type="text" value={editRf.ativo} disabled style={{ width: '100%', padding: '10px 14px', background: '#0D0D0D', border: '1px solid #2A2A2A', borderRadius: 8, color: '#666', fontFamily: 'inherit' }} />
+                  <label style={{ display: 'block', fontSize: '0.8em', color: 'var(--text-muted)', marginBottom: 4 }}>Nome</label>
+                  <input type="text" value={editRf.ativo} disabled style={{ width: '100%', padding: '10px 14px', background: 'var(--surface-dark)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--text-faint)', fontFamily: 'inherit' }} />
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.8em', color: '#999', marginBottom: 4 }}>Tipo</label>
-                  <input type="text" value={editRf.tipo} disabled style={{ width: '100%', padding: '10px 14px', background: '#0D0D0D', border: '1px solid #2A2A2A', borderRadius: 8, color: '#666', fontFamily: 'inherit' }} />
+                  <label style={{ display: 'block', fontSize: '0.8em', color: 'var(--text-muted)', marginBottom: 4 }}>Tipo</label>
+                  <input type="text" value={editRf.tipo} disabled style={{ width: '100%', padding: '10px 14px', background: 'var(--surface-dark)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--text-faint)', fontFamily: 'inherit' }} />
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.8em', color: '#999', marginBottom: 4 }}>Quantidade</label>
-                  <input type="text" value={formatNumber(editRf.quantidade)} disabled style={{ width: '100%', padding: '10px 14px', background: '#0D0D0D', border: '1px solid #2A2A2A', borderRadius: 8, color: '#666', fontFamily: 'inherit' }} />
+                  <label style={{ display: 'block', fontSize: '0.8em', color: 'var(--text-muted)', marginBottom: 4 }}>Quantidade</label>
+                  <input type="text" value={formatNumber(editRf.quantidade)} disabled style={{ width: '100%', padding: '10px 14px', background: 'var(--surface-dark)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--text-faint)', fontFamily: 'inherit' }} />
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.8em', color: '#999', marginBottom: 4 }}>Preço Médio</label>
-                  <input type="text" value={formatCurrency(editRf.precoMedio)} disabled style={{ width: '100%', padding: '10px 14px', background: '#0D0D0D', border: '1px solid #2A2A2A', borderRadius: 8, color: '#666', fontFamily: 'inherit' }} />
+                  <label style={{ display: 'block', fontSize: '0.8em', color: 'var(--text-muted)', marginBottom: 4 }}>Preço Médio</label>
+                  <input type="text" value={formatCurrency(editRf.precoMedio)} disabled style={{ width: '100%', padding: '10px 14px', background: 'var(--surface-dark)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--text-faint)', fontFamily: 'inherit' }} />
                 </div>
                 <div>
                   <label style={{ display: 'block', fontSize: '0.8em', color: '#C8B800', marginBottom: 4 }}>Atual (editável)</label>
@@ -523,7 +523,7 @@ function Carteira() {
                     type="text"
                     value={editRfValue}
                     onChange={e => setEditRfValue(e.target.value)}
-                    style={{ width: '100%', padding: '10px 14px', background: '#1A1A00', border: '1px solid #C8B80044', borderRadius: 8, color: '#FFF', fontFamily: 'inherit', fontWeight: 700 }}
+                    style={{ width: '100%', padding: '10px 14px', background: 'var(--gold-hover)', border: '1px solid #C8B80044', borderRadius: 8, color: 'var(--ink)', fontFamily: 'inherit', fontWeight: 700 }}
                   />
                 </div>
               </div>
@@ -546,44 +546,44 @@ function Carteira() {
             <div className="modal-body">
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 20 }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.75em', color: '#888', marginBottom: 4 }}>Ticker</label>
-                  <input type="text" value={linkAsset.ticker} disabled style={{ width: '100%', padding: '8px 12px', background: '#070707', border: '1px solid #1a1a1a', borderRadius: 6, color: '#777', fontFamily: 'inherit', fontSize: '0.85em' }} />
+                  <label style={{ display: 'block', fontSize: '0.75em', color: 'var(--text-faint)', marginBottom: 4 }}>Ticker</label>
+                  <input type="text" value={linkAsset.ticker} disabled style={{ width: '100%', padding: '8px 12px', background: 'var(--surface-void)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text-faint)', fontFamily: 'inherit', fontSize: '0.85em' }} />
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.75em', color: '#888', marginBottom: 4 }}>Nome</label>
-                  <input type="text" value={linkAsset.ativo} disabled style={{ width: '100%', padding: '8px 12px', background: '#070707', border: '1px solid #1a1a1a', borderRadius: 6, color: '#777', fontFamily: 'inherit', fontSize: '0.85em' }} />
+                  <label style={{ display: 'block', fontSize: '0.75em', color: 'var(--text-faint)', marginBottom: 4 }}>Nome</label>
+                  <input type="text" value={linkAsset.ativo} disabled style={{ width: '100%', padding: '8px 12px', background: 'var(--surface-void)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text-faint)', fontFamily: 'inherit', fontSize: '0.85em' }} />
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.75em', color: '#888', marginBottom: 4 }}>Tipo</label>
-                  <input type="text" value={linkAsset.tipo} disabled style={{ width: '100%', padding: '8px 12px', background: '#070707', border: '1px solid #1a1a1a', borderRadius: 6, color: '#777', fontFamily: 'inherit', fontSize: '0.85em' }} />
+                  <label style={{ display: 'block', fontSize: '0.75em', color: 'var(--text-faint)', marginBottom: 4 }}>Tipo</label>
+                  <input type="text" value={linkAsset.tipo} disabled style={{ width: '100%', padding: '8px 12px', background: 'var(--surface-void)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text-faint)', fontFamily: 'inherit', fontSize: '0.85em' }} />
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.75em', color: '#888', marginBottom: 4 }}>Quantidade</label>
-                  <input type="text" value={formatNumber(linkAsset.quantidade)} disabled style={{ width: '100%', padding: '8px 12px', background: '#070707', border: '1px solid #1a1a1a', borderRadius: 6, color: '#777', fontFamily: 'inherit', fontSize: '0.85em' }} />
+                  <label style={{ display: 'block', fontSize: '0.75em', color: 'var(--text-faint)', marginBottom: 4 }}>Quantidade</label>
+                  <input type="text" value={formatNumber(linkAsset.quantidade)} disabled style={{ width: '100%', padding: '8px 12px', background: 'var(--surface-void)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text-faint)', fontFamily: 'inherit', fontSize: '0.85em' }} />
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.75em', color: '#888', marginBottom: 4 }}>Preço Médio</label>
-                  <input type="text" value={formatCurrency(linkAsset.precoMedio)} disabled style={{ width: '100%', padding: '8px 12px', background: '#070707', border: '1px solid #1a1a1a', borderRadius: 6, color: '#777', fontFamily: 'inherit', fontSize: '0.85em' }} />
+                  <label style={{ display: 'block', fontSize: '0.75em', color: 'var(--text-faint)', marginBottom: 4 }}>Preço Médio</label>
+                  <input type="text" value={formatCurrency(linkAsset.precoMedio)} disabled style={{ width: '100%', padding: '8px 12px', background: 'var(--surface-void)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text-faint)', fontFamily: 'inherit', fontSize: '0.85em' }} />
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.75em', color: '#888', marginBottom: 4 }}>Investido</label>
-                  <input type="text" value={formatCurrency(linkAsset.investido)} disabled style={{ width: '100%', padding: '8px 12px', background: '#070707', border: '1px solid #1a1a1a', borderRadius: 6, color: '#777', fontFamily: 'inherit', fontSize: '0.85em' }} />
+                  <label style={{ display: 'block', fontSize: '0.75em', color: 'var(--text-faint)', marginBottom: 4 }}>Investido</label>
+                  <input type="text" value={formatCurrency(linkAsset.investido)} disabled style={{ width: '100%', padding: '8px 12px', background: 'var(--surface-void)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text-faint)', fontFamily: 'inherit', fontSize: '0.85em' }} />
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.75em', color: '#888', marginBottom: 4 }}>Atual</label>
-                  <input type="text" value={formatCurrency(linkAsset.atual)} disabled style={{ width: '100%', padding: '8px 12px', background: '#070707', border: '1px solid #1a1a1a', borderRadius: 6, color: '#777', fontFamily: 'inherit', fontSize: '0.85em' }} />
+                  <label style={{ display: 'block', fontSize: '0.75em', color: 'var(--text-faint)', marginBottom: 4 }}>Atual</label>
+                  <input type="text" value={formatCurrency(linkAsset.atual)} disabled style={{ width: '100%', padding: '8px 12px', background: 'var(--surface-void)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text-faint)', fontFamily: 'inherit', fontSize: '0.85em' }} />
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.75em', color: '#888', marginBottom: 4 }}>Rendimento</label>
-                  <input type="text" value={`${linkAsset.rendimento >= 0 ? '+' : ''}${formatNumber(linkAsset.rendimento)}%`} disabled style={{ width: '100%', padding: '8px 12px', background: '#070707', border: '1px solid #1a1a1a', borderRadius: 6, color: linkAsset.rendimento >= 0 ? '#00CC66' : '#FF5555', fontFamily: 'inherit', fontSize: '0.85em', fontWeight: 600 }} />
+                  <label style={{ display: 'block', fontSize: '0.75em', color: 'var(--text-faint)', marginBottom: 4 }}>Rendimento</label>
+                  <input type="text" value={`${linkAsset.rendimento >= 0 ? '+' : ''}${formatNumber(linkAsset.rendimento)}%`} disabled style={{ width: '100%', padding: '8px 12px', background: 'var(--surface-void)', border: '1px solid var(--border)', borderRadius: 6, color: linkAsset.rendimento >= 0 ? '#00CC66' : '#FF5555', fontFamily: 'inherit', fontSize: '0.85em', fontWeight: 600 }} />
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.75em', color: '#888', marginBottom: 4 }}>Resultado</label>
-                  <input type="text" value={`${linkAsset.resultado >= 0 ? '+' : ''}${formatCurrency(linkAsset.resultado)}`} disabled style={{ width: '100%', padding: '8px 12px', background: '#070707', border: '1px solid #1a1a1a', borderRadius: 6, color: linkAsset.resultado >= 0 ? '#00CC66' : '#FF5555', fontFamily: 'inherit', fontSize: '0.85em', fontWeight: 600 }} />
+                  <label style={{ display: 'block', fontSize: '0.75em', color: 'var(--text-faint)', marginBottom: 4 }}>Resultado</label>
+                  <input type="text" value={`${linkAsset.resultado >= 0 ? '+' : ''}${formatCurrency(linkAsset.resultado)}`} disabled style={{ width: '100%', padding: '8px 12px', background: 'var(--surface-void)', border: '1px solid var(--border)', borderRadius: 6, color: linkAsset.resultado >= 0 ? '#00CC66' : '#FF5555', fontFamily: 'inherit', fontSize: '0.85em', fontWeight: 600 }} />
                 </div>
               </div>
 
-              <div style={{ background: '#0A0A0A', border: '1px solid #222', borderRadius: 8, padding: 16 }}>
+              <div style={{ background: 'var(--surface-void)', border: '1px solid var(--border)', borderRadius: 8, padding: 16 }}>
                 <label style={{ display: 'block', fontSize: '0.85em', color: '#00E5FF', fontWeight: 700, marginBottom: 8, letterSpacing: '0.5px' }}>
                   Link da Internet para o Ativo (Editável)
                 </label>
@@ -594,8 +594,8 @@ function Carteira() {
                     value={linkValue}
                     onChange={e => setLinkValue(e.target.value)}
                     style={{
-                      flex: 1, padding: '10px 14px', background: '#121212',
-                      border: '1px solid #00E5FF33', borderRadius: 6, color: '#FFF',
+                      flex: 1, padding: '10px 14px', background: 'var(--surface-void)',
+                      border: '1px solid #00E5FF33', borderRadius: 6, color: 'var(--text)',
                       fontFamily: 'inherit', fontSize: '0.9em', outline: 'none'
                     }}
                     onFocus={e => e.target.style.borderColor = '#00E5FF'}
@@ -606,8 +606,8 @@ function Carteira() {
                     onClick={handleVisitLink}
                     disabled={!linkValue}
                     style={{
-                      padding: '10px 16px', background: linkValue ? '#00E5FF' : '#222',
-                      color: linkValue ? '#000' : '#555', border: 'none', borderRadius: 6,
+                      padding: '10px 16px', background: linkValue ? '#00E5FF' : 'var(--surface-void)',
+                      color: linkValue ? '#000' : 'var(--text-faint)', border: 'none', borderRadius: 6,
                       fontSize: '0.85em', fontWeight: 700, cursor: linkValue ? 'pointer' : 'default',
                       transition: 'all 0.2s ease', display: 'flex', alignItems: 'center', gap: 4
                     }}
@@ -615,12 +615,12 @@ function Carteira() {
                     🔗 Acessar
                   </button>
                 </div>
-                <small style={{ display: 'block', marginTop: 6, color: '#555566', fontSize: '0.75em' }}>
+                <small style={{ display: 'block', marginTop: 6, color: 'var(--text-faint)', fontSize: '0.75em' }}>
                   Adicione o link do site do ativo, StatusInvest, Fundamentus ou qualquer outra fonte para abrir com 1 clique.
                 </small>
               </div>
 
-              <div style={{ background: '#0A0A0A', border: '1px solid #222', borderRadius: 8, padding: 16, marginTop: 14 }}>
+              <div style={{ background: 'var(--surface-void)', border: '1px solid var(--border)', borderRadius: 8, padding: 16, marginTop: 14 }}>
                 <label style={{ display: 'block', fontSize: '0.85em', color: '#C8B800', fontWeight: 700, marginBottom: 8, letterSpacing: '0.5px' }}>
                   Link da Imagem / Logo do Ativo (Editável)
                 </label>
@@ -631,18 +631,18 @@ function Carteira() {
                     value={imageValue}
                     onChange={e => setImageValue(e.target.value)}
                     style={{
-                      flex: 1, padding: '10px 14px', background: '#121212',
-                      border: '1px solid #C8B80033', borderRadius: 6, color: '#FFF',
+                      flex: 1, padding: '10px 14px', background: 'var(--surface-void)',
+                      border: '1px solid #C8B80033', borderRadius: 6, color: 'var(--text)',
                       fontFamily: 'inherit', fontSize: '0.9em', outline: 'none'
                     }}
                     onFocus={e => e.target.style.borderColor = '#C8B800'}
                     onBlur={e => e.target.style.borderColor = '#C8B80033'}
                   />
                   {imageValue && (
-                    <LogoImage ticker={linkAsset.ticker} size={36} fallback={linkAsset.ticker[0]} style={{ border: '1px solid #444', borderRadius: 6, background: '#111', flexShrink: 0 }} />
+                    <LogoImage ticker={linkAsset.ticker} size={36} fallback={linkAsset.ticker[0]} style={{ border: '1px solid var(--border-strong)', borderRadius: 6, background: 'var(--surface-void)', flexShrink: 0 }} />
                   )}
                 </div>
-                <small style={{ display: 'block', marginTop: 6, color: '#555566', fontSize: '0.75em' }}>
+                <small style={{ display: 'block', marginTop: 6, color: 'var(--text-faint)', fontSize: '0.75em' }}>
                   Cole o link de uma imagem da internet para personalizar o logotipo do ativo. A visualização atualizará instantaneamente.
                 </small>
               </div>

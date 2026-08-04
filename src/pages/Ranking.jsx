@@ -15,17 +15,17 @@ const tabs = [
 const thStyle = {
   padding: '10px 14px',
   textAlign: 'left',
-  color: '#666666',
+  color: 'var(--text-faint)',
   fontWeight: 500,
   fontSize: '0.8em',
   textTransform: 'uppercase',
   letterSpacing: '1px',
-  borderBottom: '1px solid #2A2A2A',
+  borderBottom: '1px solid var(--border)',
 };
 
 const tdStyle = {
   padding: '10px 14px',
-  borderBottom: '1px solid #1A1A1A',
+  borderBottom: '1px solid var(--border)',
 };
 
 function Ranking() {
@@ -183,7 +183,7 @@ function Ranking() {
         display: 'flex',
         gap: '4px',
         marginBottom: '25px',
-        borderBottom: '1px solid #2A2A2A',
+        borderBottom: '1px solid var(--border)',
         paddingBottom: '2px',
       }}>
         {tabs.map((tab) => (
@@ -191,10 +191,10 @@ function Ranking() {
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
             style={{
-              background: activeTab === tab.id ? '#151515' : 'transparent',
+              background: activeTab === tab.id ? 'var(--surface)' : 'transparent',
               border: 'none',
               borderBottom: activeTab === tab.id ? '2px solid #C8B800' : '2px solid transparent',
-              color: activeTab === tab.id ? '#FFFFFF' : '#999999',
+              color: activeTab === tab.id ? 'var(--text-strong)' : 'var(--text-muted)',
               padding: '10px 18px',
               cursor: 'pointer',
               fontSize: '0.9em',
@@ -211,7 +211,7 @@ function Ranking() {
 
       {isAnualOrDy && anos.length > 0 && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
-          <span style={{ color: '#E0E0E0', fontSize: '0.95em', fontWeight: 600 }}>
+          <span style={{ color: 'var(--text)', fontSize: '0.95em', fontWeight: 600 }}>
             Selecione o ano
           </span>
           <span style={{ color: '#FF0000', fontSize: '2em', lineHeight: 1 }}>➡</span>
@@ -219,7 +219,7 @@ function Ranking() {
             value={selectedAno || ''}
             onChange={e => setSelectedAno(Number(e.target.value))}
             style={{
-              background: '#0D0D0D', color: '#E0E0E0', border: '1px solid #2A2A2A', borderRadius: 6,
+              background: 'var(--surface-dark)', color: 'var(--text)', border: '1px solid var(--border)', borderRadius: 6,
               padding: '6px 12px', fontSize: '1em', cursor: 'pointer', fontFamily: 'inherit',
             }}
           >
@@ -231,8 +231,8 @@ function Ranking() {
       )}
 
       <div style={{
-        background: '#151515',
-        border: '1px solid #2A2A2A',
+        background: 'var(--surface)',
+        border: '1px solid var(--border)',
         borderRadius: 12,
         overflow: 'hidden',
         maxWidth: 520,
@@ -253,7 +253,7 @@ function Ranking() {
           <tbody>
             {currentData.length === 0 && (
               <tr>
-                <td colSpan={4} style={{ ...tdStyle, textAlign: 'center', color: '#666', padding: 30 }}>
+                <td colSpan={4} style={{ ...tdStyle, textAlign: 'center', color: 'var(--text-faint)', padding: 30 }}>
                   Nenhum dado disponível
                 </td>
               </tr>
@@ -264,7 +264,7 @@ function Ranking() {
                 style={{
                   transition: 'background 0.2s ease',
                 }}
-                onMouseEnter={(e) => e.currentTarget.style.background = '#1A1A00'}
+                onMouseEnter={(e) => e.currentTarget.style.background = 'var(--gold-hover)'}
                 onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
               >
                 <td style={tdStyle}>
@@ -274,7 +274,7 @@ function Ranking() {
                     height: '22px',
                     borderRadius: '50%',
                     background: i < 3 ? '#C8B80022' : 'transparent',
-                    color: i < 3 ? '#FFFFFF' : '#999999',
+                    color: i < 3 ? 'var(--gold-soft)' : 'var(--text-muted)',
                     alignItems: 'center',
                     justifyContent: 'center',
                     fontSize: '0.8em',
@@ -286,7 +286,7 @@ function Ranking() {
                 <td style={tdStyle}>
                   <LogoImage ticker={item.ticker} size={28} />
                 </td>
-                <td style={{ ...tdStyle, fontWeight: 600, color: '#FFFFFF' }}>{item.ticker}</td>
+                <td style={{ ...tdStyle, fontWeight: 600, color: 'var(--text-strong)' }}>{item.ticker}</td>
                 <td style={{ ...tdStyle, textAlign: 'right', color: valueColor(item), fontWeight: 600 }}>
                   {formatValue(item)}
                 </td>

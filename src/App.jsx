@@ -128,20 +128,25 @@ function App() {
           </label>
         )}
 
-        <button
-          className="theme-toggle"
-          data-theme={theme}
-          onClick={toggleTheme}
-          title={theme === 'dark' ? 'Mudar para tema claro' : 'Mudar para tema escuro'}
-        >
-          <span className="theme-toggle-sun">☀️</span>
-          <span className="theme-toggle-knob">{theme === 'dark' ? '🌙' : '☀️'}</span>
-          <span className="theme-toggle-moon">🌙</span>
-        </button>
-
         <button className="btn-sair" onClick={signOut}>
           Sair
         </button>
+
+        <div
+          className="theme-selector"
+          title={theme === 'dark' ? 'Mudar para tema claro' : 'Mudar para tema escuro'}
+        >
+          <span className="theme-icon theme-icon-sun">☀️</span>
+          <button
+            className="theme-toggle"
+            data-theme={theme}
+            onClick={toggleTheme}
+            aria-label="Alternar tema claro/escuro"
+          >
+            <span className="theme-toggle-knob" />
+          </button>
+          <span className="theme-icon theme-icon-moon">🌙</span>
+        </div>
       </div>
 
       <main className="main-content">

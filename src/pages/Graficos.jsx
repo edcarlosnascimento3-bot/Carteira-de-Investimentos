@@ -45,8 +45,8 @@ const INDEX_HISTORY = {
 };
 
 const tooltipStyle = {
-  background: '#151515', border: '1px solid #2A2A2A', borderRadius: 8,
-  fontSize: '0.85em', color: '#E0E0E0',
+  background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8,
+  fontSize: '0.85em', color: 'var(--text)',
 };
 
 const RADIAN = Math.PI / 180;
@@ -652,7 +652,7 @@ function Graficos() {
                     innerRadius="14%"
                     paddingAngle={3}
                     label={renderLabel}
-                    labelLine={{ stroke: '#555', strokeWidth: 1 }}
+                    labelLine={{ stroke: 'var(--border-strong)', strokeWidth: 1 }}
                     activeIndex={pieHover}
                     activeShape={renderActiveShape}
                     onMouseEnter={(_, index) => setPieHover(index)}
@@ -662,7 +662,7 @@ function Graficos() {
                     {tipoData.map((entry) => (
                       <Cell
                         key={entry.name}
-                        fill={typeColors[entry.name] || '#666'}
+                        fill={typeColors[entry.name] || 'var(--text-muted)'}
                         fillOpacity={getTipoOpacity(entry.name)}
                         stroke={selectedType === entry.name ? selColor : 'transparent'}
                         strokeWidth={selectedType === entry.name ? 2 : 0}
@@ -678,7 +678,7 @@ function Graficos() {
             {hasFilter && (
               <div style={{
                 position: 'absolute', top: 8, right: 8, zIndex: 10,
-                background: '#C8B800', color: '#0A0A0A', border: 'none', borderRadius: 6,
+                background: 'var(--gold)', color: 'var(--ink)', border: 'none', borderRadius: 6,
                 padding: '3px 10px', fontSize: '0.75em', cursor: 'pointer', fontWeight: 700,
               }} onClick={() => { setSelectedType(null); setSelectedTicker(null); }}>
                 ✕ LIMPAR
@@ -709,7 +709,7 @@ function Graficos() {
                     innerRadius="15%"
                     paddingAngle={2}
                     label={renderTickerLabel}
-                    labelLine={{ stroke: '#555', strokeWidth: 1 }}
+                    labelLine={{ stroke: 'var(--border-strong)', strokeWidth: 1 }}
                     activeIndex={tickerHover}
                     activeShape={renderActiveShape}
                     onMouseEnter={(_, index) => setTickerHover(index)}
@@ -742,8 +742,8 @@ function Graficos() {
             <div style={{ flex: 1, minHeight: 0 }}>
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={qtdData} layout="vertical" margin={{ left: 24, right: 30, top: 4, bottom: 4 }} barSize={36} barCategoryGap="50%">
-                  <XAxis type="number" tick={{ fill: '#999', fontSize: 10 }} axisLine={{ stroke: '#2A2A2A' }} tickLine={false} />
-                  <YAxis type="category" dataKey="name" tick={{ fill: '#E0E0E0', fontSize: 13 }} axisLine={false} tickLine={false} width={40} />
+                  <XAxis type="number" tick={{ fill: 'var(--text-muted)', fontSize: 10 }} axisLine={{ stroke: 'var(--border)' }} tickLine={false} />
+                  <YAxis type="category" dataKey="name" tick={{ fill: 'var(--text)', fontSize: 13 }} axisLine={false} tickLine={false} width={40} />
                   <Tooltip cursor={false} contentStyle={tooltipStyle} formatter={(v) => [v.toLocaleString('pt-BR'), 'Quantidade']} />
                   <Bar dataKey="quantidade" radius={[0, 50, 50, 0]} cursor="pointer" activeBar={{ stroke: '#FFF', strokeWidth: 2, filter: 'brightness(1.15)' }}>
                     {qtdData.map((entry) => (
@@ -762,7 +762,7 @@ function Graficos() {
             {(hasFilter && !selectedTicker) && (
               <div style={{
                 position: 'absolute', top: 8, right: 8, zIndex: 10,
-                background: '#C8B800', color: '#0A0A0A', border: 'none', borderRadius: 6,
+                background: 'var(--gold)', color: 'var(--ink)', border: 'none', borderRadius: 6,
                 padding: '3px 10px', fontSize: '0.75em', cursor: 'pointer', fontWeight: 700,
               }} onClick={() => { setSelectedType(null); setSelectedTicker(null); }}>
                 ✕ LIMPAR
@@ -792,7 +792,7 @@ function Graficos() {
                   innerRadius="15%"
                   paddingAngle={2}
                   label={renderTickerLabelWithValue}
-                  labelLine={{ stroke: '#555', strokeWidth: 1 }}
+                  labelLine={{ stroke: 'var(--border-strong)', strokeWidth: 1 }}
                   onClick={(entry) => handleTickerClick(entry.name)}
                 >
                   {internacionalData.map((entry, idx) => (
@@ -879,8 +879,8 @@ function Graficos() {
             <div style={{ flex: 1, minHeight: 0 }}>
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={corretoraData} margin={{ left: 20, right: 20, top: 60, bottom: 10 }} barSize={90}>
-                  <XAxis dataKey="name" tick={{ fill: '#FFD700', fontSize: 12, fontWeight: 700 }} axisLine={{ stroke: '#2A2A2A' }} tickLine={false} angle={-20} textAnchor="end" height={60} />
-                  <YAxis tick={{ fill: '#999', fontSize: 11 }} axisLine={{ stroke: '#2A2A2A' }} tickLine={false} />
+                  <XAxis dataKey="name" tick={{ fill: 'var(--gold-soft)', fontSize: 12, fontWeight: 700 }} axisLine={{ stroke: 'var(--border)' }} tickLine={false} angle={-20} textAnchor="end" height={60} />
+                  <YAxis tick={{ fill: 'var(--text-muted)', fontSize: 11 }} axisLine={{ stroke: 'var(--border)' }} tickLine={false} />
                   <Tooltip cursor={false} contentStyle={tooltipStyle} formatter={(v) => formatCurrency(v)} />
                   <Bar dataKey="value" radius={[8, 8, 0, 0]} cursor="pointer" onClick={(entry) => setSelectedCorretora(prev => prev === entry.name ? null : entry.name)}>
                     <LabelList dataKey="value" content={renderCorretoraBarLabel} />
@@ -893,7 +893,7 @@ function Graficos() {
             </div>
           ) : (
             <div style={{ flex: 1, minHeight: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <p style={{ color: '#666', fontSize: '0.9em' }}>Sem dados de corretora no momento</p>
+              <p style={{ color: 'var(--text-faint)', fontSize: '0.9em' }}>Sem dados de corretora no momento</p>
             </div>
           )}
         </div>
@@ -919,7 +919,7 @@ function Graficos() {
                   innerRadius="15%"
                   paddingAngle={2}
                   label={renderTickerLabel}
-                  labelLine={{ stroke: '#555', strokeWidth: 1 }}
+                  labelLine={{ stroke: 'var(--border-strong)', strokeWidth: 1 }}
                   onClick={(entry) => handleTickerClick(entry.name)}
                 >
                   {acoesData.map((entry, idx) => (
@@ -961,7 +961,7 @@ function Graficos() {
                   innerRadius="15%"
                   paddingAngle={2}
                   label={renderTickerLabel}
-                  labelLine={{ stroke: '#555', strokeWidth: 1 }}
+                  labelLine={{ stroke: 'var(--border-strong)', strokeWidth: 1 }}
                   onClick={(entry) => handleTickerClick(entry.name)}
                 >
                   {fiisData.map((entry, idx) => (
@@ -1003,7 +1003,7 @@ function Graficos() {
                   innerRadius="15%"
                   paddingAngle={2}
                   label={renderTickerLabelWithValue}
-                  labelLine={{ stroke: '#555', strokeWidth: 1 }}
+                  labelLine={{ stroke: 'var(--border-strong)', strokeWidth: 1 }}
                   onClick={(entry) => handleTickerClick(entry.name)}
                 >
                   {rendaFixaData.map((entry, idx) => (
@@ -1031,8 +1031,8 @@ function Graficos() {
               <div style={{ flex: 1, minHeight: 0 }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={proventosEvolData} margin={{ left: 30, right: 30, top: 30, bottom: 10 }} barSize={60}>
-                    <XAxis dataKey="name" tick={{ fill: '#E0E0E0', fontSize: 12 }} axisLine={{ stroke: '#2A2A2A' }} tickLine={false} />
-                    <YAxis tick={{ fill: '#999', fontSize: 11 }} axisLine={{ stroke: '#2A2A2A' }} tickLine={false} />
+                    <XAxis dataKey="name" tick={{ fill: 'var(--text)', fontSize: 12 }} axisLine={{ stroke: 'var(--border)' }} tickLine={false} />
+                    <YAxis tick={{ fill: 'var(--text-muted)', fontSize: 11 }} axisLine={{ stroke: 'var(--border)' }} tickLine={false} />
                     <Tooltip cursor={false} contentStyle={tooltipStyle} formatter={(v) => formatCurrency(v)} />
                     <Bar dataKey="value" radius={[8, 8, 0, 0]} fill="#1B2A4A" activeBar={{ stroke: '#FFF', strokeWidth: 2, filter: 'brightness(1.15)' }}>
                       <LabelList dataKey="value" content={renderEvolLabel} />
@@ -1049,8 +1049,8 @@ function Graficos() {
               <div style={{ flex: 1, minHeight: 0 }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={proventosMediaData} layout="vertical" margin={{ left: 30, right: 80, top: 10, bottom: 10 }} barSize={30} barCategoryGap="40%">
-                    <XAxis type="number" tick={{ fill: '#999', fontSize: 11 }} axisLine={{ stroke: '#2A2A2A' }} tickLine={false} />
-                    <YAxis type="category" dataKey="name" tick={{ fill: '#E0E0E0', fontSize: 12 }} axisLine={false} tickLine={false} width={30} />
+                    <XAxis type="number" tick={{ fill: 'var(--text-muted)', fontSize: 11 }} axisLine={{ stroke: 'var(--border)' }} tickLine={false} />
+                    <YAxis type="category" dataKey="name" tick={{ fill: 'var(--text)', fontSize: 12 }} axisLine={false} tickLine={false} width={30} />
                     <Tooltip cursor={false} contentStyle={tooltipStyle} formatter={(v) => formatCurrency(v)} />
                     <Bar dataKey="value" radius={[0, 50, 50, 0]} fill="#2E7D32" activeBar={{ stroke: '#FFF', strokeWidth: 2, filter: 'brightness(1.15)' }}>
                       <LabelList dataKey="value" content={renderEvolLabelRight} />
@@ -1066,7 +1066,7 @@ function Graficos() {
       {proventosAnos.length > 0 && (
         <div className="chart-card" style={{ display: 'flex', flexDirection: 'column', position: 'relative', gridColumn: '1 / -1' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 0' }}>
-            <span style={{ color: '#E0E0E0', fontSize: '0.95em', fontWeight: 600 }}>
+            <span style={{ color: 'var(--text)', fontSize: '0.95em', fontWeight: 600 }}>
               Selecione ao lado o período
             </span>
             <span style={{ color: '#FF0000', fontSize: '2em', lineHeight: 1 }}>➡</span>
@@ -1074,7 +1074,7 @@ function Graficos() {
               value={selectedProventosAno || ''}
               onChange={e => setSelectedProventosAno(Number(e.target.value))}
               style={{
-                background: '#0D0D0D', color: '#E0E0E0', border: '1px solid #2A2A2A', borderRadius: 6,
+                background: 'var(--surface-dark)', color: 'var(--text)', border: '1px solid var(--border)', borderRadius: 6,
                 padding: '6px 12px', fontSize: '1em', cursor: 'pointer', fontFamily: 'inherit',
               }}
             >
@@ -1087,9 +1087,9 @@ function Graficos() {
           <div style={{ flex: 1, minHeight: 0 }}>
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={proventosMonthData} margin={{ left: 30, right: 30, top: 30, bottom: 10 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#2A2A2A" />
-                <XAxis dataKey="nome" tick={{ fill: '#FFD700', fontSize: 13, fontWeight: 700 }} axisLine={{ stroke: '#2A2A2A' }} tickLine={false} />
-                <YAxis tick={{ fill: '#999', fontSize: 11 }} axisLine={{ stroke: '#2A2A2A' }} tickLine={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                <XAxis dataKey="nome" tick={{ fill: 'var(--gold-soft)', fontSize: 13, fontWeight: 700 }} axisLine={{ stroke: 'var(--border)' }} tickLine={false} />
+                <YAxis tick={{ fill: 'var(--text-muted)', fontSize: 11 }} axisLine={{ stroke: 'var(--border)' }} tickLine={false} />
                 <Tooltip cursor={false} contentStyle={tooltipStyle} formatter={(v) => formatCurrency(v)} />
                 <Bar dataKey="value" radius={[8, 8, 0, 0]} activeBar={{ stroke: '#FFF', strokeWidth: 2, filter: 'brightness(1.15)' }} animationDuration={2000}>
                   {proventosMonthData.map((entry, idx) => (
@@ -1107,7 +1107,7 @@ function Graficos() {
       {proventosTiposAnos.length > 0 && uniqueProventosTipos.length > 0 && (
         <div className="chart-card" style={{ display: 'flex', flexDirection: 'column', position: 'relative', gridColumn: '1 / -1' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 0' }}>
-            <span style={{ color: '#E0E0E0', fontSize: '0.95em', fontWeight: 600 }}>
+            <span style={{ color: 'var(--text)', fontSize: '0.95em', fontWeight: 600 }}>
               Selecione ao lado o período
             </span>
             <span style={{ color: '#FF0000', fontSize: '2em', lineHeight: 1 }}>➡</span>
@@ -1115,7 +1115,7 @@ function Graficos() {
               value={selectedProventosAnoTipo || ''}
               onChange={e => setSelectedProventosAnoTipo(Number(e.target.value))}
               style={{
-                background: '#0D0D0D', color: '#E0E0E0', border: '1px solid #2A2A2A', borderRadius: 6,
+                background: 'var(--surface-dark)', color: 'var(--text)', border: '1px solid var(--border)', borderRadius: 6,
                 padding: '6px 12px', fontSize: '1em', cursor: 'pointer', fontFamily: 'inherit',
               }}
             >
@@ -1128,7 +1128,7 @@ function Graficos() {
           <div style={{ display: 'flex', flex: 1, minHeight: 0, gap: 12 }}>
             <div style={{ width: 160, flexShrink: 0, overflowY: 'auto', padding: '8px 0' }}>
               {uniqueProventosTipos.map(tipo => (
-                <label key={tipo} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0', fontSize: '0.9em', cursor: 'pointer', color: typeColors[tipo] || '#E0E0E0' }}>
+                <label key={tipo} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0', fontSize: '0.9em', cursor: 'pointer', color: typeColors[tipo] || 'var(--text-soft)' }}>
                   <input
                     type="checkbox"
                     checked={selectedProventosTipos.includes(tipo)}
@@ -1148,12 +1148,12 @@ function Graficos() {
                         <feDropShadow dx="3" dy="3" stdDeviation="3" flood-color="#000" flood-opacity="0.5" />
                       </filter>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#2A2A2A" />
-                    <XAxis dataKey="nome" tick={{ fill: '#FFD700', fontSize: 13, fontWeight: 700 }} axisLine={{ stroke: '#2A2A2A' }} tickLine={false} />
-                    <YAxis tick={{ fill: '#999', fontSize: 11 }} axisLine={{ stroke: '#2A2A2A' }} tickLine={false} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                    <XAxis dataKey="nome" tick={{ fill: 'var(--gold-soft)', fontSize: 13, fontWeight: 700 }} axisLine={{ stroke: 'var(--border)' }} tickLine={false} />
+                    <YAxis tick={{ fill: 'var(--text-muted)', fontSize: 11 }} axisLine={{ stroke: 'var(--border)' }} tickLine={false} />
                     <Tooltip cursor={false} contentStyle={tooltipStyle} />
                     {selectedProventosTipos.map(tipo => (
-                      <Bar key={tipo} dataKey={tipo} fill={typeColors[tipo] || '#666'} animationDuration={2000} filter="url(#bar3dShadow)">
+                      <Bar key={tipo} dataKey={tipo} fill={typeColors[tipo] || 'var(--text-muted)'} animationDuration={2000} filter="url(#bar3dShadow)">
                         <LabelList dataKey={tipo} position="top" content={renderProventosLabelInclinado} />
                       </Bar>
                     ))}
@@ -1161,7 +1161,7 @@ function Graficos() {
                 </ResponsiveContainer>
               </div>
             ) : (
-              <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#666', fontSize: '0.9em' }}>
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-faint)', fontSize: '0.9em' }}>
                 Selecione ao menos um tipo de ativo
               </div>
             )}
@@ -1172,7 +1172,7 @@ function Graficos() {
       {uniqueAnos.length > 0 && (
         <div className="chart-card" style={{ display: 'flex', flexDirection: 'column', position: 'relative', gridColumn: '1 / -1' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 0' }}>
-            <span style={{ color: '#E0E0E0', fontSize: '0.95em', fontWeight: 600 }}>
+            <span style={{ color: 'var(--text)', fontSize: '0.95em', fontWeight: 600 }}>
               Selecione o ano desejado
             </span>
             <span style={{ color: '#FF3333', fontSize: '2em', lineHeight: 1 }}>➡</span>
@@ -1180,7 +1180,7 @@ function Graficos() {
               value={selectedAno || ''}
               onChange={e => setSelectedAno(Number(e.target.value))}
               style={{
-                background: '#0D0D0D', color: '#E0E0E0', border: '1px solid #2A2A2A', borderRadius: 6,
+                background: 'var(--surface-dark)', color: 'var(--text)', border: '1px solid var(--border)', borderRadius: 6,
                 padding: '6px 12px', fontSize: '1em', cursor: 'pointer', fontFamily: 'inherit',
               }}
             >
@@ -1193,9 +1193,9 @@ function Graficos() {
           <div style={{ flex: 1, minHeight: 0 }}>
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={monthData} margin={{ left: 30, right: 30, top: 30, bottom: 10 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#2A2A2A" />
-                <XAxis dataKey="nome" tick={{ fill: '#E0E0E0', fontSize: 11 }} axisLine={{ stroke: '#2A2A2A' }} tickLine={false} />
-                <YAxis tick={{ fill: '#999', fontSize: 11 }} axisLine={{ stroke: '#2A2A2A' }} tickLine={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                <XAxis dataKey="nome" tick={{ fill: 'var(--text)', fontSize: 11 }} axisLine={{ stroke: 'var(--border)' }} tickLine={false} />
+                <YAxis tick={{ fill: 'var(--text-muted)', fontSize: 11 }} axisLine={{ stroke: 'var(--border)' }} tickLine={false} />
                 <Tooltip cursor={false} contentStyle={tooltipStyle} formatter={(v) => formatCurrency(v)} />
                 <Line type="monotone" dataKey="value" stroke="#FF3333" strokeWidth={3} dot={{ r: 6, fill: '#FF3333', strokeWidth: 2, stroke: '#FF3333' }} activeDot={false}>
                   <LabelList dataKey="value" content={renderMonthLabel} />
@@ -1212,8 +1212,8 @@ function Graficos() {
           <div style={{ flex: 1, minHeight: 0 }}>
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={evolData} margin={{ left: 30, right: 30, top: 30, bottom: 10 }} barSize={60}>
-                <XAxis dataKey="name" tick={{ fill: '#FFD700', fontSize: 13, fontWeight: 700 }} axisLine={{ stroke: '#2A2A2A' }} tickLine={false} />
-                <YAxis tick={{ fill: '#999', fontSize: 11 }} axisLine={{ stroke: '#2A2A2A' }} tickLine={false} />
+                <XAxis dataKey="name" tick={{ fill: 'var(--gold-soft)', fontSize: 13, fontWeight: 700 }} axisLine={{ stroke: 'var(--border)' }} tickLine={false} />
+                <YAxis tick={{ fill: 'var(--text-muted)', fontSize: 11 }} axisLine={{ stroke: 'var(--border)' }} tickLine={false} />
                 <Tooltip cursor={false} contentStyle={tooltipStyle} formatter={(v) => formatCurrency(v)} />
                 <Bar dataKey="value" radius={[8, 8, 0, 0]} fill="#990000" activeBar={{ stroke: '#FFF', strokeWidth: 2, filter: 'brightness(1.15)' }}>
                   <LabelList dataKey="value" content={renderEvolLabel} />
@@ -1253,13 +1253,13 @@ function Graficos() {
                     <feDropShadow dx="2" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.5" />
                   </filter>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#2A2A2A" />
-                <XAxis dataKey="year" tick={{ fill: '#FFD700', fontSize: 13, fontWeight: 700 }} axisLine={{ stroke: '#2A2A2A' }} tickLine={false} />
-                <YAxis tick={{ fill: '#999', fontSize: 11 }} axisLine={{ stroke: '#2A2A2A' }} tickLine={false} tickFormatter={(v) => `${v}%`} />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                <XAxis dataKey="year" tick={{ fill: 'var(--gold-soft)', fontSize: 13, fontWeight: 700 }} axisLine={{ stroke: 'var(--border)' }} tickLine={false} />
+                <YAxis tick={{ fill: 'var(--text-muted)', fontSize: 11 }} axisLine={{ stroke: 'var(--border)' }} tickLine={false} tickFormatter={(v) => `${v}%`} />
                 <Tooltip cursor={false} contentStyle={tooltipStyle} formatter={(v) => [`${v.toFixed(2)}%`]} />
                 <Line type="monotone" dataKey="Carteira" stroke="#FF3333" strokeWidth={3} dot={{ r: 5, fill: '#FF3333', strokeWidth: 0 }} filter="url(#lineShadow)" animationDuration={2000} />
                 {selectedIndices.map(idx => (
-                  <Line key={idx} type="monotone" dataKey={idx} stroke={INDEX_HISTORY[idx]?.cor || '#666'} strokeWidth={2} dot={{ r: 4, fill: INDEX_HISTORY[idx]?.cor || '#666', strokeWidth: 0 }} filter="url(#lineShadow)" animationDuration={2000} />
+                  <Line key={idx} type="monotone" dataKey={idx} stroke={INDEX_HISTORY[idx]?.cor || 'var(--text-muted)'} strokeWidth={2} dot={{ r: 4, fill: INDEX_HISTORY[idx]?.cor || 'var(--text-muted)', strokeWidth: 0 }} filter="url(#lineShadow)" animationDuration={2000} />
                 ))}
               </LineChart>
             </ResponsiveContainer>
@@ -1296,13 +1296,13 @@ function Graficos() {
                     <feDropShadow dx="2" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.5" />
                   </filter>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#2A2A2A" />
-                <XAxis dataKey="year" tick={{ fill: '#FFD700', fontSize: 13, fontWeight: 700 }} axisLine={{ stroke: '#2A2A2A' }} tickLine={false} />
-                <YAxis tick={{ fill: '#999', fontSize: 11 }} axisLine={{ stroke: '#2A2A2A' }} tickLine={false} domain={['auto', 'auto']} />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                <XAxis dataKey="year" tick={{ fill: 'var(--gold-soft)', fontSize: 13, fontWeight: 700 }} axisLine={{ stroke: 'var(--border)' }} tickLine={false} />
+                <YAxis tick={{ fill: 'var(--text-muted)', fontSize: 11 }} axisLine={{ stroke: 'var(--border)' }} tickLine={false} domain={['auto', 'auto']} />
                 <Tooltip cursor={false} contentStyle={tooltipStyle} formatter={(v) => [v.toFixed(2), 'Valor']} />
                 <Line type="monotone" dataKey="Carteira" stroke="#FF3333" strokeWidth={3} dot={{ r: 5, fill: '#FF3333', strokeWidth: 0 }} filter="url(#accShadow)" animationDuration={2000} />
                 {selectedIndices.map(idx => (
-                  <Line key={idx} type="monotone" dataKey={idx} stroke={INDEX_HISTORY[idx]?.cor || '#666'} strokeWidth={2} dot={{ r: 4, fill: INDEX_HISTORY[idx]?.cor || '#666', strokeWidth: 0 }} filter="url(#accShadow)" animationDuration={2000} />
+                  <Line key={idx} type="monotone" dataKey={idx} stroke={INDEX_HISTORY[idx]?.cor || 'var(--text-muted)'} strokeWidth={2} dot={{ r: 4, fill: INDEX_HISTORY[idx]?.cor || 'var(--text-muted)', strokeWidth: 0 }} filter="url(#accShadow)" animationDuration={2000} />
                 ))}
               </LineChart>
             </ResponsiveContainer>

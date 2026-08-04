@@ -67,7 +67,7 @@ function MIDI() {
       <p className="subtitle">
         Proventos por ativo — distribuição mensal
         {tickerData.length > 0 && (
-          <span style={{ color: '#666666', marginLeft: '8px' }}>
+          <span style={{ color: 'var(--text-faint)', marginLeft: '8px' }}>
             — {tickerData.length} ativo(s)
           </span>
         )}
@@ -79,7 +79,7 @@ function MIDI() {
         gap: 8,
         marginBottom: 12,
       }}>
-        <span style={{ color: '#E0E0E0', fontSize: '0.9em' }}>
+        <span style={{ color: 'var(--text)', fontSize: '0.9em' }}>
           Selecione o ano desejado
         </span>
         <span style={{ color: '#FF3333', fontSize: '1.2em', lineHeight: 1 }}>➡</span>
@@ -87,8 +87,8 @@ function MIDI() {
           value={anoFiltro}
           onChange={e => setAnoFiltro(e.target.value)}
           style={{
-            background: '#0D0D0D',
-            color: '#E0E0E0',
+            background: 'var(--surface-dark)',
+            color: 'var(--text)',
             border: '1px solid #C8B800AA',
             borderRadius: 8,
             padding: '6px 12px',
@@ -127,7 +127,7 @@ function MIDI() {
                   fontSize: '1.0em',
                   textTransform: 'uppercase',
                   letterSpacing: '0.3px',
-                  borderBottom: '1px solid #2A2A2A',
+                  borderBottom: '1px solid var(--border)',
                 }}>
                   TICKER
                 </th>
@@ -142,7 +142,7 @@ function MIDI() {
                     fontSize: '1.0em',
                     textTransform: 'uppercase',
                     letterSpacing: '0.2px',
-                    borderBottom: '1px solid #2A2A2A',
+                    borderBottom: '1px solid var(--border)',
                   }}>
                     {mes}
                   </th>
@@ -157,24 +157,24 @@ function MIDI() {
                   fontSize: '1.0em',
                   textTransform: 'uppercase',
                   letterSpacing: '0.3px',
-                  borderBottom: '1px solid #2A2A2A',
+                  borderBottom: '1px solid var(--border)',
                 }}>
                   TOTAL
                 </th>
               </tr>
-              <tr style={{ background: '#000000' }}>
-                <td style={{ padding: '4px 4px', background: '#000000', textAlign: 'center' }} />
+              <tr style={{ background: 'var(--surface-void)' }}>
+                <td style={{ padding: '4px 4px', background: 'var(--surface-void)', textAlign: 'center' }} />
                 {tickerData.length > 0 ? meses.map((_, idx) => {
                   const count = tickerData.filter(r => r.meses[idx] > 0).length;
                   return (
-                    <td key={idx} style={{ padding: '4px 2px', background: '#000000', textAlign: 'center', color: '#FFFFFF', fontSize: '0.8em', fontWeight: 600 }}>
+                    <td key={idx} style={{ padding: '4px 2px', background: 'var(--surface-void)', textAlign: 'center', color: 'var(--text-strong)', fontSize: '0.8em', fontWeight: 600 }}>
                       {count || '—'}
                     </td>
                   );
                 }) : meses.map((_, idx) => (
-                  <td key={idx} style={{ padding: '4px 2px', background: '#000000', textAlign: 'center', color: '#FFFFFF', fontSize: '0.8em', fontWeight: 600 }}>—</td>
+                  <td key={idx} style={{ padding: '4px 2px', background: 'var(--surface-void)', textAlign: 'center', color: 'var(--text-strong)', fontSize: '0.8em', fontWeight: 600 }}>—</td>
                 ))}
-                <td style={{ padding: '4px 4px', background: '#000000', textAlign: 'center' }} />
+                <td style={{ padding: '4px 4px', background: 'var(--surface-void)', textAlign: 'center' }} />
               </tr>
             </thead>
             <tbody>
@@ -186,7 +186,7 @@ function MIDI() {
                     fontWeight: 700,
                     textAlign: 'center',
                     padding: '6px 4px',
-                    borderBottom: '1px solid #1A1A1A',
+                    borderBottom: '1px solid var(--border)',
                     fontSize: '1.0em',
                   }}>
                     {row.ticker}
@@ -198,7 +198,7 @@ function MIDI() {
                       <td key={idx} style={{
                         textAlign: 'center',
                         padding: '6px 2px',
-                        borderBottom: '1px solid #1A1A1A',
+                        borderBottom: '1px solid var(--border)',
                         background: bg,
                         color: fontColor,
                         fontFamily: "'Consolas', monospace",
@@ -214,7 +214,7 @@ function MIDI() {
                     color: '#000000',
                     textAlign: 'center',
                     padding: '6px 4px',
-                    borderBottom: '1px solid #1A1A1A',
+                    borderBottom: '1px solid var(--border)',
                     fontFamily: "'Consolas', monospace",
                     fontWeight: 700,
                     fontSize: '1.0em',
