@@ -113,3 +113,15 @@
 - Link correto: `https://carteira-de-investimentos-beryl.vercel.app`
 **Pendências:**
 - Testar login do seed user e confirmar que dados carregam
+
+## 2026-08-04
+
+**Foco:** Conversão de cores hardcoded para variáveis CSS do tema + gráfico Evolução do Patrimônio + ajustes visuais
+**Arquivos alterados:** 21 arquivos em `src/` (todas as páginas, componentes e globals.css)
+**Decisões:**
+- Substituídas 315+ ocorrências de cores hex neutras por `var(--...)` para o toggle claro/escuro valer em todas as telas; mantidas cores de dados/semáforos/paletas e overlay escuro dos gráficos
+- Gráfico "Evolução Do Patrimônio Ano a Ano" renomeado para "Investimento Ano a Ano"; criado novo gráfico "Evolução do Patrimônio Ano a Ano" com valor investido acumulado, linha verde `#2E7D32`, círculos maiores e rótulos em amarelo (`var(--gold)`)
+- Modal de informações do ativo translúcido (`--modal-bg` 0.72 dark / 0.78 light) com blur; cotas em azul negrito `#1E4FD8` no tema claro
+- Commits: c89be12, c9808d1, 98420f9, d21c232, 3d3e9af, 6cd2ee5, 0e8ec98, ce06f9d — todos com push (deploy Vercel)
+**Pendências:**
+- Nenhuma
