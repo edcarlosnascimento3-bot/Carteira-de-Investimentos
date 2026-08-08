@@ -403,8 +403,8 @@ function Meta() {
 
                   <div style={{ fontSize: '0.82em' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '3px 0', flexWrap: 'wrap', marginBottom: 14 }}>
-                      <span style={{ color: 'var(--text-muted)', whiteSpace: 'nowrap', fontSize: '1.05em' }}>Cotas</span>
-                      <span style={{ color: 'var(--text)', fontWeight: 600, whiteSpace: 'nowrap', fontSize: '1.05em' }}>
+                      <span style={{ color: 'var(--text-muted)', whiteSpace: 'nowrap', fontSize: '1.8em' }}>Cotas</span>
+                      <span style={{ color: 'var(--text)', fontWeight: 600, whiteSpace: 'nowrap', fontSize: '1.8em' }}>
                         {formatNumber(quantidades[card.ticker] || 0, 0)}
                       </span>
                       <span style={{ color: 'var(--text-muted)', whiteSpace: 'nowrap', marginLeft: 'auto' }}>Meta</span>
