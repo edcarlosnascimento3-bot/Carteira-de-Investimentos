@@ -257,6 +257,7 @@ function Meta() {
         }}>
           {cards.map(card => {
             const border = typeBorders[card.tipo] || 'var(--text-faint)';
+            const barColor = effectiveTipo === 'FII' ? '#375623' : border;
             const metasCard = metas[metaKey(card.ticker)] || {};
             const metaVal = parseFloat(metasCard.meta) || 0;
             const metaRecebimento = parseFloat(metasCard.recebimento) || 0;
@@ -354,7 +355,7 @@ function Meta() {
                           height: '100%',
                           width: `${metaPct}%`,
                           borderRadius: 6,
-                          background: border,
+                          background: barColor,
                           transition: 'width 0.4s ease',
                         }} />
                       </div>
@@ -403,7 +404,7 @@ function Meta() {
                           height: '100%',
                           width: `${recebimentoPct}%`,
                           borderRadius: 6,
-                          background: border,
+                          background: barColor,
                           transition: 'width 0.4s ease',
                         }} />
                       </div>
