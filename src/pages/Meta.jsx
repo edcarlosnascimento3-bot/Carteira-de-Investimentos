@@ -167,6 +167,15 @@ function Meta() {
     marginTop: 5,
   });
 
+  const progressColor = (pct) => {
+    if (pct <= 0) return null;
+    if (pct <= 25) return '#FF3333';
+    if (pct <= 50) return '#2979FF';
+    if (pct <= 75) return '#FF9800';
+    if (pct <= 95) return '#FFD700';
+    return '#00E676';
+  };
+
   const formatDesejadoInput = (raw, focused) => {
     if (!raw) return '';
     const num = parseFloat(raw);
@@ -223,13 +232,13 @@ function Meta() {
             <div className="value" style={{ color: '#C8B800' }}>
               {desejadoGlobal > 0 ? `${formatNumber(atingidoPct, 0)}%` : '—'}
             </div>
-            {desejadoGlobal > 0 && (
+            {desejadoGlobal > 0 && atingidoPct > 0 && (
               <div style={{ ...barStyle(Math.min(100, atingidoPct), summaryBorder), height: 8, marginTop: 6 }}>
                 <div style={{
                   height: '100%',
                   width: `${Math.min(100, atingidoPct)}%`,
                   borderRadius: 4,
-                  background: summaryBorder,
+                  background: progressColor(atingidoPct),
                   transition: 'width 0.4s ease',
                 }} />
               </div>
@@ -406,18 +415,20 @@ function Meta() {
                         value={metasCard.meta || ''}
                         placeholder="0,00"
                         onChange={e => handleMetaChange(card.ticker, 'meta', e.target.value)}
-                        style={{ ...inputStyle, flex: 1, minWidth: 80 }}
+                        style={{ ...inputStyle, flex: 1, minWidth: 56, maxWidth: 90 }}
                       />
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <div style={{ ...barStyle(metaPct, border), flex: 1, marginTop: 0 }}>
-                        <div style={{
-                          height: '100%',
-                          width: `${metaPct}%`,
-                          borderRadius: 6,
-                          background: border,
-                          transition: 'width 0.4s ease',
-                        }} />
+                        {metaPct > 0 && (
+                          <div style={{
+                            height: '100%',
+                            width: `${metaPct}%`,
+                            borderRadius: 6,
+                            background: progressColor(metaPct),
+                            transition: 'width 0.4s ease',
+                          }} />
+                        )}
                       </div>
                       <span style={{
                         color: '#C8B800',
