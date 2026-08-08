@@ -403,11 +403,11 @@ function Meta() {
 
                   <div style={{ fontSize: '0.82em' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '3px 0', flexWrap: 'wrap', marginBottom: 14 }}>
-                      <span style={{ color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>Cotas</span>
-                      <span style={{ color: 'var(--text)', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                      <span style={{ color: 'var(--text-muted)', whiteSpace: 'nowrap', fontSize: '0.95em' }}>Cotas</span>
+                      <span style={{ color: 'var(--text)', fontWeight: 600, whiteSpace: 'nowrap', fontSize: '0.95em' }}>
                         {formatNumber(quantidades[card.ticker] || 0, 0)}
                       </span>
-                      <span style={{ color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>Meta</span>
+                      <span style={{ color: 'var(--text-muted)', whiteSpace: 'nowrap', marginLeft: 'auto' }}>Meta</span>
                       <input
                         type="text"
                         inputMode="numeric"
@@ -415,7 +415,7 @@ function Meta() {
                         value={metasCard.meta || ''}
                         placeholder="0"
                         onChange={e => handleMetaChange(card.ticker, 'meta', e.target.value.replace(/\D/g, ''))}
-                        style={{ ...inputStyle, marginLeft: 'auto', minWidth: 48, maxWidth: 72 }}
+                        style={{ ...inputStyle, minWidth: 48, maxWidth: 72 }}
                       />
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
