@@ -138,8 +138,6 @@ function Meta() {
   const metasGlobal = metas['__global__'] || {};
   const desejadoGlobal = parseFloat(metasGlobal.recebimento) || 0;
   const atingidoPct = desejadoGlobal > 0 ? (summary.media / desejadoGlobal) * 100 : 0;
-  const globalDesejadoFocused = focusedInput === 'global-desejado';
-  const globalDesejadoDisplay = formatDesejadoInput(metasGlobal.recebimento, globalDesejadoFocused);
   const summaryBorder = typeBorders[effectiveTipo] || '#C8B800';
 
   const metaKey = (ticker) => ticker;
@@ -188,6 +186,9 @@ function Meta() {
     const cents = parseInt(digits, 10);
     return (cents / 100).toFixed(2);
   };
+
+  const globalDesejadoFocused = focusedInput === 'global-desejado';
+  const globalDesejadoDisplay = formatDesejadoInput(metasGlobal.recebimento, globalDesejadoFocused);
 
   return (
     <div>
