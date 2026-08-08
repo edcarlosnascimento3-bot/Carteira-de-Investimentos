@@ -51,16 +51,19 @@ const tooltipStyle = {
 
 const RADIAN = Math.PI / 180;
 
-function renderLabel({ name, percent, cx, cy, midAngle, outerRadius }) {
-  const radius = outerRadius * 1.2;
-  const x = cx + radius * Math.cos(-midAngle * RADIAN);
-  const y = cy + radius * Math.sin(-midAngle * RADIAN);
-  const pct = (percent * 100).toFixed(1);
-  return (
-    <text x={x} y={y} fill="#BBB" textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central" fontSize={12}>
-      {`${name} ${pct}%`}
-    </text>
-  );
+function renderLabel(isLight) {
+  const fill = isLight ? '#000000' : '#BBB';
+  return ({ name, percent, cx, cy, midAngle, outerRadius }) => {
+    const radius = outerRadius * 1.2;
+    const x = cx + radius * Math.cos(-midAngle * RADIAN);
+    const y = cy + radius * Math.sin(-midAngle * RADIAN);
+    const pct = (percent * 100).toFixed(1);
+    return (
+      <text x={x} y={y} fill={fill} textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central" fontSize={12}>
+        {`${name} ${pct}%`}
+      </text>
+    );
+  };
 }
 
 
@@ -75,33 +78,39 @@ function renderActiveShape(props) {
   );
 }
 
-function renderTickerLabel({ name, percent, cx, cy, midAngle, outerRadius }) {
-  const radius = outerRadius * 1.25;
-  const x = cx + radius * Math.cos(-midAngle * RADIAN);
-  const y = cy + radius * Math.sin(-midAngle * RADIAN);
-  const fs = percent < 0.03 ? 10 : percent < 0.06 ? 11 : 12;
-  return (
-    <text x={x} y={y} fill="#BBB" textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central" fontSize={fs}>
-      {name} {(percent * 100).toFixed(1)}%
-    </text>
-  );
-}
-
-function renderTickerLabelWithValue({ name, percent, cx, cy, midAngle, outerRadius, value }) {
-  const radius = outerRadius * 1.3;
-  const x = cx + radius * Math.cos(-midAngle * RADIAN);
-  const y = cy + radius * Math.sin(-midAngle * RADIAN);
-  const fs = percent < 0.03 ? 10 : percent < 0.06 ? 11 : 12;
-  return (
-    <g>
-      <text x={x} y={y - 7} fill="#BBB" textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central" fontSize={fs}>
+function renderTickerLabel(isLight) {
+  const fill = isLight ? '#000000' : '#BBB';
+  return ({ name, percent, cx, cy, midAngle, outerRadius }) => {
+    const radius = outerRadius * 1.25;
+    const x = cx + radius * Math.cos(-midAngle * RADIAN);
+    const y = cy + radius * Math.sin(-midAngle * RADIAN);
+    const fs = percent < 0.03 ? 10 : percent < 0.06 ? 11 : 12;
+    return (
+      <text x={x} y={y} fill={fill} textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central" fontSize={fs}>
         {name} {(percent * 100).toFixed(1)}%
       </text>
-      <text x={x} y={y + 9} fill="#4CAF50" textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central" fontSize={11} fontWeight="bold">
-        {formatCurrency(value)}
-      </text>
-    </g>
-  );
+    );
+  };
+}
+
+function renderTickerLabelWithValue(isLight) {
+  const fill = isLight ? '#000000' : '#BBB';
+  return ({ name, percent, cx, cy, midAngle, outerRadius, value }) => {
+    const radius = outerRadius * 1.3;
+    const x = cx + radius * Math.cos(-midAngle * RADIAN);
+    const y = cy + radius * Math.sin(-midAngle * RADIAN);
+    const fs = percent < 0.03 ? 10 : percent < 0.06 ? 11 : 12;
+    return (
+      <g>
+        <text x={x} y={y - 7} fill={fill} textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central" fontSize={fs}>
+          {name} {(percent * 100).toFixed(1)}%
+        </text>
+        <text x={x} y={y + 9} fill="#4CAF50" textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central" fontSize={11} fontWeight="bold">
+          {formatCurrency(value)}
+        </text>
+      </g>
+    );
+  };
 }
 
 function SelectionBadge({ data, selectedName, valueKey, formatFn }) {
@@ -123,7 +132,27 @@ function SelectionBadge({ data, selectedName, valueKey, formatFn }) {
   );
 }
 
+function useLightTheme() {
+  const [isLight, setIsLight] = useState(() =>
+    typeof document !== 'undefined' &&
+    document.documentElement.getAttribute('data-theme') === 'light'
+  );
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    const el = document.documentElement;
+    const update = () => setIsLight(el.getAttribute('data-theme') === 'light');
+    update();
+    const observer = new MutationObserver(update);
+    observer.observe(el, { attributes: true, attributeFilter: ['data-theme'] });
+    return () => observer.disconnect();
+  }, []);
+
+  return isLight;
+}
+
 function Graficos() {
+  const isLight = useLightTheme();
   const { transactions } = useTransactions();
   const { proventos } = useProventos();
   const [selectedType, setSelectedType] = useState(null);
@@ -480,7 +509,7 @@ function Graficos() {
   const renderMonthLabel = (props) => {
     const { x, y, value } = props;
     return (
-      <text x={x} y={y - 10} fill="#FFFFFF" fontSize={11} fontWeight={700} textAnchor="middle">
+      <text x={x} y={y - 10} fill={isLight ? '#000000' : '#FFFFFF'} fontSize={11} fontWeight={700} textAnchor="middle">
         {formatCurrency(value)}
       </text>
     );
@@ -489,7 +518,7 @@ function Graficos() {
   const renderEvolLabelRight = (props) => {
     const { x, y, width, value } = props;
     return (
-      <text x={x + width + 6} y={y + 8} fill="#FFFFFF" fontSize={13} fontWeight={700} textAnchor="start">
+      <text x={x + width + 6} y={y + 8} fill={isLight ? '#000000' : '#FFFFFF'} fontSize={13} fontWeight={700} textAnchor="start">
         {formatCurrency(value)}
       </text>
     );
@@ -498,7 +527,7 @@ function Graficos() {
   const renderEvolLabel = (props) => {
     const { x, y, width, value } = props;
     return (
-      <text x={x + width / 2} y={y - 8} fill="#FFFFFF" fontSize={13} fontWeight={700} textAnchor="middle">
+      <text x={x + width / 2} y={y - 8} fill={isLight ? '#000000' : '#FFFFFF'} fontSize={13} fontWeight={700} textAnchor="middle">
         {formatCurrency(value)}
       </text>
     );
@@ -516,7 +545,7 @@ function Graficos() {
   const renderProventosLabel = (props) => {
     const { x, y, width, value } = props;
     return (
-      <text x={x + width / 2} y={y - 8} fill="#FFFFFF" fontSize={11} fontWeight={700} textAnchor="middle">
+      <text x={x + width / 2} y={y - 8} fill={isLight ? '#000000' : '#FFFFFF'} fontSize={11} fontWeight={700} textAnchor="middle">
         {formatCurrency(value)}
       </text>
     );
@@ -536,7 +565,7 @@ function Graficos() {
         {logoUrl && (
           <image href={logoUrl} x={x + width / 2 - logoSize / 2} y={y + 4} width={logoSize} height={logoSize} />
         )}
-        <text x={x + width / 2} y={labelY} fill="#FFF" fontWeight="bold" fontSize={11} textAnchor="middle">
+        <text x={x + width / 2} y={labelY} fill={isLight ? '#000000' : '#FFF'} fontWeight="bold" fontSize={11} textAnchor="middle">
           {`${pct}%`}
         </text>
         <text x={x + width / 2} y={labelY + 16} fill="#4CAF50" fontSize={11} textAnchor="middle" fontWeight="bold">
@@ -549,7 +578,7 @@ function Graficos() {
   const renderProventosLabelInclinado = (props) => {
     const { x, y, width, value } = props;
     return (
-      <text x={x + width / 2} y={y - 8} fill="#FFFFFF" fontSize={11} fontWeight={700} textAnchor="start" transform={`rotate(-45, ${x + width / 2}, ${y - 8})`}>
+      <text x={x + width / 2} y={y - 8} fill={isLight ? '#000000' : '#FFFFFF'} fontSize={11} fontWeight={700} textAnchor="start" transform={`rotate(-45, ${x + width / 2}, ${y - 8})`}>
         {formatCurrency(value)}
       </text>
     );
@@ -677,7 +706,7 @@ function Graficos() {
                     outerRadius="60%"
                     innerRadius="14%"
                     paddingAngle={3}
-                    label={renderLabel}
+                    label={renderLabel(isLight)}
                     labelLine={{ stroke: 'var(--border-strong)', strokeWidth: 1 }}
                     activeIndex={pieHover}
                     activeShape={renderActiveShape}
@@ -734,7 +763,7 @@ function Graficos() {
                     outerRadius="55%"
                     innerRadius="15%"
                     paddingAngle={2}
-                    label={renderTickerLabel}
+                    label={renderTickerLabel(isLight)}
                     labelLine={{ stroke: 'var(--border-strong)', strokeWidth: 1 }}
                     activeIndex={tickerHover}
                     activeShape={renderActiveShape}
@@ -769,7 +798,7 @@ function Graficos() {
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={qtdData} layout="vertical" margin={{ left: 24, right: 30, top: 4, bottom: 4 }} barSize={36} barCategoryGap="50%">
                   <XAxis type="number" tick={{ fill: 'var(--text-muted)', fontSize: 10 }} axisLine={{ stroke: 'var(--border)' }} tickLine={false} />
-                  <YAxis type="category" dataKey="name" tick={{ fill: 'var(--text)', fontSize: 13 }} axisLine={false} tickLine={false} width={40} />
+                  <YAxis type="category" dataKey="name" tick={{ fill: 'var(--text)', fontSize: 12 }} axisLine={false} tickLine={false} width={120} interval={0} tickFormatter={(n) => String(n).replace(/ /g, '\u00A0')} />
                   <Tooltip cursor={false} contentStyle={tooltipStyle} formatter={(v) => [v.toLocaleString('pt-BR'), 'Quantidade']} />
                   <Bar dataKey="quantidade" radius={[0, 50, 50, 0]} cursor="pointer" activeBar={{ stroke: '#FFF', strokeWidth: 2, filter: 'brightness(1.15)' }}>
                     {qtdData.map((entry) => (
@@ -817,7 +846,7 @@ function Graficos() {
                   outerRadius="55%"
                   innerRadius="15%"
                   paddingAngle={2}
-                  label={renderTickerLabelWithValue}
+                  label={renderTickerLabelWithValue(isLight)}
                   labelLine={{ stroke: 'var(--border-strong)', strokeWidth: 1 }}
                   onClick={(entry) => handleTickerClick(entry.name)}
                 >
@@ -905,8 +934,8 @@ function Graficos() {
             <div style={{ flex: 1, minHeight: 0 }}>
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={corretoraData} margin={{ left: 20, right: 20, top: 60, bottom: 10 }} barSize={90}>
-                  <XAxis dataKey="name" tick={{ fill: 'var(--gold-soft)', fontSize: 12, fontWeight: 700 }} axisLine={{ stroke: 'var(--border)' }} tickLine={false} angle={-20} textAnchor="end" height={60} />
-                  <YAxis tick={{ fill: 'var(--text-muted)', fontSize: 11 }} axisLine={{ stroke: 'var(--border)' }} tickLine={false} />
+                  <XAxis dataKey="name" tick={{ fill: isLight ? '#000000' : 'var(--gold-soft)', fontSize: 12, fontWeight: 700 }} axisLine={{ stroke: 'var(--border)' }} tickLine={false} angle={-20} textAnchor="end" height={60} />
+                  <YAxis tick={{ fill: isLight ? '#000000' : 'var(--text-muted)', fontSize: 11 }} axisLine={{ stroke: 'var(--border)' }} tickLine={false} />
                   <Tooltip cursor={false} contentStyle={tooltipStyle} formatter={(v) => formatCurrency(v)} />
                   <Bar dataKey="value" radius={[8, 8, 0, 0]} cursor="pointer" onClick={(entry) => setSelectedCorretora(prev => prev === entry.name ? null : entry.name)}>
                     <LabelList dataKey="value" content={renderCorretoraBarLabel} />
@@ -944,7 +973,7 @@ function Graficos() {
                   outerRadius="55%"
                   innerRadius="15%"
                   paddingAngle={2}
-                  label={renderTickerLabel}
+                  label={renderTickerLabel(isLight)}
                   labelLine={{ stroke: 'var(--border-strong)', strokeWidth: 1 }}
                   onClick={(entry) => handleTickerClick(entry.name)}
                 >
@@ -986,7 +1015,7 @@ function Graficos() {
                   outerRadius="55%"
                   innerRadius="15%"
                   paddingAngle={2}
-                  label={renderTickerLabel}
+                  label={renderTickerLabel(isLight)}
                   labelLine={{ stroke: 'var(--border-strong)', strokeWidth: 1 }}
                   onClick={(entry) => handleTickerClick(entry.name)}
                 >
@@ -1028,7 +1057,7 @@ function Graficos() {
                   outerRadius="55%"
                   innerRadius="15%"
                   paddingAngle={2}
-                  label={renderTickerLabelWithValue}
+                  label={renderTickerLabelWithValue(isLight)}
                   labelLine={{ stroke: 'var(--border-strong)', strokeWidth: 1 }}
                   onClick={(entry) => handleTickerClick(entry.name)}
                 >
@@ -1057,8 +1086,8 @@ function Graficos() {
               <div style={{ flex: 1, minHeight: 0 }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={proventosEvolData} margin={{ left: 30, right: 30, top: 30, bottom: 10 }} barSize={60}>
-                    <XAxis dataKey="name" tick={{ fill: 'var(--text)', fontSize: 12 }} axisLine={{ stroke: 'var(--border)' }} tickLine={false} />
-                    <YAxis tick={{ fill: 'var(--text-muted)', fontSize: 11 }} axisLine={{ stroke: 'var(--border)' }} tickLine={false} />
+                    <XAxis dataKey="name" tick={{ fill: isLight ? '#000000' : 'var(--text)', fontSize: 12 }} axisLine={{ stroke: 'var(--border)' }} tickLine={false} />
+                    <YAxis tick={{ fill: isLight ? '#000000' : 'var(--text-muted)', fontSize: 11 }} axisLine={{ stroke: 'var(--border)' }} tickLine={false} />
                     <Tooltip cursor={false} contentStyle={tooltipStyle} formatter={(v) => formatCurrency(v)} />
                     <Bar dataKey="value" radius={[8, 8, 0, 0]} fill="#1B2A4A" activeBar={{ stroke: '#FFF', strokeWidth: 2, filter: 'brightness(1.15)' }}>
                       <LabelList dataKey="value" content={renderEvolLabel} />
@@ -1075,8 +1104,8 @@ function Graficos() {
               <div style={{ flex: 1, minHeight: 0 }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={proventosMediaData} layout="vertical" margin={{ left: 30, right: 80, top: 10, bottom: 10 }} barSize={30} barCategoryGap="40%">
-                    <XAxis type="number" tick={{ fill: 'var(--text-muted)', fontSize: 11 }} axisLine={{ stroke: 'var(--border)' }} tickLine={false} />
-                    <YAxis type="category" dataKey="name" tick={{ fill: 'var(--text)', fontSize: 12 }} axisLine={false} tickLine={false} width={30} />
+                    <XAxis type="number" tick={{ fill: isLight ? '#000000' : 'var(--text-muted)', fontSize: 11 }} axisLine={{ stroke: 'var(--border)' }} tickLine={false} />
+                    <YAxis type="category" dataKey="name" tick={{ fill: isLight ? '#000000' : 'var(--text)', fontSize: 12 }} axisLine={false} tickLine={false} width={30} />
                     <Tooltip cursor={false} contentStyle={tooltipStyle} formatter={(v) => formatCurrency(v)} />
                     <Bar dataKey="value" radius={[0, 50, 50, 0]} fill="#2E7D32" activeBar={{ stroke: '#FFF', strokeWidth: 2, filter: 'brightness(1.15)' }}>
                       <LabelList dataKey="value" content={renderEvolLabelRight} />
@@ -1114,8 +1143,8 @@ function Graficos() {
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={proventosMonthData} margin={{ left: 30, right: 30, top: 30, bottom: 10 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                <XAxis dataKey="nome" tick={{ fill: 'var(--gold-soft)', fontSize: 13, fontWeight: 700 }} axisLine={{ stroke: 'var(--border)' }} tickLine={false} />
-                <YAxis tick={{ fill: 'var(--text-muted)', fontSize: 11 }} axisLine={{ stroke: 'var(--border)' }} tickLine={false} />
+                <XAxis dataKey="nome" tick={{ fill: isLight ? '#000000' : 'var(--gold-soft)', fontSize: 13, fontWeight: 700 }} axisLine={{ stroke: 'var(--border)' }} tickLine={false} />
+                <YAxis tick={{ fill: isLight ? '#000000' : 'var(--text-muted)', fontSize: 11 }} axisLine={{ stroke: 'var(--border)' }} tickLine={false} />
                 <Tooltip cursor={false} contentStyle={tooltipStyle} formatter={(v) => formatCurrency(v)} />
                 <Bar dataKey="value" radius={[8, 8, 0, 0]} activeBar={{ stroke: '#FFF', strokeWidth: 2, filter: 'brightness(1.15)' }} animationDuration={2000}>
                   {proventosMonthData.map((entry, idx) => (
@@ -1175,8 +1204,8 @@ function Graficos() {
                       </filter>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                    <XAxis dataKey="nome" tick={{ fill: 'var(--gold-soft)', fontSize: 13, fontWeight: 700 }} axisLine={{ stroke: 'var(--border)' }} tickLine={false} />
-                    <YAxis tick={{ fill: 'var(--text-muted)', fontSize: 11 }} axisLine={{ stroke: 'var(--border)' }} tickLine={false} />
+                    <XAxis dataKey="nome" tick={{ fill: isLight ? '#000000' : 'var(--gold-soft)', fontSize: 13, fontWeight: 700 }} axisLine={{ stroke: 'var(--border)' }} tickLine={false} />
+                    <YAxis tick={{ fill: isLight ? '#000000' : 'var(--text-muted)', fontSize: 11 }} axisLine={{ stroke: 'var(--border)' }} tickLine={false} />
                     <Tooltip cursor={false} contentStyle={tooltipStyle} />
                     {selectedProventosTipos.map(tipo => (
                       <Bar key={tipo} dataKey={tipo} fill={typeColors[tipo] || 'var(--text-muted)'} animationDuration={2000} filter="url(#bar3dShadow)">
@@ -1220,8 +1249,8 @@ function Graficos() {
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={monthData} margin={{ left: 30, right: 30, top: 30, bottom: 10 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                <XAxis dataKey="nome" tick={{ fill: 'var(--text)', fontSize: 11 }} axisLine={{ stroke: 'var(--border)' }} tickLine={false} />
-                <YAxis tick={{ fill: 'var(--text-muted)', fontSize: 11 }} axisLine={{ stroke: 'var(--border)' }} tickLine={false} />
+                <XAxis dataKey="nome" tick={{ fill: isLight ? '#000000' : 'var(--text)', fontSize: 11 }} axisLine={{ stroke: 'var(--border)' }} tickLine={false} />
+                <YAxis tick={{ fill: isLight ? '#000000' : 'var(--text-muted)', fontSize: 11 }} axisLine={{ stroke: 'var(--border)' }} tickLine={false} />
                 <Tooltip cursor={false} contentStyle={tooltipStyle} formatter={(v) => formatCurrency(v)} />
                 <Line type="monotone" dataKey="value" stroke="#FF3333" strokeWidth={3} dot={{ r: 6, fill: '#FF3333', strokeWidth: 2, stroke: '#FF3333' }} activeDot={false}>
                   <LabelList dataKey="value" content={renderMonthLabel} />
@@ -1238,8 +1267,8 @@ function Graficos() {
           <div style={{ flex: 1, minHeight: 0 }}>
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={evolData} margin={{ left: 30, right: 30, top: 30, bottom: 10 }} barSize={60}>
-                <XAxis dataKey="name" tick={{ fill: 'var(--gold-soft)', fontSize: 13, fontWeight: 700 }} axisLine={{ stroke: 'var(--border)' }} tickLine={false} />
-                <YAxis tick={{ fill: 'var(--text-muted)', fontSize: 11 }} axisLine={{ stroke: 'var(--border)' }} tickLine={false} />
+                <XAxis dataKey="name" tick={{ fill: isLight ? '#000000' : 'var(--gold-soft)', fontSize: 13, fontWeight: 700 }} axisLine={{ stroke: 'var(--border)' }} tickLine={false} />
+                <YAxis tick={{ fill: isLight ? '#000000' : 'var(--text-muted)', fontSize: 11 }} axisLine={{ stroke: 'var(--border)' }} tickLine={false} />
                 <Tooltip cursor={false} contentStyle={tooltipStyle} formatter={(v) => formatCurrency(v)} />
                 <Bar dataKey="value" radius={[8, 8, 0, 0]} fill="#990000" activeBar={{ stroke: '#FFF', strokeWidth: 2, filter: 'brightness(1.15)' }}>
                   <LabelList dataKey="value" content={renderEvolLabel} />
@@ -1299,8 +1328,8 @@ function Graficos() {
                   </filter>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                <XAxis dataKey="year" tick={{ fill: 'var(--gold-soft)', fontSize: 13, fontWeight: 700 }} axisLine={{ stroke: 'var(--border)' }} tickLine={false} />
-                <YAxis tick={{ fill: 'var(--text-muted)', fontSize: 11 }} axisLine={{ stroke: 'var(--border)' }} tickLine={false} tickFormatter={(v) => `${v}%`} />
+                <XAxis dataKey="year" tick={{ fill: isLight ? '#000000' : 'var(--gold-soft)', fontSize: 13, fontWeight: 700 }} axisLine={{ stroke: 'var(--border)' }} tickLine={false} />
+                <YAxis tick={{ fill: isLight ? '#000000' : 'var(--text-muted)', fontSize: 11 }} axisLine={{ stroke: 'var(--border)' }} tickLine={false} tickFormatter={(v) => `${v}%`} />
                 <Tooltip cursor={false} contentStyle={tooltipStyle} formatter={(v) => [`${v.toFixed(2)}%`]} />
                 <Line type="monotone" dataKey="Carteira" stroke="#FF3333" strokeWidth={3} dot={{ r: 5, fill: '#FF3333', strokeWidth: 0 }} filter="url(#lineShadow)" animationDuration={2000} />
                 {selectedIndices.map(idx => (
@@ -1342,8 +1371,8 @@ function Graficos() {
                   </filter>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                <XAxis dataKey="year" tick={{ fill: 'var(--gold-soft)', fontSize: 13, fontWeight: 700 }} axisLine={{ stroke: 'var(--border)' }} tickLine={false} />
-                <YAxis tick={{ fill: 'var(--text-muted)', fontSize: 11 }} axisLine={{ stroke: 'var(--border)' }} tickLine={false} domain={['auto', 'auto']} />
+                <XAxis dataKey="year" tick={{ fill: isLight ? '#000000' : 'var(--gold-soft)', fontSize: 13, fontWeight: 700 }} axisLine={{ stroke: 'var(--border)' }} tickLine={false} />
+                <YAxis tick={{ fill: isLight ? '#000000' : 'var(--text-muted)', fontSize: 11 }} axisLine={{ stroke: 'var(--border)' }} tickLine={false} domain={['auto', 'auto']} />
                 <Tooltip cursor={false} contentStyle={tooltipStyle} formatter={(v) => [v.toFixed(2), 'Valor']} />
                 <Line type="monotone" dataKey="Carteira" stroke="#FF3333" strokeWidth={3} dot={{ r: 5, fill: '#FF3333', strokeWidth: 0 }} filter="url(#accShadow)" animationDuration={2000} />
                 {selectedIndices.map(idx => (
