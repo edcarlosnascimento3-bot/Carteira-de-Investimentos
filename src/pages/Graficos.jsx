@@ -699,7 +699,8 @@ function Graficos() {
           <div className="chart-card" style={{ display: 'flex', flexDirection: 'column', position: 'relative', minHeight: 320 }}>
             <h2 style={{ textAlign: 'center' }}>Distribuição por Tipo</h2>
             <SelectionBadge data={tipoData} selectedName={selectedType} />
-            <div style={{ flex: 1, minHeight: 0 }}>
+            <div style={{ flex: 1, minHeight: 0, perspective: '900px', overflow: 'visible' }}>
+              <div style={{ width: '100%', height: '100%', transform: 'rotateX(32deg)', transformOrigin: '50% 45%', transformStyle: 'preserve-3d', overflow: 'visible' }}>
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <defs>
@@ -712,10 +713,10 @@ function Graficos() {
                     dataKey="value"
                     nameKey="name"
                     cx="50%"
-                    cy="60%"
+                    cy="55%"
                     outerRadius="60%"
                     innerRadius="14%"
-                    paddingAngle={3}
+                    paddingAngle={0}
                     stroke="none"
                     isAnimationActive={false}
                   >
@@ -734,7 +735,7 @@ function Graficos() {
                     cy="50%"
                     outerRadius="60%"
                     innerRadius="14%"
-                    paddingAngle={3}
+                    paddingAngle={0}
                     label={renderLabel(isLight)}
                     labelLine={{ stroke: 'var(--border-strong)', strokeWidth: 1 }}
                     activeIndex={pieHover}
@@ -758,6 +759,7 @@ function Graficos() {
                   <Tooltip contentStyle={tooltipStyle} formatter={(v) => formatCurrency(v)} />
                 </PieChart>
               </ResponsiveContainer>
+              </div>
             </div>
             {hasFilter && (
               <div style={{
