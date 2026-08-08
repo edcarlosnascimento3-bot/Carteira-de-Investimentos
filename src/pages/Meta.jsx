@@ -1,9 +1,36 @@
 import { useState, useMemo } from 'react';
+import { formatCurrency } from '../services/format';
 import { useProventos } from '../context/ProventosContext';
+import LogoImage from '../components/LogoImage';
+
+const typeIcons = {
+  'Ação': '📈',
+  'FII': '🏗️',
+  'Renda Fixa': '🔒',
+};
+
+const typeBorders = {
+  'Ação': '#FF3333',        // Vermelho
+  'FII': '#00CC66',         // Verde
+  'Renda Fixa': '#FFD700',  // Amarelo
+};
+
+const monthNames = [
+  'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+  'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
+];
+
+function normalizeTipo(tipo) {
+  return String(tipo || '').replace(/fii/i, 'FII');
+}
+
+function proventoTotal(p) {
+  return (p.dividendos || 0) + (p.jcp || 0) + (p.rendimento || 0) + (p.reembolso || 0);
+}
 
 function Meta() {
   const { proventos } = useProventos();
-  const [anoFiltro, setAnoFiltro] = useState('');
+  const [anoFiltro, setAnoFiltro] = useState(() => String(new Date().getFullYear()));
   const [tipoFiltro, setTipoFiltro] = useState('');
 
   const uniqueAnos = useMemo(() => {
@@ -11,12 +38,30 @@ function Meta() {
   }, [proventos]);
 
   const uniqueTipos = useMemo(() => {
-    return [...new Set(proventos.map(p => p.tipo === 'FII Agro' ? 'FII' : p.tipo))].sort();
+    return [...new Set(proventos.map(p => normalizeTipo(p.tipo)))].sort();
   }, [proventos]);
 
-  const handleTipoClick = (tipo) => {
-    setTipoFiltro(prev => (prev === tipo ? '' : tipo));
-  };
+  const effectiveTipo = tipoFiltro || uniqueTipos[0] || '';
+
+  const cards = useMemo(() => {
+    const selectedAno = String(anoFiltro);
+    const groups = {};
+    proventos.forEach(p => {
+      const tipo = normalizeTipo(p.tipo);
+      if (tipo !== effectiveTipo) return;
+      if (String(p.ano) !== selectedAno) return;
+      if (!groups[p.ticker]) groups[p.ticker] = { ticker: p.ticker, nome: p.nome || p.ticker, tipo, meses: new Array(12).fill(0) };
+      const partes = (p.data || '').split('/');
+      const mesIdx = partes.length >= 2 ? parseInt(partes[1], 10) - 1 : -1;
+      const total = proventoTotal(p);
+      if (mesIdx >= 0 && mesIdx < 12) {
+        groups[p.ticker].meses[mesIdx] += total;
+      }
+    });
+    return Object.values(groups).sort((a, b) => a.nome.localeCompare(b.nome));
+  }, [proventos, anoFiltro, effectiveTipo]);
+
+  const handleTipoClick = (tipo) => setTipoFiltro(tipo);
 
   return (
     <div>
@@ -65,7 +110,7 @@ function Meta() {
         <span style={{ color: '#FF3333', fontSize: '1.2em', lineHeight: 1 }}>➡</span>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
           {uniqueTipos.map(tipo => {
-            const selected = tipoFiltro === tipo;
+            const selected = effectiveTipo === tipo;
             return (
               <button
                 key={tipo}
@@ -90,21 +135,93 @@ function Meta() {
         </div>
       </div>
 
-      <div className="page-placeholder" style={{ height: '60%' }}>
-        <div className="icon">🎯</div>
-        <h2>Meta</h2>
-        <p>
-          {proventos.length === 0
-            ? 'Nenhum provento encontrado. Adicione registros na página Proventos.'
-            : anoFiltro && tipoFiltro
-              ? `Metas para ${tipoFiltro} em ${anoFiltro}`
-              : anoFiltro
-                ? `Metas para o ano ${anoFiltro}`
-                : tipoFiltro
-                  ? `Metas para ${tipoFiltro}`
-                  : 'Definição e acompanhamento de metas financeiras'}
-        </p>
-      </div>
+      {proventos.length === 0 ? (
+        <div className="page-placeholder" style={{ height: '60%' }}>
+          <div className="icon">🎯</div>
+          <h2>Meta</h2>
+          <p>Nenhum provento encontrado. Adicione registros na página Proventos.</p>
+        </div>
+      ) : cards.length === 0 ? (
+        <div className="page-placeholder" style={{ height: '60%' }}>
+          <div className="icon">🎯</div>
+          <h2>Meta</h2>
+          <p>Sem proventos para {effectiveTipo} em {anoFiltro}.</p>
+        </div>
+      ) : (
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+          gap: 14,
+          marginTop: 20,
+          marginBottom: 20,
+        }}>
+          {cards.map(card => {
+            const border = typeBorders[card.tipo] || 'var(--text-faint)';
+            return (
+              <div key={card.ticker} style={{
+                background: 'var(--card-bg)',
+                border: `3px solid ${border}`,
+                borderRadius: 18,
+                padding: 16,
+                boxShadow: 'var(--card-shadow)',
+              }}>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 12,
+                  marginBottom: 12,
+                }}>
+                  <LogoImage
+                    ticker={card.ticker}
+                    fallback={typeIcons[card.tipo] || '📄'}
+                    size={46}
+                    style={{ borderRadius: 10 }}
+                  />
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{
+                      color: 'var(--text)',
+                      fontWeight: 700,
+                      fontSize: '0.95em',
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                    }}>
+                      {card.nome}
+                    </div>
+                    <div style={{ color: 'var(--text-faint)', fontSize: '0.72em' }}>
+                      {card.ticker}
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  {monthNames.map((nome, i) => {
+                    const valor = card.meses[i];
+                    return (
+                      <div key={nome} style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        gap: 12,
+                        padding: '2.5px 0',
+                        fontSize: '0.82em',
+                      }}>
+                        <span style={{ color: 'var(--text-muted)' }}>{nome}</span>
+                        <span style={{
+                          color: valor > 0 ? '#00E676' : 'var(--text-faint)',
+                          fontWeight: valor > 0 ? 600 : 400,
+                          whiteSpace: 'nowrap',
+                        }}>
+                          {formatCurrency(valor)}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
