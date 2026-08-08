@@ -235,6 +235,10 @@ body {
   gap: 16px;
 }
 
+.summary-widgets .widget-card {
+  align-items: flex-start;
+}
+
 .summary-widgets .widget-card .label {
   letter-spacing: 1px;
   font-size: 0.6em;
