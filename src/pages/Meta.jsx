@@ -21,7 +21,8 @@ const monthNames = [
 ];
 
 function normalizeTipo(tipo) {
-  return String(tipo || '').replace(/fii/i, 'FII');
+  const t = String(tipo || '').trim();
+  return /^fii/i.test(t) ? 'FII' : t;
 }
 
 function proventoTotal(p) {
@@ -185,6 +186,9 @@ function Meta() {
                 <div>
                   {monthNames.map((nome, i) => {
                     const valor = card.meses[i];
+                    const partes = formatCurrency(valor).split(' ');
+                    const simbolo = partes[0] || 'R$';
+                    const numero = partes.slice(1).join(' ');
                     return (
                       <div key={nome} style={{
                         display: 'flex',
@@ -204,7 +208,16 @@ function Meta() {
                           fontWeight: valor > 0 ? 600 : 400,
                           whiteSpace: 'nowrap',
                         }}>
-                          {formatCurrency(valor)}
+                          <span style={{ color: 'inherit', marginRight: 3 }}>{simbolo}</span>
+                          <span style={{
+                            display: 'inline-block',
+                            minWidth: '7ch',
+                            textAlign: 'right',
+                            fontVariantNumeric: 'tabular-nums',
+                            fontFamily: "'Consolas', monospace",
+                          }}>
+                            {numero}
+                          </span>
                         </span>
                       </div>
                     );
