@@ -280,6 +280,7 @@ function Meta() {
           {uniqueAnos.map(a => <option key={a} value={a}>{a}</option>)}
         </select>
 
+        <span style={{ display: 'inline-block', width: '1.2em' }} />
         <span style={{ color: 'var(--text)', fontSize: '0.9em' }}>
           Selecione o tipo
         </span>
