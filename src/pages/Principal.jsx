@@ -123,6 +123,16 @@ function Principal() {
     v.toLocaleString('pt-BR');
 
   const [selectedTicker, setSelectedTicker] = useState(null);
+  const [closing, setClosing] = useState(false);
+
+  const closeModal = () => {
+    if (closing) return;
+    setClosing(true);
+    setTimeout(() => {
+      setClosing(false);
+      setSelectedTicker(null);
+    }, 660);
+  };
 
   const assetModalInfo = useMemo(() => {
     if (!selectedTicker) return null;
@@ -310,9 +320,11 @@ function Principal() {
       )}
 
       {assetModalInfo && (
-        <div className="asset-modal-overlay" onClick={() => setSelectedTicker(null)}>
-          <div className="asset-modal-content" onClick={e => e.stopPropagation()}>
+        <div className={`asset-modal-overlay${closing ? ' closing' : ''}`} onClick={closeModal}>
+          <div className={`asset-modal-content${closing ? ' closing' : ''}`} onClick={e => e.stopPropagation()}>
             <div className="asset-modal-title">{assetModalInfo.ticker}</div>
+
+            <div className="asset-modal-curtain">
 
             <div className="asset-modal-row">
               <span className="asset-modal-label">Quantidade total de ativos</span>
@@ -343,7 +355,8 @@ function Principal() {
               <span className="asset-modal-value">{assetModalInfo.minDiv != null ? formatCurrency(assetModalInfo.minDiv) : '—'}</span>
             </div>
 
-            <button className="asset-modal-ok" onClick={() => setSelectedTicker(null)}>OK</button>
+            <button className="asset-modal-ok" onClick={closeModal}>OK</button>
+            </div>
           </div>
         </div>
       )}
