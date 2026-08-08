@@ -51,6 +51,16 @@ const tooltipStyle = {
 
 const RADIAN = Math.PI / 180;
 
+function shadeColor(color, percent) {
+  if (!color || color[0] !== '#') return color;
+  const r = parseInt(color.slice(1, 3), 16);
+  const g = parseInt(color.slice(3, 5), 16);
+  const b = parseInt(color.slice(5, 7), 16);
+  const f = 1 - percent;
+  const toHex = (v) => Math.max(0, Math.min(255, Math.round(v * f))).toString(16).padStart(2, '0');
+  return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+}
+
 function renderLabel(isLight) {
   const fill = isLight ? '#000000' : '#BBB';
   return ({ name, percent, cx, cy, midAngle, outerRadius }) => {
@@ -697,6 +707,25 @@ function Graficos() {
                       <feDropShadow dx="3" dy="3" stdDeviation="4" flood-color="#000" flood-opacity="0.5" />
                     </filter>
                   </defs>
+                  <Pie
+                    data={tipoData}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="54%"
+                    outerRadius="60%"
+                    innerRadius="14%"
+                    paddingAngle={3}
+                    stroke="none"
+                    isAnimationActive={false}
+                  >
+                    {tipoData.map((entry) => (
+                      <Cell
+                        key={`3d-${entry.name}`}
+                        fill={shadeColor(typeColors[entry.name] || 'var(--text-muted)', 0.45)}
+                      />
+                    ))}
+                  </Pie>
                   <Pie
                     data={tipoData}
                     dataKey="value"
