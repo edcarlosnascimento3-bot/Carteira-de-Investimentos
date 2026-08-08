@@ -18,17 +18,21 @@ export function UserProvider({ children }) {
     Promise.all([db.read(STORAGE_NAME), loadAvatarFromIDB()]).then(([data, saved]) => {
       if (!active) return;
       if (data?.userName) setUserName(data.userName);
-      if (saved) setAvatar(saved);
+      // Avatar prioriza o storage principal (localStorage + Supabase) para
+      // persistir entre navegadores/dispositivos; IndexedDB é o fallback local.
+      if (data?.avatar) setAvatar(data.avatar);
+      else if (saved) setAvatar(saved);
       setLoaded(true);
     });
     return () => { active = false; };
   }, []);
 
-  // Nome gravado sem o avatar — o dataURL da foto estoura a quota do
-  // localStorage e o payload do Supabase, derrubando a gravação inteira.
+  // Avatar redimensionado (máx 256px) cabe folgado na quota — salvo junto com
+  // o nome para persistir em qualquer navegador/dispositivo (localStorage +
+  // Supabase), mantendo o IndexedDB como cache local.
   useEffect(() => {
-    if (loaded && userName) db.write(STORAGE_NAME, { userName });
-  }, [userName, loaded]);
+    if (loaded && userName) db.write(STORAGE_NAME, { userName, avatar });
+  }, [userName, avatar, loaded]);
 
   useEffect(() => {
     if (loaded) saveAvatarToIDB(avatar);

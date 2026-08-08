@@ -91,7 +91,7 @@ function App() {
         ctx.drawImage(img, 0, 0, width, height);
         setAvatar(canvas.toDataURL('image/jpeg', 0.85));
       };
-      img.onerror = () => setAvatar(ev.target.result);
+      img.onerror = () => setAvatar(null);
       img.src = ev.target.result;
     };
     reader.readAsDataURL(file);
