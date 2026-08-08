@@ -232,7 +232,7 @@ body {
 .summary-widgets .card-content {
   flex: 1;
   min-width: 0;
-  gap: 10px;
+  gap: 16px;
 }
 
 .summary-widgets .widget-card .label {
