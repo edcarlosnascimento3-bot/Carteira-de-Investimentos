@@ -194,7 +194,7 @@ function Meta() {
       <div className="summary-widgets">
         <div className="widget-card">
           <div className="card-content">
-            <div className="label" style={{ color: '#C8B800' }}>MÉDIA MENSAL DOS PROVENTOS</div>
+            <div className="label" style={{ color: '#C8B800', whiteSpace: 'nowrap' }}>MÉDIA MENSAL DOS PROVENTOS</div>
             <div className="value" style={{ color: '#00E676' }}>{formatCurrency(currentMedia)}</div>
           </div>
           <div className="card-icon icon-pulse" style={{ fontSize: 36 }}>💵</div>
@@ -329,14 +329,9 @@ function Meta() {
             const cardBorder = effectiveTipo === 'FII' ? '#375623' : border;
             const metasCard = metas[metaKey(card.ticker)] || {};
             const metaVal = parseFloat(metasCard.meta) || 0;
-            const metaRecebimento = parseFloat(metasCard.recebimento) || 0;
             const cotas = quantidades[card.ticker] || 0;
             const metaPct = metaVal > 0 ? Math.min(100, (cotas / metaVal) * 100) : 0;
             const cotasFaltando = metaVal > 0 ? Math.max(0, metaVal - cotas) : 0;
-            const recebimentoPct = metaRecebimento > 0 ? Math.min(100, (card.media / metaRecebimento) * 100) : 0;
-            const faltaPct = metaRecebimento > 0 ? Math.max(0, 100 - recebimentoPct) : 0;
-            const desejadoFocused = focusedInput === `${card.ticker}-desejado`;
-            const desejadoDisplay = formatDesejadoInput(metasCard.recebimento, desejadoFocused);
             return (
               <div key={card.ticker} style={{
                 background: 'var(--card-bg)',
@@ -397,16 +392,12 @@ function Meta() {
 
                 <div style={{ marginTop: 14 }} />
 
-                <div style={{ fontSize: '0.82em' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, padding: '3px 0' }}>
-                    <span style={{ color: 'var(--text-muted)' }}>Quantidade de cotas</span>
-                    <span style={{ color: 'var(--text)', fontWeight: 600, whiteSpace: 'nowrap' }}>
-                      {formatNumber(quantidades[card.ticker] || 0, 0)}
-                    </span>
-                  </div>
-
-                  <div style={{ padding: '3px 0' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 5 }}>
+                  <div style={{ fontSize: '0.82em' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '3px 0', flexWrap: 'wrap' }}>
+                      <span style={{ color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>Cotas</span>
+                      <span style={{ color: 'var(--text)', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                        {formatNumber(quantidades[card.ticker] || 0, 0)}
+                      </span>
                       <span style={{ color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>Meta</span>
                       <input
                         type="number"
@@ -415,7 +406,7 @@ function Meta() {
                         value={metasCard.meta || ''}
                         placeholder="0,00"
                         onChange={e => handleMetaChange(card.ticker, 'meta', e.target.value)}
-                        style={inputStyle}
+                        style={{ ...inputStyle, flex: 1, minWidth: 80 }}
                       />
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -452,47 +443,6 @@ function Meta() {
                       {formatCurrency(card.media)}
                     </span>
                   </div>
-
-                  <div style={{ padding: '3px 0' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 5 }}>
-                      <span style={{ color: 'var(--text-muted)', flex: 1 }}>Desejado</span>
-                      <input
-                        type="text"
-                        inputMode="decimal"
-                        value={desejadoDisplay}
-                        placeholder="R$ 0,00"
-                        onChange={e => handleMetaChange(card.ticker, 'recebimento', parseDesejadoInput(e.target.value))}
-                        onFocus={() => setFocusedInput(`${card.ticker}-desejado`)}
-                        onBlur={() => setFocusedInput(null)}
-                        style={{ ...inputStyle, width: 110 }}
-                      />
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <div style={{ ...barStyle(recebimentoPct, border), flex: 1, marginTop: 0 }}>
-                        <div style={{
-                          height: '100%',
-                          width: `${recebimentoPct}%`,
-                          borderRadius: 6,
-                          background: border,
-                          transition: 'width 0.4s ease',
-                        }} />
-                      </div>
-                      <span style={{
-                        color: '#C8B800',
-                        fontWeight: 700,
-                        fontSize: '0.85em',
-                        whiteSpace: 'nowrap',
-                      }}>
-                        {metaRecebimento > 0 ? `Falta ${formatNumber(faltaPct, 0)}%` : ''}
-                      </span>
-                    </div>
-                    {metaRecebimento > 0 && faltaPct === 0 && (
-                      <div style={{ fontSize: '0.72em', color: 'var(--text-faint)', marginTop: 3 }}>
-                        Média recebida atingiu o desejado
-                      </div>
-                    )}
-                  </div>
-                </div>
               </div>
             );
           })}
