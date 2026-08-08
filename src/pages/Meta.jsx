@@ -96,7 +96,7 @@ function Meta() {
 
   const handleTipoClick = (tipo) => setTipoFiltro(tipo);
 
-  const metaKey = (ticker) => `${ticker}|${anoFiltro}`;
+  const metaKey = (ticker) => ticker;
 
   const handleMetaChange = (ticker, campo, valor) => {
     setMetas(prev => {
@@ -240,8 +240,11 @@ function Meta() {
             const metasCard = metas[metaKey(card.ticker)] || {};
             const metaVal = parseFloat(metasCard.meta) || 0;
             const metaRecebimento = parseFloat(metasCard.recebimento) || 0;
-            const metaPct = metaVal > 0 ? Math.min(100, (card.media / metaVal) * 100) : 0;
-            const recebimentoPct = metaRecebimento > 0 ? Math.min(100, (card.total / metaRecebimento) * 100) : 0;
+            const cotas = quantidades[card.ticker] || 0;
+            const metaPct = metaVal > 0 ? Math.min(100, (cotas / metaVal) * 100) : 0;
+            const cotasFaltando = metaVal > 0 ? Math.max(0, metaVal - cotas) : 0;
+            const recebimentoPct = metaRecebimento > 0 ? Math.min(100, (card.media / metaRecebimento) * 100) : 0;
+            const faltaPct = metaRecebimento > 0 ? Math.max(0, 100 - recebimentoPct) : 0;
             const desejadoFocused = focusedInput === `${card.ticker}-desejado`;
             const desejadoDisplay = formatDesejadoInput(metasCard.recebimento, desejadoFocused);
             return (
@@ -344,6 +347,13 @@ function Meta() {
                         {metaVal > 0 ? `${formatNumber(metaPct, 0)}%` : ''}
                       </span>
                     </div>
+                    {metaVal > 0 && (
+                      <div style={{ fontSize: '0.72em', color: 'var(--text-faint)', marginTop: 3 }}>
+                        {cotasFaltando > 0
+                          ? `Faltam ${formatNumber(cotasFaltando, 0)} cotas para atingir a meta`
+                          : 'Meta atingida'}
+                      </div>
+                    )}
                   </div>
 
                   <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, padding: '3px 0' }}>
@@ -383,9 +393,14 @@ function Meta() {
                         fontSize: '0.85em',
                         whiteSpace: 'nowrap',
                       }}>
-                        {metaRecebimento > 0 ? `${formatNumber(recebimentoPct, 0)}%` : ''}
+                        {metaRecebimento > 0 ? `Falta ${formatNumber(faltaPct, 0)}%` : ''}
                       </span>
                     </div>
+                    {metaRecebimento > 0 && faltaPct === 0 && (
+                      <div style={{ fontSize: '0.72em', color: 'var(--text-faint)', marginTop: 3 }}>
+                        Média recebida atingiu o desejado
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
