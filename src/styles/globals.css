@@ -62,7 +62,7 @@
   --card-border: #D6DAE4;
   --card-shadow: inset 0 1px 0 rgba(255,255,255,0.7), 0 4px 16px rgba(40, 50, 100, 0.08);
   --widget-shadow: inset 0 1px 0 rgba(255,255,255,0.7), 0 4px 20px rgba(40, 50, 100, 0.08), 0 1px 3px rgba(40, 50, 100, 0.05);
-  --modal-bg: rgba(120, 180, 255, 0);
+  --modal-bg: rgba(13, 45, 120, 0);
   --sidebar-bg: #FFFFFF;
   --sidebar-text: #6B6200;
   --sidebar-subtitle: #5C6272;
@@ -1760,7 +1760,7 @@ table:not(.data-table) tr {
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: rgba(0, 0, 0, 0.005);
+  background: rgba(0, 0, 0, 0.002);
   display: flex;
   align-items: center;
   justify-content: center;
