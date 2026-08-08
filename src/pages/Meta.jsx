@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { formatCurrency, formatNumber } from '../services/format';
 import { useProventos } from '../context/ProventosContext';
 import { useTransactions } from '../context/TransactionsContext';
@@ -30,6 +30,25 @@ function proventoTotal(p) {
   return (p.dividendos || 0) + (p.jcp || 0) + (p.rendimento || 0) + (p.reembolso || 0);
 }
 
+function useLightTheme() {
+  const [isLight, setIsLight] = useState(() =>
+    typeof document !== 'undefined' &&
+    document.documentElement.getAttribute('data-theme') === 'light'
+  );
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    const el = document.documentElement;
+    const update = () => setIsLight(el.getAttribute('data-theme') === 'light');
+    update();
+    const observer = new MutationObserver(update);
+    observer.observe(el, { attributes: true, attributeFilter: ['data-theme'] });
+    return () => observer.disconnect();
+  }, []);
+
+  return isLight;
+}
+
 const META_STORAGE = 'investimento_metas';
 
 function loadMetas() {
@@ -44,6 +63,7 @@ function loadMetas() {
 function Meta() {
   const { proventos } = useProventos();
   const { transactions } = useTransactions();
+  const isLight = useLightTheme();
   const [anoFiltro, setAnoFiltro] = useState(() => String(new Date().getFullYear()));
   const [tipoFiltro, setTipoFiltro] = useState('');
   const [metas, setMetas] = useState(loadMetas);
@@ -124,7 +144,7 @@ function Meta() {
   const barStyle = (pct, cor) => ({
     height: 12,
     borderRadius: 6,
-    background: 'rgba(255,255,255,0.08)',
+    background: isLight ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.08)',
     overflow: 'hidden',
     marginTop: 5,
   });
