@@ -229,6 +229,21 @@ body {
   justify-content: start;
 }
 
+.summary-widgets .card-content {
+  flex: 1;
+  min-width: 0;
+  gap: 10px;
+}
+
+.summary-widgets .widget-card .label {
+  letter-spacing: 1px;
+  font-size: 0.6em;
+}
+
+.summary-widgets .card-icon {
+  margin-left: 8px;
+}
+
 /* Cartões de ativos na Principal */
 .asset-cards-grid {
   display: grid;
