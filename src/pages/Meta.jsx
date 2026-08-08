@@ -111,7 +111,7 @@ function Meta() {
         const media = mesesComValor > 0 ? total / mesesComValor : 0;
         return { ...g, total, mesesComValor, media };
       })
-      .sort((a, b) => (quantidades[b.ticker] || 0) - (quantidades[a.ticker] || 0));
+      .sort((a, b) => a.ticker.localeCompare(b.ticker));
   }, [proventos, anoFiltro, effectiveTipo, quantidades]);
 
   const handleTipoClick = (tipo) => setTipoFiltro(tipo);
@@ -277,7 +277,6 @@ function Meta() {
             textAlignLast: 'center',
           }}
         >
-          <option value="">Todos os anos</option>
           {uniqueAnos.map(a => <option key={a} value={a}>{a}</option>)}
         </select>
 
