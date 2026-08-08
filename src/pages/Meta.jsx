@@ -4,18 +4,18 @@ import { useProventos } from '../context/ProventosContext';
 function Meta() {
   const { proventos } = useProventos();
   const [anoFiltro, setAnoFiltro] = useState('');
-  const [ativoFiltro, setAtivoFiltro] = useState('');
+  const [tipoFiltro, setTipoFiltro] = useState('');
 
   const uniqueAnos = useMemo(() => {
     return [...new Set(proventos.map(p => p.ano))].sort((a, b) => b - a);
   }, [proventos]);
 
-  const uniqueAtivos = useMemo(() => {
-    return [...new Set(proventos.map(p => p.ticker))].sort();
+  const uniqueTipos = useMemo(() => {
+    return [...new Set(proventos.map(p => p.tipo === 'FII Agro' ? 'FII' : p.tipo))].sort();
   }, [proventos]);
 
-  const handleAtivoClick = (ticker) => {
-    setAtivoFiltro(prev => (prev === ticker ? '' : ticker));
+  const handleTipoClick = (tipo) => {
+    setTipoFiltro(prev => (prev === tipo ? '' : tipo));
   };
 
   return (
@@ -60,16 +60,16 @@ function Meta() {
 
         <span style={{ color: '#FF3333', fontSize: '1.2em', lineHeight: 1 }}>➡</span>
         <span style={{ color: 'var(--text)', fontSize: '0.9em' }}>
-          Selecione o ativo
+          Selecione o tipo
         </span>
         <span style={{ color: '#FF3333', fontSize: '1.2em', lineHeight: 1 }}>➡</span>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-          {uniqueAtivos.map(ticker => {
-            const selected = ativoFiltro === ticker;
+          {uniqueTipos.map(tipo => {
+            const selected = tipoFiltro === tipo;
             return (
               <button
-                key={ticker}
-                onClick={() => handleAtivoClick(ticker)}
+                key={tipo}
+                onClick={() => handleTipoClick(tipo)}
                 style={{
                   background: selected ? '#C8B800' : 'var(--surface-dark)',
                   color: selected ? '#000' : 'var(--text)',
@@ -83,7 +83,7 @@ function Meta() {
                   outline: 'none',
                 }}
               >
-                {ticker}
+                {tipo}
               </button>
             );
           })}
@@ -96,12 +96,12 @@ function Meta() {
         <p>
           {proventos.length === 0
             ? 'Nenhum provento encontrado. Adicione registros na página Proventos.'
-            : anoFiltro && ativoFiltro
-              ? `Metas para ${ativoFiltro} em ${anoFiltro}`
+            : anoFiltro && tipoFiltro
+              ? `Metas para ${tipoFiltro} em ${anoFiltro}`
               : anoFiltro
                 ? `Metas para o ano ${anoFiltro}`
-                : ativoFiltro
-                  ? `Metas para ${ativoFiltro}`
+                : tipoFiltro
+                  ? `Metas para ${tipoFiltro}`
                   : 'Definição e acompanhamento de metas financeiras'}
         </p>
       </div>
