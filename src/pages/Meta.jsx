@@ -402,20 +402,20 @@ function Meta() {
                 <div style={{ marginTop: 14 }} />
 
                   <div style={{ fontSize: '0.82em' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '3px 0', flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '3px 0', flexWrap: 'wrap', marginBottom: 14 }}>
                       <span style={{ color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>Cotas</span>
                       <span style={{ color: 'var(--text)', fontWeight: 600, whiteSpace: 'nowrap' }}>
                         {formatNumber(quantidades[card.ticker] || 0, 0)}
                       </span>
                       <span style={{ color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>Meta</span>
                       <input
-                        type="number"
-                        min="0"
-                        step="0.01"
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
                         value={metasCard.meta || ''}
-                        placeholder="0,00"
-                        onChange={e => handleMetaChange(card.ticker, 'meta', e.target.value)}
-                        style={{ ...inputStyle, flex: 1, minWidth: 56, maxWidth: 90 }}
+                        placeholder="0"
+                        onChange={e => handleMetaChange(card.ticker, 'meta', e.target.value.replace(/\D/g, ''))}
+                        style={{ ...inputStyle, marginLeft: 'auto', minWidth: 48, maxWidth: 72 }}
                       />
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
