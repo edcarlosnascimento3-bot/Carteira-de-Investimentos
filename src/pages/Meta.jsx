@@ -112,20 +112,20 @@ function Meta() {
     color: 'var(--text)',
     border: '1px solid #C8B800AA',
     borderRadius: 6,
-    padding: '3px 6px',
-    fontSize: '0.8em',
+    padding: '4px 8px',
+    fontSize: '0.82em',
     fontFamily: 'inherit',
     outline: 'none',
-    width: '100%',
+    width: 90,
     textAlign: 'right',
   };
 
   const barStyle = (pct, cor) => ({
-    height: 6,
-    borderRadius: 3,
+    height: 12,
+    borderRadius: 6,
     background: 'rgba(255,255,255,0.08)',
     overflow: 'hidden',
-    marginTop: 3,
+    marginTop: 5,
   });
 
   return (
@@ -291,31 +291,37 @@ function Meta() {
                   <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, padding: '3px 0' }}>
                     <span style={{ color: 'var(--text-muted)' }}>Quantidade de ativos</span>
                     <span style={{ color: 'var(--text)', fontWeight: 600, whiteSpace: 'nowrap' }}>
-                      {formatNumber(quantidades[card.ticker] || 0)}
+                      {formatNumber(quantidades[card.ticker] || 0, 0)}
                     </span>
                   </div>
 
                   <div style={{ padding: '3px 0' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, marginBottom: 3 }}>
-                      <span style={{ color: 'var(--text-muted)' }}>Meta</span>
-                      <span style={{ color: '#C8B800', fontWeight: 600, fontSize: '0.85em', whiteSpace: 'nowrap' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 5 }}>
+                      <span style={{ color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>Meta</span>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={metasCard.meta || ''}
+                        placeholder="0,00"
+                        onChange={e => handleMetaChange(card.ticker, 'meta', e.target.value)}
+                        style={inputStyle}
+                      />
+                      <span style={{
+                        color: '#C8B800',
+                        fontWeight: 700,
+                        fontSize: '0.85em',
+                        marginLeft: 'auto',
+                        whiteSpace: 'nowrap',
+                      }}>
                         {metaVal > 0 ? `${formatNumber(metaPct, 0)}%` : ''}
                       </span>
                     </div>
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={metasCard.meta || ''}
-                      placeholder="0,00"
-                      onChange={e => handleMetaChange(card.ticker, 'meta', e.target.value)}
-                      style={inputStyle}
-                    />
                     <div style={barStyle(metaPct, border)}>
                       <div style={{
                         height: '100%',
                         width: `${metaPct}%`,
-                        borderRadius: 3,
+                        borderRadius: 6,
                         background: border,
                         transition: 'width 0.4s ease',
                       }} />
@@ -330,26 +336,32 @@ function Meta() {
                   </div>
 
                   <div style={{ padding: '3px 0' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, marginBottom: 3 }}>
-                      <span style={{ color: 'var(--text-muted)' }}>Meta de recebimento</span>
-                      <span style={{ color: '#C8B800', fontWeight: 600, fontSize: '0.85em', whiteSpace: 'nowrap' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 5 }}>
+                      <span style={{ color: 'var(--text-muted)', flex: 1 }}>Meta de recebimento</span>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={metasCard.recebimento || ''}
+                        placeholder="0,00"
+                        onChange={e => handleMetaChange(card.ticker, 'recebimento', e.target.value)}
+                        style={{ ...inputStyle, width: 80 }}
+                      />
+                      <span style={{
+                        color: '#C8B800',
+                        fontWeight: 700,
+                        fontSize: '0.85em',
+                        marginLeft: 'auto',
+                        whiteSpace: 'nowrap',
+                      }}>
                         {metaRecebimento > 0 ? `${formatNumber(recebimentoPct, 0)}%` : ''}
                       </span>
                     </div>
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={metasCard.recebimento || ''}
-                      placeholder="0,00"
-                      onChange={e => handleMetaChange(card.ticker, 'recebimento', e.target.value)}
-                      style={inputStyle}
-                    />
                     <div style={barStyle(recebimentoPct, border)}>
                       <div style={{
                         height: '100%',
                         width: `${recebimentoPct}%`,
-                        borderRadius: 3,
+                        borderRadius: 6,
                         background: border,
                         transition: 'width 0.4s ease',
                       }} />
