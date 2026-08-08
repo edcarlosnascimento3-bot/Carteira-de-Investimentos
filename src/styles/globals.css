@@ -222,10 +222,10 @@ body {
 /* Cards resumo da Meta no formato/widgets da Principal */
 .summary-widgets {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(170px, 190px));
+  grid-template-columns: repeat(auto-fit, 300px);
   gap: 14px;
   margin-top: 20px;
-  margin-bottom: 24px;
+  margin-bottom: 48px;
   justify-content: start;
 }
 

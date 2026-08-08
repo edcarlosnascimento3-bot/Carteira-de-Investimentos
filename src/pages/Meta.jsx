@@ -116,28 +116,22 @@ function Meta() {
 
   const handleTipoClick = (tipo) => setTipoFiltro(tipo);
 
-  const summary = useMemo(() => {
-    const selectedAno = String(anoFiltro);
-    const meses = new Array(12).fill(0);
+  const currentMedia = useMemo(() => {
+    const now = new Date();
+    const currentMonth = now.getMonth() + 1;
+    const currentYear = now.getFullYear();
+    let total = 0;
     proventos.forEach(p => {
-      const tipo = normalizeTipo(p.tipo);
-      if (tipo !== effectiveTipo) return;
-      if (String(p.ano) !== selectedAno) return;
-      const partes = (p.data || '').split('/');
-      const mesIdx = partes.length >= 2 ? parseInt(partes[1], 10) - 1 : -1;
-      if (mesIdx >= 0 && mesIdx < 12) {
-        meses[mesIdx] += proventoTotal(p);
+      if (Number(p.ano) === currentYear) {
+        total += proventoTotal(p);
       }
     });
-    const total = meses.reduce((s, v) => s + v, 0);
-    const mesesComValor = meses.filter(v => v > 0).length;
-    const media = mesesComValor > 0 ? total / mesesComValor : 0;
-    return { total, mesesComValor, media };
-  }, [proventos, anoFiltro, effectiveTipo]);
+    return Math.round((total / currentMonth) * 100) / 100;
+  }, [proventos]);
 
   const metasGlobal = metas['__global__'] || {};
   const desejadoGlobal = parseFloat(metasGlobal.recebimento) || 0;
-  const atingidoPct = desejadoGlobal > 0 ? (summary.media / desejadoGlobal) * 100 : 0;
+  const atingidoPct = desejadoGlobal > 0 ? (currentMedia / desejadoGlobal) * 100 : 0;
   const summaryBorder = typeBorders[effectiveTipo] || '#C8B800';
 
   const metaKey = (ticker) => ticker;
@@ -201,7 +195,7 @@ function Meta() {
         <div className="widget-card">
           <div className="card-content">
             <div className="label" style={{ color: '#C8B800' }}>MÉDIA MENSAL DOS PROVENTOS</div>
-            <div className="value" style={{ color: '#00E676' }}>{formatCurrency(summary.media)}</div>
+            <div className="value" style={{ color: '#00E676' }}>{formatCurrency(currentMedia)}</div>
           </div>
           <div className="card-icon icon-pulse" style={{ fontSize: 36 }}>💵</div>
         </div>
