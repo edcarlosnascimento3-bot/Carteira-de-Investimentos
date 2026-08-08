@@ -569,7 +569,7 @@ function Graficos() {
           {`${pct}%`}
         </text>
         <text x={x + width / 2} y={labelY + 16} fill="#4CAF50" fontSize={11} textAnchor="middle" fontWeight="bold">
-          {`(${formatCurrency(value)})`}
+          {`${formatCurrency(value)}`}
         </text>
       </g>
     );
