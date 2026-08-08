@@ -238,6 +238,7 @@ body {
 .summary-widgets .widget-card .label {
   letter-spacing: 1px;
   font-size: 0.6em;
+  margin-bottom: 8px;
 }
 
 .summary-widgets .card-icon {
