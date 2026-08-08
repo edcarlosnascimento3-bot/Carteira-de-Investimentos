@@ -67,7 +67,7 @@
   --card-border: #D6DAE4;
   --card-shadow: inset 0 1px 0 rgba(255,255,255,0.7), 0 4px 16px rgba(40, 50, 100, 0.08);
   --widget-shadow: inset 0 1px 0 rgba(255,255,255,0.7), 0 4px 20px rgba(40, 50, 100, 0.08), 0 1px 3px rgba(40, 50, 100, 0.05);
-  --modal-bg: rgba(13, 45, 120, 0);
+  --modal-bg: rgba(13, 45, 120, 0.1);
   --modal-glass-top: rgba(255, 255, 255, 0.04);
   --modal-glass-mid: rgba(255, 255, 255, 0.02);
   --modal-glass-sheen: rgba(255, 255, 255, 0.08);
