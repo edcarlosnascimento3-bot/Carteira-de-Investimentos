@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
-import { formatCurrency } from '../services/format';
+import { formatCurrency, formatNumber } from '../services/format';
 import { useProventos } from '../context/ProventosContext';
+import { useTransactions } from '../context/TransactionsContext';
 import LogoImage from '../components/LogoImage';
 
 const typeIcons = {
@@ -29,10 +30,23 @@ function proventoTotal(p) {
   return (p.dividendos || 0) + (p.jcp || 0) + (p.rendimento || 0) + (p.reembolso || 0);
 }
 
+const META_STORAGE = 'investimento_metas';
+
+function loadMetas() {
+  try {
+    const raw = localStorage.getItem(META_STORAGE);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
 function Meta() {
   const { proventos } = useProventos();
+  const { transactions } = useTransactions();
   const [anoFiltro, setAnoFiltro] = useState(() => String(new Date().getFullYear()));
   const [tipoFiltro, setTipoFiltro] = useState('');
+  const [metas, setMetas] = useState(loadMetas);
 
   const uniqueAnos = useMemo(() => {
     return [...new Set(proventos.map(p => p.ano))].sort((a, b) => b - a);
@@ -43,6 +57,16 @@ function Meta() {
   }, [proventos]);
 
   const effectiveTipo = tipoFiltro || uniqueTipos[0] || '';
+
+  const quantidades = useMemo(() => {
+    const map = {};
+    transactions.forEach(t => {
+      if (!map[t.ticker]) map[t.ticker] = 0;
+      if (t.operacao === 'Compra') map[t.ticker] += t.quantidade;
+      else if (t.operacao === 'Venda') map[t.ticker] -= t.quantidade;
+    });
+    return map;
+  }, [transactions]);
 
   const cards = useMemo(() => {
     const selectedAno = String(anoFiltro);
@@ -59,10 +83,50 @@ function Meta() {
         groups[p.ticker].meses[mesIdx] += total;
       }
     });
-    return Object.values(groups).sort((a, b) => a.nome.localeCompare(b.nome));
+    return Object.values(groups)
+      .map(g => {
+        const total = g.meses.reduce((s, v) => s + v, 0);
+        const mesesComValor = g.meses.filter(v => v > 0).length;
+        const media = mesesComValor > 0 ? total / mesesComValor : 0;
+        return { ...g, total, mesesComValor, media };
+      })
+      .sort((a, b) => a.nome.localeCompare(b.nome));
   }, [proventos, anoFiltro, effectiveTipo]);
 
   const handleTipoClick = (tipo) => setTipoFiltro(tipo);
+
+  const metaKey = (ticker) => `${ticker}|${anoFiltro}`;
+
+  const handleMetaChange = (ticker, campo, valor) => {
+    setMetas(prev => {
+      const next = { ...prev, [metaKey(ticker)]: { ...prev[metaKey(ticker)], [campo]: valor } };
+      try {
+        localStorage.setItem(META_STORAGE, JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+  };
+
+  const inputStyle = {
+    background: 'var(--surface-dark)',
+    color: 'var(--text)',
+    border: '1px solid #C8B800AA',
+    borderRadius: 6,
+    padding: '3px 6px',
+    fontSize: '0.8em',
+    fontFamily: 'inherit',
+    outline: 'none',
+    width: '100%',
+    textAlign: 'right',
+  };
+
+  const barStyle = (pct, cor) => ({
+    height: 6,
+    borderRadius: 3,
+    background: 'rgba(255,255,255,0.08)',
+    overflow: 'hidden',
+    marginTop: 3,
+  });
 
   return (
     <div>
@@ -158,6 +222,11 @@ function Meta() {
         }}>
           {cards.map(card => {
             const border = typeBorders[card.tipo] || 'var(--text-faint)';
+            const metasCard = metas[metaKey(card.ticker)] || {};
+            const metaVal = parseFloat(metasCard.meta) || 0;
+            const metaRecebimento = parseFloat(metasCard.recebimento) || 0;
+            const metaPct = metaVal > 0 ? Math.min(100, (card.media / metaVal) * 100) : 0;
+            const recebimentoPct = metaRecebimento > 0 ? Math.min(100, (card.total / metaRecebimento) * 100) : 0;
             return (
               <div key={card.ticker} style={{
                 background: 'var(--card-bg)',
@@ -210,6 +279,82 @@ function Meta() {
                       </div>
                     );
                   })}
+                </div>
+
+                <div style={{ marginTop: 14 }} />
+
+                <div style={{ borderBottom: '1px dotted rgba(255,255,255,0.25)', width: '100%' }} />
+
+                <div style={{ marginTop: 14 }} />
+
+                <div style={{ fontSize: '0.82em' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, padding: '3px 0' }}>
+                    <span style={{ color: 'var(--text-muted)' }}>Quantidade de ativos</span>
+                    <span style={{ color: 'var(--text)', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                      {formatNumber(quantidades[card.ticker] || 0)}
+                    </span>
+                  </div>
+
+                  <div style={{ padding: '3px 0' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, marginBottom: 3 }}>
+                      <span style={{ color: 'var(--text-muted)' }}>Meta</span>
+                      <span style={{ color: '#C8B800', fontWeight: 600, fontSize: '0.85em', whiteSpace: 'nowrap' }}>
+                        {metaVal > 0 ? `${formatNumber(metaPct, 0)}%` : ''}
+                      </span>
+                    </div>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={metasCard.meta || ''}
+                      placeholder="0,00"
+                      onChange={e => handleMetaChange(card.ticker, 'meta', e.target.value)}
+                      style={inputStyle}
+                    />
+                    <div style={barStyle(metaPct, border)}>
+                      <div style={{
+                        height: '100%',
+                        width: `${metaPct}%`,
+                        borderRadius: 3,
+                        background: border,
+                        transition: 'width 0.4s ease',
+                      }} />
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, padding: '3px 0' }}>
+                    <span style={{ color: 'var(--text-muted)' }}>Média recebida</span>
+                    <span style={{ color: '#00E676', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                      {formatCurrency(card.media)}
+                    </span>
+                  </div>
+
+                  <div style={{ padding: '3px 0' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, marginBottom: 3 }}>
+                      <span style={{ color: 'var(--text-muted)' }}>Meta de recebimento</span>
+                      <span style={{ color: '#C8B800', fontWeight: 600, fontSize: '0.85em', whiteSpace: 'nowrap' }}>
+                        {metaRecebimento > 0 ? `${formatNumber(recebimentoPct, 0)}%` : ''}
+                      </span>
+                    </div>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={metasCard.recebimento || ''}
+                      placeholder="0,00"
+                      onChange={e => handleMetaChange(card.ticker, 'recebimento', e.target.value)}
+                      style={inputStyle}
+                    />
+                    <div style={barStyle(recebimentoPct, border)}>
+                      <div style={{
+                        height: '100%',
+                        width: `${recebimentoPct}%`,
+                        borderRadius: 3,
+                        background: border,
+                        transition: 'width 0.4s ease',
+                      }} />
+                    </div>
+                  </div>
                 </div>
               </div>
             );
