@@ -47,6 +47,7 @@ function Meta() {
   const [anoFiltro, setAnoFiltro] = useState(() => String(new Date().getFullYear()));
   const [tipoFiltro, setTipoFiltro] = useState('');
   const [metas, setMetas] = useState(loadMetas);
+  const [focusedInput, setFocusedInput] = useState(null);
 
   const uniqueAnos = useMemo(() => {
     return [...new Set(proventos.map(p => p.ano))].sort((a, b) => b - a);
@@ -127,6 +128,20 @@ function Meta() {
     overflow: 'hidden',
     marginTop: 5,
   });
+
+  const formatDesejadoInput = (raw, focused) => {
+    if (!raw) return '';
+    const num = parseFloat(raw);
+    if (isNaN(num)) return '';
+    return focused ? num.toFixed(2) : formatCurrency(num);
+  };
+
+  const parseDesejadoInput = (text) => {
+    const digits = text.replace(/\D/g, '');
+    if (!digits) return '';
+    const cents = parseInt(digits, 10);
+    return (cents / 100).toFixed(2);
+  };
 
   return (
     <div>
@@ -227,6 +242,8 @@ function Meta() {
             const metaRecebimento = parseFloat(metasCard.recebimento) || 0;
             const metaPct = metaVal > 0 ? Math.min(100, (card.media / metaVal) * 100) : 0;
             const recebimentoPct = metaRecebimento > 0 ? Math.min(100, (card.total / metaRecebimento) * 100) : 0;
+            const desejadoFocused = focusedInput === `${card.ticker}-desejado`;
+            const desejadoDisplay = formatDesejadoInput(metasCard.recebimento, desejadoFocused);
             return (
               <div key={card.ticker} style={{
                 background: 'var(--card-bg)',
@@ -266,12 +283,12 @@ function Meta() {
                         <span style={{ color: 'var(--text-muted)' }}>{nome}</span>
                         <span style={{
                           flex: 1,
-                          borderBottom: '1px dotted rgba(255,255,255,0.25)',
+                          borderBottom: '1px dotted var(--text-muted)',
                           margin: '0 2px',
                         }} />
                         <span style={{
                           color: valor > 0 ? '#00E676' : 'var(--text-faint)',
-                          fontWeight: valor > 0 ? 600 : 400,
+                          fontWeight: valor > 0 ? 700 : 400,
                           whiteSpace: 'nowrap',
                         }}>
                           {formatCurrency(valor)}
@@ -283,13 +300,13 @@ function Meta() {
 
                 <div style={{ marginTop: 14 }} />
 
-                <div style={{ borderBottom: '1px dotted rgba(255,255,255,0.25)', width: '100%' }} />
+                <div style={{ borderBottom: '1px dotted var(--text-muted)', width: '100%' }} />
 
                 <div style={{ marginTop: 14 }} />
 
                 <div style={{ fontSize: '0.82em' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, padding: '3px 0' }}>
-                    <span style={{ color: 'var(--text-muted)' }}>Quantidade de ativos</span>
+                    <span style={{ color: 'var(--text-muted)' }}>Quantidade de cotas</span>
                     <span style={{ color: 'var(--text)', fontWeight: 600, whiteSpace: 'nowrap' }}>
                       {formatNumber(quantidades[card.ticker] || 0, 0)}
                     </span>
@@ -307,64 +324,67 @@ function Meta() {
                         onChange={e => handleMetaChange(card.ticker, 'meta', e.target.value)}
                         style={inputStyle}
                       />
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <div style={{ ...barStyle(metaPct, border), flex: 1, marginTop: 0 }}>
+                        <div style={{
+                          height: '100%',
+                          width: `${metaPct}%`,
+                          borderRadius: 6,
+                          background: border,
+                          transition: 'width 0.4s ease',
+                        }} />
+                      </div>
                       <span style={{
                         color: '#C8B800',
                         fontWeight: 700,
                         fontSize: '0.85em',
-                        marginLeft: 'auto',
                         whiteSpace: 'nowrap',
                       }}>
                         {metaVal > 0 ? `${formatNumber(metaPct, 0)}%` : ''}
                       </span>
                     </div>
-                    <div style={barStyle(metaPct, border)}>
-                      <div style={{
-                        height: '100%',
-                        width: `${metaPct}%`,
-                        borderRadius: 6,
-                        background: border,
-                        transition: 'width 0.4s ease',
-                      }} />
-                    </div>
                   </div>
 
                   <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, padding: '3px 0' }}>
                     <span style={{ color: 'var(--text-muted)' }}>Média recebida</span>
-                    <span style={{ color: '#00E676', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                    <span style={{ color: '#00E676', fontWeight: 700, whiteSpace: 'nowrap' }}>
                       {formatCurrency(card.media)}
                     </span>
                   </div>
 
                   <div style={{ padding: '3px 0' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 5 }}>
-                      <span style={{ color: 'var(--text-muted)', flex: 1 }}>Meta de recebimento</span>
+                      <span style={{ color: 'var(--text-muted)', flex: 1 }}>Desejado</span>
                       <input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={metasCard.recebimento || ''}
-                        placeholder="0,00"
-                        onChange={e => handleMetaChange(card.ticker, 'recebimento', e.target.value)}
-                        style={{ ...inputStyle, width: 80 }}
+                        type="text"
+                        inputMode="decimal"
+                        value={desejadoDisplay}
+                        placeholder="R$ 0,00"
+                        onChange={e => handleMetaChange(card.ticker, 'recebimento', parseDesejadoInput(e.target.value))}
+                        onFocus={() => setFocusedInput(`${card.ticker}-desejado`)}
+                        onBlur={() => setFocusedInput(null)}
+                        style={{ ...inputStyle, width: 110 }}
                       />
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <div style={{ ...barStyle(recebimentoPct, border), flex: 1, marginTop: 0 }}>
+                        <div style={{
+                          height: '100%',
+                          width: `${recebimentoPct}%`,
+                          borderRadius: 6,
+                          background: border,
+                          transition: 'width 0.4s ease',
+                        }} />
+                      </div>
                       <span style={{
                         color: '#C8B800',
                         fontWeight: 700,
                         fontSize: '0.85em',
-                        marginLeft: 'auto',
                         whiteSpace: 'nowrap',
                       }}>
                         {metaRecebimento > 0 ? `${formatNumber(recebimentoPct, 0)}%` : ''}
                       </span>
-                    </div>
-                    <div style={barStyle(recebimentoPct, border)}>
-                      <div style={{
-                        height: '100%',
-                        width: `${recebimentoPct}%`,
-                        borderRadius: 6,
-                        background: border,
-                        transition: 'width 0.4s ease',
-                      }} />
                     </div>
                   </div>
                 </div>
