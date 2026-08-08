@@ -850,17 +850,21 @@ function Graficos() {
                   labelLine={{ stroke: 'var(--border-strong)', strokeWidth: 1 }}
                   onClick={(entry) => handleTickerClick(entry.name)}
                 >
-                  {internacionalData.map((entry, idx) => (
-                    <Cell
-                      key={entry.name}
-                      fill={INTL_COLORS[idx % INTL_COLORS.length]}
-                      fillOpacity={getTickerOpacity(entry.name)}
-                      stroke={selectedTicker === entry.name ? selColor : 'transparent'}
-                      strokeWidth={selectedTicker === entry.name ? 2 : 0}
-                      cursor="pointer"
-                      filter="url(#pieShadowIntl)"
-                    />
-                  ))}
+                  {internacionalData.map((entry, idx) => {
+                    const entryTipo = portfolioBase.find(p => p.ticker === entry.name)?.tipo;
+                    const fill = entryTipo === 'Euro' ? typeColors['Euro'] : INTL_COLORS[idx % INTL_COLORS.length];
+                    return (
+                      <Cell
+                        key={entry.name}
+                        fill={fill}
+                        fillOpacity={getTickerOpacity(entry.name)}
+                        stroke={selectedTicker === entry.name ? selColor : 'transparent'}
+                        strokeWidth={selectedTicker === entry.name ? 2 : 0}
+                        cursor="pointer"
+                        filter="url(#pieShadowIntl)"
+                      />
+                    );
+                  })}
                 </Pie>
                 <Tooltip contentStyle={tooltipStyle} formatter={(v) => formatCurrency(v)} />
               </PieChart>
