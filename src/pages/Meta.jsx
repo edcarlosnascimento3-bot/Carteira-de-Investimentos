@@ -111,10 +111,36 @@ function Meta() {
         const media = mesesComValor > 0 ? total / mesesComValor : 0;
         return { ...g, total, mesesComValor, media };
       })
-      .sort((a, b) => a.nome.localeCompare(b.nome));
-  }, [proventos, anoFiltro, effectiveTipo]);
+      .sort((a, b) => (quantidades[b.ticker] || 0) - (quantidades[a.ticker] || 0));
+  }, [proventos, anoFiltro, effectiveTipo, quantidades]);
 
   const handleTipoClick = (tipo) => setTipoFiltro(tipo);
+
+  const summary = useMemo(() => {
+    const selectedAno = String(anoFiltro);
+    const meses = new Array(12).fill(0);
+    proventos.forEach(p => {
+      const tipo = normalizeTipo(p.tipo);
+      if (tipo !== effectiveTipo) return;
+      if (String(p.ano) !== selectedAno) return;
+      const partes = (p.data || '').split('/');
+      const mesIdx = partes.length >= 2 ? parseInt(partes[1], 10) - 1 : -1;
+      if (mesIdx >= 0 && mesIdx < 12) {
+        meses[mesIdx] += proventoTotal(p);
+      }
+    });
+    const total = meses.reduce((s, v) => s + v, 0);
+    const mesesComValor = meses.filter(v => v > 0).length;
+    const media = mesesComValor > 0 ? total / mesesComValor : 0;
+    return { total, mesesComValor, media };
+  }, [proventos, anoFiltro, effectiveTipo]);
+
+  const metasGlobal = metas['__global__'] || {};
+  const desejadoGlobal = parseFloat(metasGlobal.recebimento) || 0;
+  const atingidoPct = desejadoGlobal > 0 ? (summary.media / desejadoGlobal) * 100 : 0;
+  const globalDesejadoFocused = focusedInput === 'global-desejado';
+  const globalDesejadoDisplay = formatDesejadoInput(metasGlobal.recebimento, globalDesejadoFocused);
+  const summaryBorder = typeBorders[effectiveTipo] || '#C8B800';
 
   const metaKey = (ticker) => ticker;
 
@@ -169,6 +195,76 @@ function Meta() {
       <p className="subtitle">
         Definição e acompanhamento de metas financeiras
       </p>
+
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+        gap: 14,
+        marginBottom: 20,
+      }}>
+        <div style={{
+          background: 'var(--card-bg)',
+          border: `2px solid ${summaryBorder}`,
+          borderRadius: 18,
+          padding: 16,
+          boxShadow: 'var(--card-shadow)',
+        }}>
+          <div style={{ fontSize: '0.82em', color: 'var(--text-muted)', marginBottom: 8 }}>
+            Média mensal dos proventos
+          </div>
+          <div style={{ color: '#00E676', fontWeight: 700, fontSize: '1.15em' }}>
+            {formatCurrency(summary.media)}
+          </div>
+        </div>
+
+        <div style={{
+          background: 'var(--card-bg)',
+          border: `2px solid ${summaryBorder}`,
+          borderRadius: 18,
+          padding: 16,
+          boxShadow: 'var(--card-shadow)',
+        }}>
+          <div style={{ fontSize: '0.82em', color: 'var(--text-muted)', marginBottom: 8 }}>
+            Valor mensal desejado
+          </div>
+          <input
+            type="text"
+            inputMode="decimal"
+            value={globalDesejadoDisplay}
+            placeholder="R$ 0,00"
+            onChange={e => handleMetaChange('__global__', 'recebimento', parseDesejadoInput(e.target.value))}
+            onFocus={() => setFocusedInput('global-desejado')}
+            onBlur={() => setFocusedInput(null)}
+            style={{ ...inputStyle, width: '100%', boxSizing: 'border-box', fontSize: '1em' }}
+          />
+        </div>
+
+        <div style={{
+          background: 'var(--card-bg)',
+          border: `2px solid ${summaryBorder}`,
+          borderRadius: 18,
+          padding: 16,
+          boxShadow: 'var(--card-shadow)',
+        }}>
+          <div style={{ fontSize: '0.82em', color: 'var(--text-muted)', marginBottom: 8 }}>
+            Percentual atingido
+          </div>
+          <div style={{ color: '#C8B800', fontWeight: 700, fontSize: '1.15em', marginBottom: 6 }}>
+            {desejadoGlobal > 0 ? `${formatNumber(atingidoPct, 0)}%` : '—'}
+          </div>
+          {desejadoGlobal > 0 && (
+            <div style={{ ...barStyle(Math.min(100, atingidoPct), summaryBorder), flex: 1, marginTop: 0 }}>
+              <div style={{
+                height: '100%',
+                width: `${Math.min(100, atingidoPct)}%`,
+                borderRadius: 6,
+                background: summaryBorder,
+                transition: 'width 0.4s ease',
+              }} />
+            </div>
+          )}
+        </div>
+      </div>
 
       <div style={{
         display: 'flex',
@@ -257,7 +353,7 @@ function Meta() {
         }}>
           {cards.map(card => {
             const border = typeBorders[card.tipo] || 'var(--text-faint)';
-            const barColor = effectiveTipo === 'FII' ? '#375623' : border;
+            const cardBorder = effectiveTipo === 'FII' ? '#375623' : border;
             const metasCard = metas[metaKey(card.ticker)] || {};
             const metaVal = parseFloat(metasCard.meta) || 0;
             const metaRecebimento = parseFloat(metasCard.recebimento) || 0;
@@ -271,7 +367,7 @@ function Meta() {
             return (
               <div key={card.ticker} style={{
                 background: 'var(--card-bg)',
-                border: `3px solid ${border}`,
+                border: `3px solid ${cardBorder}`,
                 borderRadius: 18,
                 padding: 16,
                 boxShadow: 'var(--card-shadow)',
@@ -355,7 +451,7 @@ function Meta() {
                           height: '100%',
                           width: `${metaPct}%`,
                           borderRadius: 6,
-                          background: barColor,
+                          background: border,
                           transition: 'width 0.4s ease',
                         }} />
                       </div>
@@ -404,7 +500,7 @@ function Meta() {
                           height: '100%',
                           width: `${recebimentoPct}%`,
                           borderRadius: 6,
-                          background: barColor,
+                          background: border,
                           transition: 'width 0.4s ease',
                         }} />
                       </div>
