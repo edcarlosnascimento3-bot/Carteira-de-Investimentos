@@ -1848,8 +1848,7 @@ table:not(.data-table) tr {
   gap: 8px;
   padding: 4px 8px;
   border-radius: 30px;
-  background: var(--surface-void);
-  border: 1px solid var(--border);
+  background: transparent;
   flex-shrink: 0;
 }
 
@@ -1865,18 +1864,19 @@ table:not(.data-table) tr {
   align-items: center;
   width: 52px;
   height: 26px;
-  border: none;
+  border: 2px solid var(--gold);
   border-radius: 26px;
   background: var(--surface-dark);
   padding: 0;
   cursor: pointer;
   position: relative;
   flex-shrink: 0;
-  transition: background 0.35s ease;
+  transition: background 0.35s ease, box-shadow 0.35s ease;
+  box-shadow: 0 0 10px rgba(200, 184, 0, 0.35), inset 0 0 6px rgba(200, 184, 0, 0.15);
 }
 
 .theme-toggle:hover {
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--gold) 35%, transparent);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--gold) 60%, transparent), inset 0 0 8px rgba(200, 184, 0, 0.2);
 }
 
 .theme-toggle-knob {
