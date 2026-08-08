@@ -131,7 +131,7 @@ function Principal() {
     setTimeout(() => {
       setClosing(false);
       setSelectedTicker(null);
-    }, 660);
+    }, 1400);
   };
 
   const assetModalInfo = useMemo(() => {
