@@ -712,7 +712,7 @@ function Graficos() {
                     dataKey="value"
                     nameKey="name"
                     cx="50%"
-                    cy="54%"
+                    cy="60%"
                     outerRadius="60%"
                     innerRadius="14%"
                     paddingAngle={3}
