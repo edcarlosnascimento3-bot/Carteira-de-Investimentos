@@ -34,13 +34,19 @@ function loadAtivos() {
   if (ativosCache) return Promise.resolve(ativosCache);
   if (cachePromise) return cachePromise;
   cachePromise = import('../database/TickerCatalogService').then(({ listar }) =>
-    listar().then(data => {
-      const map = {};
-      data.forEach(a => { if (a.TICKER) map[a.TICKER.toUpperCase()] = a.IMAGEM; });
-      ativosCache = map;
-      return map;
-    })
-  ).catch(() => (ativosCache = {}));
+    listar()
+  ).then((data) => {
+    const map = {};
+    (data || []).forEach(a => { if (a && a.TICKER) map[a.TICKER.toUpperCase()] = a.IMAGEM || ''; });
+    // Lista vazia (ex.: chamada antes da sessão ficar pronta) não deve travar
+    // o cache — permite nova tentativa na próxima montagem.
+    if (Object.keys(map).length === 0) cachePromise = null;
+    else ativosCache = map;
+    return map;
+  }).catch(() => {
+    cachePromise = null;
+    return {};
+  });
   return cachePromise;
 }
 
@@ -92,6 +98,7 @@ function getLogoSources(ticker, imagemUrl) {
 function LogoImage({ ticker, fallback, style, size }) {
   const [srcIdx, setSrcIdx] = useState(0);
   const [imagemUrl, setImagemUrl] = useState(null);
+  const [ready, setReady] = useState(false);
   const s = size || 32;
   const bg = hashColor(ticker || '');
 
@@ -115,8 +122,14 @@ function LogoImage({ ticker, fallback, style, size }) {
 
   useEffect(() => {
     if (!ticker) return;
+    let cancelled = false;
+    setReady(false);
+    setSrcIdx(0);
     loadAtivos().then(map => {
+      if (cancelled) return;
       setImagemUrl(map[ticker.toUpperCase()] || null);
+      setReady(true);
+      setSrcIdx(0);
     });
 
     const handleUpdate = (e) => {
@@ -128,6 +141,7 @@ function LogoImage({ ticker, fallback, style, size }) {
 
     window.addEventListener('ticker-logo-updated', handleUpdate);
     return () => {
+      cancelled = true;
       window.removeEventListener('ticker-logo-updated', handleUpdate);
     };
   }, [ticker]);
@@ -151,6 +165,10 @@ function LogoImage({ ticker, fallback, style, size }) {
         {fallback || '?'}
       </span>
     );
+  }
+
+  if (!ready) {
+    return <span style={containerStyle} />;
   }
 
   const sources = getLogoSources(ticker, imagemUrl);
