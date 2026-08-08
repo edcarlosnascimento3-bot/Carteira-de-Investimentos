@@ -150,7 +150,7 @@ function Meta() {
       ) : (
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
           gap: 14,
           marginTop: 20,
           marginBottom: 20,
@@ -177,20 +177,8 @@ function Meta() {
                     size={46}
                     style={{ borderRadius: 10 }}
                   />
-                  <div style={{ minWidth: 0 }}>
-                    <div style={{
-                      color: 'var(--text)',
-                      fontWeight: 700,
-                      fontSize: '0.95em',
-                      whiteSpace: 'nowrap',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                    }}>
-                      {card.nome}
-                    </div>
-                    <div style={{ color: 'var(--text-faint)', fontSize: '0.72em' }}>
-                      {card.ticker}
-                    </div>
+                  <div style={{ color: 'var(--text)', fontWeight: 700, fontSize: '1em' }}>
+                    {card.ticker}
                   </div>
                 </div>
 
@@ -200,12 +188,17 @@ function Meta() {
                     return (
                       <div key={nome} style={{
                         display: 'flex',
-                        justifyContent: 'space-between',
-                        gap: 12,
+                        alignItems: 'baseline',
+                        gap: 6,
                         padding: '2.5px 0',
                         fontSize: '0.82em',
                       }}>
                         <span style={{ color: 'var(--text-muted)' }}>{nome}</span>
+                        <span style={{
+                          flex: 1,
+                          borderBottom: '1px dotted rgba(255,255,255,0.25)',
+                          margin: '0 2px',
+                        }} />
                         <span style={{
                           color: valor > 0 ? '#00E676' : 'var(--text-faint)',
                           fontWeight: valor > 0 ? 600 : 400,
