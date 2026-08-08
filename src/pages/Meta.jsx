@@ -191,79 +191,57 @@ function Meta() {
   const globalDesejadoDisplay = formatDesejadoInput(metasGlobal.recebimento, globalDesejadoFocused);
 
   return (
-    <div>
+    <div className="page-meta">
       <h1>Meta</h1>
       <p className="subtitle">
         Definição e acompanhamento de metas financeiras
       </p>
 
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-        gap: 14,
-        marginBottom: 20,
-      }}>
-        <div style={{
-          background: 'var(--card-bg)',
-          border: `2px solid ${summaryBorder}`,
-          borderRadius: 18,
-          padding: 16,
-          boxShadow: 'var(--card-shadow)',
-        }}>
-          <div style={{ fontSize: '0.82em', color: 'var(--text-muted)', marginBottom: 8 }}>
-            Média mensal dos proventos
+      <div className="summary-widgets">
+        <div className="widget-card">
+          <div className="card-content">
+            <div className="label" style={{ color: '#C8B800' }}>MÉDIA MENSAL DOS PROVENTOS</div>
+            <div className="value" style={{ color: '#00E676' }}>{formatCurrency(summary.media)}</div>
           </div>
-          <div style={{ color: '#00E676', fontWeight: 700, fontSize: '1.15em' }}>
-            {formatCurrency(summary.media)}
-          </div>
+          <div className="card-icon icon-pulse" style={{ fontSize: 36 }}>💵</div>
         </div>
 
-        <div style={{
-          background: 'var(--card-bg)',
-          border: `2px solid ${summaryBorder}`,
-          borderRadius: 18,
-          padding: 16,
-          boxShadow: 'var(--card-shadow)',
-        }}>
-          <div style={{ fontSize: '0.82em', color: 'var(--text-muted)', marginBottom: 8 }}>
-            Valor mensal desejado
+        <div className="widget-card">
+          <div className="card-content" style={{ flex: 1 }}>
+            <div className="label">VALOR MENSAL DESEJADO</div>
+            <input
+              type="text"
+              inputMode="decimal"
+              value={globalDesejadoDisplay}
+              placeholder="R$ 0,00"
+              onChange={e => handleMetaChange('__global__', 'recebimento', parseDesejadoInput(e.target.value))}
+              onFocus={() => setFocusedInput('global-desejado')}
+              onBlur={() => setFocusedInput(null)}
+              style={{ ...inputStyle, width: '100%', boxSizing: 'border-box', fontSize: '1.1em', padding: '6px 10px', textAlign: 'left' }}
+            />
           </div>
-          <input
-            type="text"
-            inputMode="decimal"
-            value={globalDesejadoDisplay}
-            placeholder="R$ 0,00"
-            onChange={e => handleMetaChange('__global__', 'recebimento', parseDesejadoInput(e.target.value))}
-            onFocus={() => setFocusedInput('global-desejado')}
-            onBlur={() => setFocusedInput(null)}
-            style={{ ...inputStyle, width: '100%', boxSizing: 'border-box', fontSize: '1em' }}
-          />
+          <div className="card-icon icon-float" style={{ fontSize: 36 }}>🎯</div>
         </div>
 
-        <div style={{
-          background: 'var(--card-bg)',
-          border: `2px solid ${summaryBorder}`,
-          borderRadius: 18,
-          padding: 16,
-          boxShadow: 'var(--card-shadow)',
-        }}>
-          <div style={{ fontSize: '0.82em', color: 'var(--text-muted)', marginBottom: 8 }}>
-            Percentual atingido
-          </div>
-          <div style={{ color: '#C8B800', fontWeight: 700, fontSize: '1.15em', marginBottom: 6 }}>
-            {desejadoGlobal > 0 ? `${formatNumber(atingidoPct, 0)}%` : '—'}
-          </div>
-          {desejadoGlobal > 0 && (
-            <div style={{ ...barStyle(Math.min(100, atingidoPct), summaryBorder), flex: 1, marginTop: 0 }}>
-              <div style={{
-                height: '100%',
-                width: `${Math.min(100, atingidoPct)}%`,
-                borderRadius: 6,
-                background: summaryBorder,
-                transition: 'width 0.4s ease',
-              }} />
+        <div className="widget-card">
+          <div className="card-content">
+            <div className="label">PERCENTUAL ATINGIDO</div>
+            <div className="value" style={{ color: '#C8B800' }}>
+              {desejadoGlobal > 0 ? `${formatNumber(atingidoPct, 0)}%` : '—'}
             </div>
-          )}
+            {desejadoGlobal > 0 && (
+              <div style={{ ...barStyle(Math.min(100, atingidoPct), summaryBorder), height: 8, marginTop: 6 }}>
+                <div style={{
+                  height: '100%',
+                  width: `${Math.min(100, atingidoPct)}%`,
+                  borderRadius: 4,
+                  background: summaryBorder,
+                  transition: 'width 0.4s ease',
+                }} />
+              </div>
+            )}
+          </div>
+          <div className="card-icon icon-bounce" style={{ fontSize: 36 }}>📊</div>
         </div>
       </div>
 

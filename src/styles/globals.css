@@ -214,6 +214,21 @@ body {
   font-size: 0.95em;
 }
 
+/* Pagina Meta: titulo alinhado ao topo esquerdo, junto ao InvestPro */
+.main-content .page-meta {
+  margin-top: -75px;
+}
+
+/* Cards resumo da Meta no formato/widgets da Principal */
+.summary-widgets {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 190px));
+  gap: 14px;
+  margin-top: 20px;
+  margin-bottom: 24px;
+  justify-content: start;
+}
+
 /* Cartões de ativos na Principal */
 .asset-cards-grid {
   display: grid;
