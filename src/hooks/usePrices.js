@@ -42,7 +42,7 @@ export function usePrices(tickers = []) {
     mountedRef.current = true;
     fetch();
 
-    const id = setInterval(fetch, 20000);
+    const id = setInterval(fetch, 60000);
     return () => {
       mountedRef.current = false;
       clearInterval(id);
