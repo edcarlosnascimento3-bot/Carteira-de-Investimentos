@@ -1820,12 +1820,13 @@ table:not(.data-table) tr {
 }
 
 @keyframes curtainDown {
-  0% { max-height: 0; }
-  100% { max-height: 380px; }
+  0% { max-height: 0; opacity: 0; }
+  5% { opacity: 1; }
+  100% { max-height: 400px; opacity: 1; }
 }
 
 @keyframes curtainUp {
-  0% { max-height: 380px; opacity: 1; }
+  0% { max-height: 400px; opacity: 1; }
   100% { max-height: 0; opacity: 0; }
 }
 
