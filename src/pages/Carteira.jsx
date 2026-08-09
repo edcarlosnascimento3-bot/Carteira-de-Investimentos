@@ -295,10 +295,10 @@ function Carteira() {
                   <td className="td-valor">{formatCurrency(row.precoMedio)}</td>
                   <td className="td-valor" style={{ whiteSpace: 'nowrap' }}>
                     {row.cotacao != null ? (
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                        <span>{currencySymbols[row.tipo] || 'R$'} {formatCotation(row.cotacao)}</span>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontFamily: 'Consolas, monospace', fontSize: 'inherit' }}>
+                        <span style={{ fontFamily: 'inherit', fontSize: 'inherit' }}>{currencySymbols[row.tipo] || 'R$'} {formatCotation(row.cotacao)}</span>
                         {row.tipo !== 'Renda Fixa' && (
-                          <span style={{ color: row.variacao >= 0 ? '#00CC66' : '#FF5555', fontFamily: 'Consolas, monospace', fontSize: 'inherit' }}>
+                          <span style={{ color: row.variacao >= 0 ? '#00CC66' : '#FF5555', fontFamily: 'inherit', fontSize: 'inherit' }}>
                             {row.variacao > 0 ? '▲' : row.variacao < 0 ? '▼' : '•'} {Math.abs(row.variacao).toFixed(2)}%
                           </span>
                         )}
