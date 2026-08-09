@@ -50,6 +50,11 @@ function Sidebar({ activePage, onNavigate }) {
     setOpenMenus((prev) => prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]);
   };
 
+  const navigate = (target) => {
+    setOpenMenus([]);
+    onNavigate(target);
+  };
+
   return (
     <aside className="sidebar">
       <div className="sidebar-header">
@@ -63,7 +68,7 @@ function Sidebar({ activePage, onNavigate }) {
             {/* Item principal do menu */}
             <button
               className={`menu-item ${activePage === item.id ? 'active' : ''}`}
-              onClick={() => { if (item.submenu) toggleMenu(item.id); else onNavigate(item.id); }}
+              onClick={() => { if (item.submenu) toggleMenu(item.id); else navigate(item.id); }}
               title={item.label}
             >
               <span className="menu-item-icon">{item.icon}</span>
@@ -78,7 +83,7 @@ function Sidebar({ activePage, onNavigate }) {
                   <button
                     key={sub.id}
                     className="submenu-item"
-                    onClick={() => onNavigate(sub.target)}
+                    onClick={() => navigate(sub.target)}
                   >
                     {sub.label}
                   </button>
