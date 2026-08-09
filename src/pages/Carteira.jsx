@@ -20,18 +20,18 @@ const typeColors = {
 };
 
 const columns = [
-  { key: 'imagem', label: 'Imagem', width: 50 },
-  { key: 'ticker', label: 'Ticker', width: 80 },
-  { key: 'ativo', label: 'Nome', width: 180 },
-  { key: 'tipo', label: 'Tipo', width: 90 },
-  { key: 'quantidade', label: 'Quantidade', width: 100 },
-  { key: 'precoMedio', label: 'Preço Médio', width: 110 },
+  { key: 'imagem', label: 'Imagem', width: 65 },
+  { key: 'ticker', label: 'Ticker', width: 70 },
+  { key: 'ativo', label: 'Nome', width: 110 },
+  { key: 'tipo', label: 'Tipo', width: 60 },
+  { key: 'quantidade', label: 'Quantidade', width: 98 },
+  { key: 'precoMedio', label: 'Preço Médio', width: 106 },
   { key: 'cotacao', label: 'Cotação', width: 100 },
-  { key: 'investido', label: 'Investido', width: 110 },
-  { key: 'atual', label: 'Atual', width: 110 },
-  { key: 'rendimento', label: 'Rendimento', width: 110 },
-  { key: 'resultado', label: 'Resultado', width: 110 },
-  { key: 'acoes', label: 'Ações', width: 50 },
+  { key: 'investido', label: 'Investido', width: 95 },
+  { key: 'atual', label: 'Atual', width: 70 },
+  { key: 'rendimento', label: 'Rendimento', width: 98 },
+  { key: 'resultado', label: 'Resultado', width: 95 },
+  { key: 'acoes', label: 'Ações', width: 60 },
 ];
 
 const currencySymbols = {
@@ -254,7 +254,7 @@ function Carteira() {
       </div>
 
       <div className="table-wrapper">
-        <table className="data-table">
+        <table className="data-table carteira-table">
           <thead>
             <tr>
               {columns.map((col) => (
@@ -283,7 +283,7 @@ function Carteira() {
                     />
                   </td>
                   <td className="td-ticker">{row.ticker}</td>
-                  <td style={{ textAlign: 'center', color: 'var(--text)' }}>{row.ativo}</td>
+                  <td style={{ textAlign: 'center', color: 'var(--text)', whiteSpace: 'normal', minWidth: 110, maxWidth: 110 }}>{row.ativo}</td>
                   <td className="td-tipo">{row.tipo}</td>
                   <td className="td-numero">{formatNumber(row.quantidade)}</td>
                   <td className="td-valor">{formatCurrency(row.precoMedio)}</td>
@@ -295,7 +295,8 @@ function Carteira() {
                           <span style={{
                             color: row.variacao >= 0 ? '#00CC66' : '#FF5555',
                             fontSize: '0.8em',
-                            marginLeft: '6px',
+                            display: 'block',
+                            marginTop: '2px',
                           }}>
                             {row.variacao > 0 ? '▲' : row.variacao < 0 ? '▼' : '•'} {Math.abs(row.variacao).toFixed(2)}%
                           </span>
