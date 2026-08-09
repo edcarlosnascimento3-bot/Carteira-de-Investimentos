@@ -298,7 +298,7 @@ function Carteira() {
                       <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
                         <span>{currencySymbols[row.tipo] || 'R$'} {formatCotation(row.cotacao)}</span>
                         {row.tipo !== 'Renda Fixa' && (
-                          <span style={{ color: row.variacao >= 0 ? '#00CC66' : '#FF5555' }}>
+                          <span style={{ color: row.variacao >= 0 ? '#00CC66' : '#FF5555', fontFamily: 'Consolas, monospace', fontSize: 'inherit' }}>
                             {row.variacao > 0 ? '▲' : row.variacao < 0 ? '▼' : '•'} {Math.abs(row.variacao).toFixed(2)}%
                           </span>
                         )}
