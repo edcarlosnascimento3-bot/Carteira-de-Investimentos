@@ -295,8 +295,7 @@ function Carteira() {
                           <span style={{
                             color: row.variacao >= 0 ? '#00CC66' : '#FF5555',
                             fontSize: '0.8em',
-                            display: 'block',
-                            marginTop: '2px',
+                            marginLeft: '6px',
                           }}>
                             {row.variacao > 0 ? '▲' : row.variacao < 0 ? '▼' : '•'} {Math.abs(row.variacao).toFixed(2)}%
                           </span>

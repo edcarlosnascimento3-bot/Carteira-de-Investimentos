@@ -748,7 +748,7 @@ body {
 
 /* Carteira: tabela compacta para caber na área de conteúdo sem cortar a última coluna */
 .carteira-table {
-  font-size: 0.82em;
+  font-size: 0.8em;
 }
 
 .carteira-table th,
