@@ -524,7 +524,7 @@ function Carteira() {
                     type="text"
                     value={editRfValue}
                     onChange={e => setEditRfValue(e.target.value)}
-                    style={{ width: '100%', padding: '10px 14px', background: 'var(--gold-hover)', border: '1px solid #C8B80044', borderRadius: 8, color: 'var(--ink)', fontFamily: 'inherit', fontWeight: 700 }}
+                    style={{ width: '100%', padding: '10px 14px', background: 'var(--gold-hover)', border: '1px solid #C8B80044', borderRadius: 8, color: '#FFFFFF', fontFamily: 'inherit', fontWeight: 700 }}
                   />
                 </div>
               </div>
