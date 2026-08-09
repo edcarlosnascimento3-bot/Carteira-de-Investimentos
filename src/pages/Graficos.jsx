@@ -315,8 +315,9 @@ function Graficos() {
       const precoMedio = quantidade > 0 ? investido / quantidade : 0;
       const tipoNorm = g.tipo;
       const isManual = ['Renda Fixa', 'Dólar', 'Euro'].includes(tipoNorm);
-      const cotacao = isManual && rfManual[g.ticker] != null
-        ? rfManual[g.ticker] / quantidade
+      const manualTotal = rfManual[g.ticker];
+      const cotacao = isManual && manualTotal != null && tipoNorm !== 'Renda Fixa'
+        ? manualTotal / quantidade
         : tipoNorm === 'Renda Fixa'
           ? precoMedio
           : tipoNorm === 'Dólar'
@@ -324,7 +325,9 @@ function Graficos() {
             : tipoNorm === 'Euro'
               ? prices['EURBRL']
               : prices[g.ticker];
-      const atual = cotacao != null ? quantidade * cotacao : 0;
+      const atual = tipoNorm === 'Renda Fixa' && manualTotal != null
+        ? manualTotal
+        : cotacao != null ? quantidade * cotacao : 0;
       return { ...g, quantidade, investido, precoMedio, atual };
     }).filter(g => g.quantidade > 0);
   }, [transactions, prices, rfManual]);

@@ -97,9 +97,10 @@ function Carteira() {
       const investido = g.investidoCompra - g.investidoVenda;
       const precoMedio = quantidade > 0 ? investido / quantidade : 0;
       const isManual = ['Renda Fixa', 'Dólar', 'Euro'].includes(g.tipo);
-      const cotacao = isManual && rfManual[g.ticker] != null
-        ? rfManual[g.ticker] / quantidade
-        : isManual && g.tipo === 'Renda Fixa'
+      const manualTotal = rfManual[g.ticker];
+      const cotacao = isManual && manualTotal != null && g.tipo !== 'Renda Fixa'
+        ? manualTotal / quantidade
+        : g.tipo === 'Renda Fixa'
           ? precoMedio
           : g.tipo === 'Dólar'
           ? prices['USDBRL']
@@ -108,7 +109,9 @@ function Carteira() {
             : prices[g.ticker];
       const changeKey = g.tipo === 'Dólar' ? 'USDBRL' : g.tipo === 'Euro' ? 'EURBRL' : g.ticker;
       const variacao = changes[changeKey] ?? 0;
-      const atual = cotacao != null ? quantidade * cotacao : 0;
+      const atual = g.tipo === 'Renda Fixa' && manualTotal != null
+        ? manualTotal
+        : cotacao != null ? quantidade * cotacao : 0;
       const rendimento = investido !== 0
         ? ((atual - investido) / Math.abs(investido)) * 100
         : 0;
@@ -287,20 +290,16 @@ function Carteira() {
                   <td className="td-tipo">{row.tipo}</td>
                   <td className="td-numero">{formatNumber(row.quantidade)}</td>
                   <td className="td-valor">{formatCurrency(row.precoMedio)}</td>
-                  <td className="td-valor">
+                  <td className="td-valor" style={{ whiteSpace: 'nowrap' }}>
                     {row.cotacao != null ? (
-                      <>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
                         <span>{currencySymbols[row.tipo] || 'R$'} {formatNumber(row.cotacao)}</span>
                         {row.tipo !== 'Renda Fixa' && (
-                          <span style={{
-                            color: row.variacao >= 0 ? '#00CC66' : '#FF5555',
-                            fontSize: '0.8em',
-                            marginLeft: '6px',
-                          }}>
+                          <span style={{ color: row.variacao >= 0 ? '#00CC66' : '#FF5555', fontSize: '0.8em' }}>
                             {row.variacao > 0 ? '▲' : row.variacao < 0 ? '▼' : '•'} {Math.abs(row.variacao).toFixed(2)}%
                           </span>
                         )}
-                      </>
+                      </span>
                     ) : (
                       <span style={{ color: 'var(--text-faint)' }}>—</span>
                     )}
