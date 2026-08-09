@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import './Sidebar.css';
 
 /* ============================================================
@@ -43,6 +44,12 @@ const menuItems = [
 ];
 
 function Sidebar({ activePage, onNavigate }) {
+  const [openMenus, setOpenMenus] = useState([]);
+
+  const toggleMenu = (id) => {
+    setOpenMenus((prev) => prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]);
+  };
+
   return (
     <aside className="sidebar">
       <div className="sidebar-header">
@@ -52,11 +59,11 @@ function Sidebar({ activePage, onNavigate }) {
 
       <nav className="menu">
         {menuItems.map((item) => (
-          <div key={item.id} className="menu-group">
+          <div key={item.id} className={`menu-group ${openMenus.includes(item.id) ? 'open' : ''}`}>
             {/* Item principal do menu */}
             <button
               className={`menu-item ${activePage === item.id ? 'active' : ''}`}
-              onClick={() => { if (!item.submenu) onNavigate(item.id); }}
+              onClick={() => { if (item.submenu) toggleMenu(item.id); else onNavigate(item.id); }}
               title={item.label}
             >
               <span className="menu-item-icon">{item.icon}</span>

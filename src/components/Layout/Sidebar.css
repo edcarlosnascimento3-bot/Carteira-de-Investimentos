@@ -93,7 +93,7 @@
   transition: transform 0.2s ease;
 }
 
-.menu-group:hover .menu-arrow {
+.menu-group.open .menu-arrow {
   transform: rotate(180deg);
 }
 
@@ -104,7 +104,7 @@
   margin-left: 36px;
 }
 
-.menu-group:hover .submenu {
+.menu-group.open .submenu {
   max-height: 160px;
 }
 
