@@ -313,7 +313,8 @@ function Carteira() {
                   <td className="td-valor" style={{ color: row.resultado >= 0 ? '#00CC66' : '#FF5555' }}>
                     {row.resultado >= 0 ? '+' : ''}{formatCurrency(row.resultado)}
                   </td>
-                  <td className="td-acoes" style={{ display: 'flex', gap: '6px', justifyContent: 'center', alignItems: 'center' }}>
+                  <td className="td-acoes">
+                    <div style={{ display: 'flex', gap: '6px', justifyContent: 'center', alignItems: 'center' }}>
                     <button
                       style={{
                         ...actionBtnStyle,
@@ -336,6 +337,7 @@ function Carteira() {
                         ✏️
                       </button>
                     )}
+                    </div>
                   </td>
                 </tr>
               ))
