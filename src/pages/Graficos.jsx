@@ -63,13 +63,18 @@ function shadeColor(color, percent) {
 
 function renderLabel(isLight) {
   const fill = isLight ? '#000000' : '#BBB';
+  const sinTilt = Math.sin((32 * Math.PI) / 180);
   return ({ name, percent, cx, cy, midAngle, outerRadius }) => {
     const radius = outerRadius * 1.2;
     const x = cx + radius * Math.cos(-midAngle * RADIAN);
     const y = cy + radius * Math.sin(-midAngle * RADIAN);
     const pct = (percent * 100).toFixed(1);
+    const originY = 0.9 * cy;
+    const d = y - originY;
+    const dRef = 0.1 * cy + radius;
+    const fs = (12 * (900 - d * sinTilt)) / (900 - dRef * sinTilt);
     return (
-      <text x={x} y={y} fill={fill} textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central" fontSize={12}>
+      <text x={x} y={y} fill={fill} textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central" fontSize={fs}>
         {`${name} ${pct}%`}
       </text>
     );
