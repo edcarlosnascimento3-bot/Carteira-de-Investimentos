@@ -23,14 +23,14 @@ const columns = [
   { key: 'imagem', label: 'Imagem', width: 65 },
   { key: 'ticker', label: 'Ticker', width: 70 },
   { key: 'ativo', label: 'Nome', width: 110 },
-  { key: 'tipo', label: 'Tipo', width: 60 },
-  { key: 'quantidade', label: 'Quantidade', width: 90 },
-  { key: 'precoMedio', label: 'Preço Médio', width: 104 },
-  { key: 'cotacao', label: 'Cotação', width: 135 },
-  { key: 'investido', label: 'Investido', width: 88 },
-  { key: 'atual', label: 'Atual', width: 70 },
-  { key: 'rendimento', label: 'Rendimento', width: 98 },
-  { key: 'resultado', label: 'Resultado', width: 95 },
+  { key: 'tipo', label: 'Tipo', width: 55 },
+  { key: 'quantidade', label: 'Quantidade', width: 88 },
+  { key: 'precoMedio', label: 'Preço Médio', width: 100 },
+  { key: 'cotacao', label: 'Cotação', width: 160 },
+  { key: 'investido', label: 'Investido', width: 84 },
+  { key: 'atual', label: 'Atual', width: 68 },
+  { key: 'rendimento', label: 'Rendimento', width: 96 },
+  { key: 'resultado', label: 'Resultado', width: 92 },
   { key: 'acoes', label: 'Ações', width: 60 },
 ];
 
@@ -125,6 +125,9 @@ function Carteira() {
 
   const formatNumber = (v) =>
     v.toLocaleString('pt-BR');
+
+  const formatCotation = (v) =>
+    v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   const handleOpenEditRf = (row) => {
     setEditRf(row);
@@ -293,9 +296,9 @@ function Carteira() {
                   <td className="td-valor" style={{ whiteSpace: 'nowrap' }}>
                     {row.cotacao != null ? (
                       <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                        <span>{currencySymbols[row.tipo] || 'R$'} {formatNumber(row.cotacao)}</span>
+                        <span>{currencySymbols[row.tipo] || 'R$'} {formatCotation(row.cotacao)}</span>
                         {row.tipo !== 'Renda Fixa' && (
-                          <span style={{ color: row.variacao >= 0 ? '#00CC66' : '#FF5555', fontSize: '0.8em' }}>
+                          <span style={{ color: row.variacao >= 0 ? '#00CC66' : '#FF5555' }}>
                             {row.variacao > 0 ? '▲' : row.variacao < 0 ? '▼' : '•'} {Math.abs(row.variacao).toFixed(2)}%
                           </span>
                         )}
