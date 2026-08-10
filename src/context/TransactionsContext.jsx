@@ -32,6 +32,23 @@ function dedupeIds(list) {
   return changed ? out : list;
 }
 
+function normalizeTipo(tipo) {
+  if (typeof tipo !== 'string') return tipo;
+  return tipo.replace(/fii/gi, 'FII');
+}
+
+function normalizeTransactions(list) {
+  let changed = false;
+  const next = list.map((t) => {
+    if (t.tipo && typeof t.tipo === 'string' && t.tipo.match(/fii/i)) {
+      changed = true;
+      return { ...t, tipo: normalizeTipo(t.tipo) };
+    }
+    return t;
+  });
+  return changed ? next : list;
+}
+
 function getInitialData() {
   try {
     const stored = localStorage.getItem('investimento_transactions');
@@ -55,7 +72,13 @@ export function TransactionsProvider({ children }) {
   useEffect(() => {
     db.read(STORAGE_NAME).then((data) => {
       if (data !== null && Array.isArray(data) && data.length > 0) {
-        setTransactions(dedupeIds(data));
+        const normalized = normalizeTransactions(data);
+        if (normalized !== data) {
+          setTransactions(dedupeIds(normalized));
+          db.write(STORAGE_NAME, dedupeIds(normalized));
+        } else {
+          setTransactions(dedupeIds(data));
+        }
       }
       buildRegistryFromTransactions(data && Array.isArray(data) && data.length > 0 ? data : transactions);
       setLoaded(true);
@@ -79,12 +102,14 @@ export function TransactionsProvider({ children }) {
   }, [loaded]);
 
   const addTransaction = (entry) => {
-    const newTx = { id: makeId(), ...entry };
+    const newTx = { id: makeId(), ...entry, tipo: normalizeTipo(entry.tipo) };
     setTransactions((prev) => [newTx, ...prev]);
   };
 
   const updateTransaction = (id, data) => {
-    setTransactions((prev) => prev.map((t) => (t.id === id ? { ...t, ...data, id } : t)));
+    setTransactions((prev) =>
+      prev.map((t) => (t.id === id ? { ...t, ...data, id, tipo: normalizeTipo(data.tipo) } : t))
+    );
   };
 
   const removeTransaction = (id) => {

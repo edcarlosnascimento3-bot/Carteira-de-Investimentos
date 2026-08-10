@@ -5,6 +5,7 @@ import { useProventos } from '../context/ProventosContext';
 import { useRfManual } from '../context/RfManualContext';
 import { usePrices } from '../hooks/usePrices';
 import LogoImage from '../components/LogoImage';
+import { ETFS_RENDA_FIXA } from '../data/etfRendaFixa';
 
 const typeIcons = {
   'Ação': '📈',
@@ -78,18 +79,19 @@ function Principal() {
       const investido = g.investidoCompra - g.investidoVenda;
       const precoMedio = quantidade > 0 ? investido / quantidade : 0;
       const tipoNorm = g.tipo.replace(/Fii/g, 'FII');
-      const isManual = ['Renda Fixa', 'Dólar', 'Euro'].includes(tipoNorm);
-      const manualTotal = rfManual[g.ticker];
+      const precificadoMercado = ETFS_RENDA_FIXA.includes(g.ticker);
+      const isManual = ['Renda Fixa', 'Dólar', 'Euro'].includes(tipoNorm) && !precificadoMercado;
+      const manualTotal = precificadoMercado ? null : rfManual[g.ticker];
       const cotacao = isManual && manualTotal != null && tipoNorm !== 'Renda Fixa'
         ? manualTotal / quantidade
         : tipoNorm === 'Renda Fixa'
-          ? precoMedio
+          ? precificadoMercado ? prices[g.ticker] : precoMedio
           : tipoNorm === 'Dólar'
             ? prices['USDBRL']
             : tipoNorm === 'Euro'
               ? prices['EURBRL']
               : prices[g.ticker];
-      const atual = tipoNorm === 'Renda Fixa' && manualTotal != null
+      const atual = tipoNorm === 'Renda Fixa' && manualTotal != null && !precificadoMercado
         ? manualTotal
         : cotacao != null ? quantidade * cotacao : 0;
       const resultado = atual - investido;
@@ -142,7 +144,11 @@ function Principal() {
     const txList = transactions.filter(t => t.ticker === selectedTicker && t.operacao === 'Compra');
     const compraDates = txList.map(t => t.data).filter(Boolean);
     const precos = txList.map(t => t.valor).filter(v => v != null);
-    const qtdTotal = portfolio.find(a => a.ticker === selectedTicker)?.quantidade || 0;
+    const asset = portfolio.find(a => a.ticker === selectedTicker);
+    const qtdTotal = asset?.quantidade || 0;
+    const investidoTotal = asset?.investido || 0;
+    const atualTotal = asset?.atual || 0;
+    const valorizacaoPct = investidoTotal > 0 ? ((atualTotal - investidoTotal) / investidoTotal) * 100 : 0;
     const firstDate = compraDates.length > 0 ? compraDates.sort((a, b) => a.split('/').reverse().join('').localeCompare(b.split('/').reverse().join('')))[0] : '—';
     const lastDate = compraDates.length > 0 ? compraDates.sort((a, b) => b.split('/').reverse().join('').localeCompare(a.split('/').reverse().join('')))[0] : '—';
     const maxPreco = precos.length > 0 ? Math.max(...precos) : null;
@@ -156,7 +162,7 @@ function Principal() {
     const maxDiv = divsPorCota.length > 0 ? Math.max(...divsPorCota) : null;
     const minDiv = divsPorCota.length > 0 ? Math.min(...divsPorCota) : null;
 
-    return { ticker: selectedTicker, qtdTotal, firstDate, lastDate, maxPreco, minPreco, maxDiv, minDiv };
+    return { ticker: selectedTicker, qtdTotal, investidoTotal, atualTotal, valorizacaoPct, firstDate, lastDate, maxPreco, minPreco, maxDiv, minDiv };
   }, [selectedTicker, transactions, proventos, portfolio]);
 
   const tickerItems = tickers.map((t) => ({
@@ -332,6 +338,20 @@ function Principal() {
             <div className="asset-modal-row">
               <span className="asset-modal-label">Quantidade total de ativos</span>
               <span className="asset-modal-value">{formatNumber(assetModalInfo.qtdTotal)}</span>
+            </div>
+            <div className="asset-modal-row">
+              <span className="asset-modal-label">Valor investido</span>
+              <span className="asset-modal-value">{formatCurrency(assetModalInfo.investidoTotal)}</span>
+            </div>
+            <div className="asset-modal-row">
+              <span className="asset-modal-label">Valor atual</span>
+              <span className="asset-modal-value">{formatCurrency(assetModalInfo.atualTotal)}</span>
+            </div>
+            <div className="asset-modal-row">
+              <span className="asset-modal-label">Valorização</span>
+              <span className="asset-modal-value" style={{ color: assetModalInfo.valorizacaoPct >= 0 ? '#00E676' : '#FF3D71' }}>
+                {assetModalInfo.valorizacaoPct >= 0 ? '+' : ''}{formatNumber(assetModalInfo.valorizacaoPct)}%
+              </span>
             </div>
             <div className="asset-modal-row">
               <span className="asset-modal-label">Primeira compra</span>

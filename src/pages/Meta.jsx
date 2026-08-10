@@ -111,7 +111,7 @@ function Meta() {
         const media = mesesComValor > 0 ? total / mesesComValor : 0;
         return { ...g, total, mesesComValor, media };
       })
-      .sort((a, b) => a.ticker.localeCompare(b.ticker));
+      .sort((a, b) => (quantidades[b.ticker] || 0) - (quantidades[a.ticker] || 0));
   }, [proventos, anoFiltro, effectiveTipo, quantidades]);
 
   const handleTipoClick = (tipo) => setTipoFiltro(tipo);
@@ -298,6 +298,8 @@ function Meta() {
                   border: selected ? '1px solid #C8B800' : '1px solid #C8B800AA',
                   borderRadius: 999,
                   padding: '5px 14px',
+                  width: 110,
+                  textAlign: 'center',
                   fontSize: '0.82em',
                   fontFamily: 'inherit',
                   fontWeight: selected ? 700 : 500,

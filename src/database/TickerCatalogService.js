@@ -35,9 +35,17 @@ export async function adicionar(ativo) {
 
 export async function atualizar(ticker, dados) {
   const lista = await listar();
-  const idx = lista.findIndex(a => a.TICKER === ticker);
+  const key = (ticker || '').toUpperCase().trim();
+  const idx = lista.findIndex(a => (a.TICKER || '').toUpperCase().trim() === key);
   if (idx === -1) return null;
-  lista[idx] = { ...lista[idx], ...dados };
+  const normalized = {
+    NOME: dados.NOME ?? dados.nome ?? '',
+    CNPJ: dados.CNPJ ?? dados.cnpj ?? '',
+    TIPO: dados.TIPO ?? dados.tipo ?? '',
+    IMAGEM: dados.IMAGEM ?? dados.imagem ?? '',
+    LINK: dados.LINK ?? dados.link ?? ''
+  };
+  lista[idx] = { ...lista[idx], ...normalized };
   await db.write(STORAGE_NAME, lista);
   cache = lista;
   return lista[idx];

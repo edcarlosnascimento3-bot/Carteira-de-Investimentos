@@ -5,6 +5,7 @@ import { useRfManual } from '../context/RfManualContext';
 import { formatCurrency } from '../services/format';
 import { usePrices } from '../hooks/usePrices';
 import * as CorretoraService from '../database/CorretoraService';
+import { ETFS_RENDA_FIXA } from '../data/etfRendaFixa';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LabelList, LineChart, Line, CartesianGrid, Sector } from 'recharts';
 
 const defaultTickers = ['PETR4', 'VALE3', 'ITUB4', 'ABEV3', 'BBAS3', 'WEGE3', 'HGLG11', 'KNRI11', 'BTC', 'ETH'];
@@ -314,18 +315,19 @@ function Graficos() {
       const investido = g.investidoCompra - g.investidoVenda;
       const precoMedio = quantidade > 0 ? investido / quantidade : 0;
       const tipoNorm = g.tipo;
-      const isManual = ['Renda Fixa', 'Dólar', 'Euro'].includes(tipoNorm);
-      const manualTotal = rfManual[g.ticker];
+      const precificadoMercado = ETFS_RENDA_FIXA.includes(g.ticker);
+      const isManual = ['Renda Fixa', 'Dólar', 'Euro'].includes(tipoNorm) && !precificadoMercado;
+      const manualTotal = precificadoMercado ? null : rfManual[g.ticker];
       const cotacao = isManual && manualTotal != null && tipoNorm !== 'Renda Fixa'
         ? manualTotal / quantidade
         : tipoNorm === 'Renda Fixa'
-          ? precoMedio
+          ? precificadoMercado ? prices[g.ticker] : precoMedio
           : tipoNorm === 'Dólar'
             ? prices['USDBRL']
             : tipoNorm === 'Euro'
               ? prices['EURBRL']
               : prices[g.ticker];
-      const atual = tipoNorm === 'Renda Fixa' && manualTotal != null
+      const atual = tipoNorm === 'Renda Fixa' && manualTotal != null && !precificadoMercado
         ? manualTotal
         : cotacao != null ? quantidade * cotacao : 0;
       return { ...g, quantidade, investido, precoMedio, atual };
@@ -370,7 +372,7 @@ function Graficos() {
 
   const rendaFixaData = useMemo(() => {
     return [...portfolioBase]
-      .filter(a => a.tipo === 'Renda Fixa')
+      .filter(a => a.tipo === 'Renda Fixa' || a.tipo === 'ETF')
       .sort((a, b) => b.investido - a.investido)
       .map(a => ({ name: a.ticker, value: a.investido }));
   }, [portfolioBase]);
@@ -1081,7 +1083,7 @@ function Graficos() {
         </div>
 
         <div className="chart-card" style={{ display: 'flex', flexDirection: 'column', position: 'relative', minHeight: 320 }}>
-          <h2 style={{ textAlign: 'center' }}>Renda Fixa</h2>
+          <h2 style={{ textAlign: 'center' }}>Renda Fixa / ETF</h2>
           <SelectionBadge data={rendaFixaData} selectedName={selectedTicker} />
           <div style={{ flex: 1, minHeight: 0 }}>
             <ResponsiveContainer width="100%" height="100%">
@@ -1240,7 +1242,7 @@ function Graficos() {
             {selectedProventosTipos.length > 0 && proventosTipoChartData.length > 0 ? (
               <div style={{ flex: 1, minHeight: 0 }}>
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={proventosTipoChartData} margin={{ left: 30, right: 30, top: 30, bottom: 10 }}>
+                  <BarChart data={proventosTipoChartData} margin={{ left: 30, right: 30, top: 70, bottom: 10 }}>
                     <defs>
                       <filter id="bar3dShadow" x="-20%" y="-20%" width="140%" height="140%">
                         <feDropShadow dx="3" dy="3" stdDeviation="3" flood-color="#000" flood-opacity="0.5" />

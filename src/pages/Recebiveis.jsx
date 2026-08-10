@@ -117,7 +117,7 @@ function Proventos() {
   const tickerTipoMap = useMemo(() => {
     const map = {};
     transactions.forEach(t => {
-      if (!map[t.ticker]) map[t.ticker] = t.tipo;
+      if (!map[t.ticker]) map[t.ticker] = (t.tipo || '').replace(/fii/gi, 'FII');
     });
     return map;
   }, [transactions]);
@@ -509,7 +509,7 @@ function Proventos() {
                   <tr key={idx}>
                     <td className="td-ticker">{row.ticker}</td>
                     <td style={{ textAlign: 'center', color: 'var(--text)' }}>{row.nome}</td>
-                    <td className="td-tipo">{row.tipo}</td>
+                    <td className="td-tipo">{(row.tipo || '').replace(/fii/gi, 'FII')}</td>
                     <td className="td-data">{formatDate(row.data)}</td>
                     <td className="td-ano">{row.ano}</td>
                     <td className="td-valor" style={row.dividendos > 0 ? greenCellStyle : {}}>

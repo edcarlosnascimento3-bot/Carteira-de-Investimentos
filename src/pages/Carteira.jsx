@@ -6,6 +6,7 @@ import LogoImage from '../components/LogoImage';
 import Toast from '../components/Toast';
 import { getTickerInfo, saveTickerInfo } from '../services/tickerRegistry';
 import { useRfManual } from '../context/RfManualContext';
+import { ETFS_RENDA_FIXA } from '../data/etfRendaFixa';
 
 const typeIcons = {
   'Ação': '📈',
@@ -96,12 +97,13 @@ function Carteira() {
       const quantidade = g.qtdCompra - g.qtdVenda;
       const investido = g.investidoCompra - g.investidoVenda;
       const precoMedio = quantidade > 0 ? investido / quantidade : 0;
-      const isManual = ['Renda Fixa', 'Dólar', 'Euro'].includes(g.tipo);
-      const manualTotal = rfManual[g.ticker];
+      const precificadoMercado = ETFS_RENDA_FIXA.includes(g.ticker);
+      const isManual = ['Renda Fixa', 'Dólar', 'Euro'].includes(g.tipo) && !precificadoMercado;
+      const manualTotal = precificadoMercado ? null : rfManual[g.ticker];
       const cotacao = isManual && manualTotal != null && g.tipo !== 'Renda Fixa'
         ? manualTotal / quantidade
         : g.tipo === 'Renda Fixa'
-          ? precoMedio
+          ? precificadoMercado ? prices[g.ticker] : precoMedio
           : g.tipo === 'Dólar'
           ? prices['USDBRL']
           : g.tipo === 'Euro'
@@ -109,7 +111,7 @@ function Carteira() {
             : prices[g.ticker];
       const changeKey = g.tipo === 'Dólar' ? 'USDBRL' : g.tipo === 'Euro' ? 'EURBRL' : g.ticker;
       const variacao = changes[changeKey] ?? 0;
-      const atual = g.tipo === 'Renda Fixa' && manualTotal != null
+      const atual = g.tipo === 'Renda Fixa' && manualTotal != null && !precificadoMercado
         ? manualTotal
         : cotacao != null ? quantidade * cotacao : 0;
       const rendimento = investido !== 0
@@ -117,7 +119,7 @@ function Carteira() {
         : 0;
       const resultado = atual - investido;
 
-      return { ...g, quantidade, investido, precoMedio, cotacao, variacao, changeKey, atual, rendimento, resultado };
+      return { ...g, quantidade, investido, precoMedio, cotacao, variacao, changeKey, atual, rendimento, resultado, precificadoMercado };
     }).filter((g) => g.quantidade > 0);
   }, [transactions, prices, changes, rfManual]);
 
@@ -294,14 +296,14 @@ function Carteira() {
                   <td className="td-numero">{formatNumber(row.quantidade)}</td>
                   <td className="td-valor">{formatCurrency(row.precoMedio)}</td>
                   <td className="td-valor" style={{ whiteSpace: 'nowrap' }}>
-                    {row.cotacao != null ? (
+                        {row.cotacao != null ? (
                       <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontFamily: 'Consolas, monospace', fontSize: 'inherit' }}>
                         <span style={{ fontFamily: 'inherit', fontSize: 'inherit' }}>{currencySymbols[row.tipo] || 'R$'} {formatCotation(row.cotacao)}</span>
-                        {row.tipo !== 'Renda Fixa' && (
+                        {row.tipo !== 'Renda Fixa' || row.precificadoMercado ? (
                           <span style={{ color: row.variacao >= 0 ? '#00CC66' : '#FF5555', fontFamily: 'inherit', fontSize: 'inherit' }}>
                             {row.variacao > 0 ? '▲' : row.variacao < 0 ? '▼' : '•'} {Math.abs(row.variacao).toFixed(2)}%
                           </span>
-                        )}
+                        ) : null}
                       </span>
                     ) : (
                       <span style={{ color: 'var(--text-faint)' }}>—</span>
@@ -329,7 +331,7 @@ function Carteira() {
                     >
                       🔗
                     </button>
-                    {(row.tipo === 'Renda Fixa' || row.tipo === 'Dólar' || row.tipo === 'Euro') && (
+                    {(row.tipo === 'Renda Fixa' || row.tipo === 'Dólar' || row.tipo === 'Euro') && !row.precificadoMercado && (
                       <button
                         style={actionBtnStyle}
                         onClick={() => handleOpenEditRf(row)}

@@ -9,6 +9,23 @@ const STORAGE_NAME = 'proventos';
 
 let _proventoNextId = Date.now();
 
+function normalizeTipo(tipo) {
+  if (typeof tipo !== 'string') return tipo;
+  return tipo.replace(/fii/gi, 'FII');
+}
+
+function normalizeProventos(list) {
+  let changed = false;
+  const next = list.map((p) => {
+    if (p.tipo && typeof p.tipo === 'string' && p.tipo.match(/fii/i)) {
+      changed = true;
+      return { ...p, tipo: normalizeTipo(p.tipo) };
+    }
+    return p;
+  });
+  return changed ? next : list;
+}
+
 export function ProventosProvider({ children }) {
   const { user } = useAuth();
   const [proventos, setProventos] = useState([]);
@@ -19,7 +36,9 @@ export function ProventosProvider({ children }) {
 
     db.read(STORAGE_NAME).then((data) => {
       if (data && Array.isArray(data) && data.length > 0) {
-        setProventos(data);
+        const normalized = normalizeProventos(data);
+        if (normalized !== data) db.write(STORAGE_NAME, normalized);
+        setProventos(normalized);
       } else {
         // fallback: tentar carregar do localStorage legacy (antes do escopo por user_id)
         try {
@@ -27,8 +46,12 @@ export function ProventosProvider({ children }) {
           if (legacy) {
             const parsed = JSON.parse(legacy);
             if (Array.isArray(parsed) && parsed.length > 0) {
-              setProventos(parsed);
-              db.write(STORAGE_NAME, parsed);
+              const normalized = normalizeProventos(parsed);
+              if (normalized !== parsed) {
+                localStorage.setItem('investimento_proventos', JSON.stringify(normalized));
+              }
+              setProventos(normalized);
+              db.write(STORAGE_NAME, normalized);
             }
           }
         } catch {}
@@ -44,7 +67,7 @@ export function ProventosProvider({ children }) {
   }, [proventos, loaded]);
 
   const addProvento = (entry) => {
-    const newProv = { id: ++_proventoNextId, ...entry };
+    const newProv = { id: ++_proventoNextId, ...entry, tipo: normalizeTipo(entry.tipo) };
     setProventos((prev) => {
       const next = [newProv, ...prev];
       db.write(STORAGE_NAME, next);
@@ -54,7 +77,9 @@ export function ProventosProvider({ children }) {
 
   const updateProvento = (id, data) => {
     setProventos((prev) => {
-      const next = prev.map((t) => (t.id === id ? { ...t, ...data, id } : t));
+      const next = prev.map((t) =>
+        t.id === id ? { ...t, ...data, id, tipo: normalizeTipo(data.tipo) } : t
+      );
       db.write(STORAGE_NAME, next);
       return next;
     });

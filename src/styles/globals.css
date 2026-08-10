@@ -268,6 +268,12 @@ body {
   margin-bottom: 20px;
 }
 
+@media (max-width: 1440px) {
+  .asset-cards-grid {
+    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  }
+}
+
 .asset-card {
   background: var(--card-bg);
   border: 1px solid var(--card-border);
@@ -689,7 +695,7 @@ body {
   overflow-x: auto;
   margin-bottom: 12px;
   scrollbar-width: thin;
-  scrollbar-color: transparent transparent;
+  scrollbar-color: var(--border) var(--surface-void);
   transition: scrollbar-color 0.3s ease;
 }
 .table-wrapper:hover {
@@ -699,10 +705,10 @@ body {
   height: 6px;
 }
 .table-wrapper::-webkit-scrollbar-track {
-  background: transparent;
+  background: var(--surface-void);
 }
 .table-wrapper::-webkit-scrollbar-thumb {
-  background: transparent;
+  background: var(--border);
   border-radius: 3px;
   transition: background 0.3s ease;
 }
@@ -1377,7 +1383,7 @@ table:not(.data-table) tr {
 }
 
 .ticker-price {
-  color: var(--text-faint);
+  color: #FFFFFF;
 }
 
 .ticker-change {
@@ -1832,11 +1838,11 @@ table:not(.data-table) tr {
 @keyframes curtainDown {
   0% { max-height: 0; opacity: 0; }
   5% { opacity: 1; }
-  100% { max-height: 400px; opacity: 1; }
+  100% { max-height: 640px; opacity: 1; }
 }
 
 @keyframes curtainUp {
-  0% { max-height: 400px; opacity: 1; }
+  0% { max-height: 640px; opacity: 1; }
   100% { max-height: 0; opacity: 0; }
 }
 

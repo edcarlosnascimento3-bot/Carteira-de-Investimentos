@@ -7,6 +7,7 @@ import ConfirmModal from '../components/Modals/ConfirmModal';
 import Toast from '../components/Toast';
 import LogoImage from '../components/LogoImage';
 import { listar as listarAtivos } from '../database/TickerCatalogService';
+import { ETFS_RENDA_FIXA } from '../data/etfRendaFixa';
 import * as XLSX from 'xlsx';
 
 const columns = [
@@ -549,7 +550,7 @@ function Lancamentos() {
                   <td className="td-ticker">{row.ticker}</td>
                   <td className="td-ativo">{row.ativo}</td>
                   <td className="td-cnpj">{row.cnpj}</td>
-                  <td className="td-tipo">{normalizeTipo(row.tipo)}</td>
+                  <td className="td-tipo">{ETFS_RENDA_FIXA.includes(row.ticker) ? 'ETF' : normalizeTipo(row.tipo)}</td>
                   <td className="td-segmento">{row.segmento}</td>
                   <td>
                     <span className={`operacao-badge ${row.operacao === 'Compra' ? 'compra' : 'venda'}`}>
