@@ -125,3 +125,16 @@
 - Commits: c89be12, c9808d1, 98420f9, d21c232, 3d3e9af, 6cd2ee5, 0e8ec98, ce06f9d — todos com push (deploy Vercel)
 **Pendências:**
 - Nenhuma
+
+## 2026-08-09
+
+**Foco:** Correção da persistência do logo de ativos (VSLH11/BTER11) + precificação de ETFs de renda fixa pelo mercado
+**Arquivos alterados:** src/database/TickerCatalogService.js, src/data/etfRendaFixa.js (novo), src/pages/Carteira.jsx, src/pages/Graficos.jsx, src/pages/Principal.jsx, src/pages/Lancamentos.jsx, src/pages/Meta.jsx, src/pages/Recebiveis.jsx, src/context/ProventosContext.jsx, src/context/TransactionsContext.jsx, src/components/Modals/EditTransactionModal.jsx, src/styles/globals.css, db_ativos.json, .gitignore
+**Decisões:**
+- Causa raiz do bug do logo: `TickerCatalogService.atualizar()` fazia merge minúsculo vs MAIÚSCULO (campos nunca sobrescritos) e match case-sensitive — agora normaliza para `NOME/CNPJ/TIPO/IMAGEM/LINK` e usa `toUpperCase().trim()`
+- ETFs de renda fixa (BTER11, LTBX11) via `ETFS_RENDA_FIXA` em `src/data/etfRendaFixa.js`: precificados pelo mercado (preço da cotação) em vez de preço médio/manual na Carteira, Principal e Graficos; tipo exibido como "ETF" nos Lançamentos
+- Normalização global de tipo `Fii`→`FII` nos contexts e dados existentes
+- Modal do ativo (Principal) ganhou Valor Investido, Valor Atual e Valorização %
+- Deploy: `vercel --prod` (alias beryl) após build OK — commit 68a4375
+**Pendências:**
+- Conferir no deploy se o logo do VSLH11/BTER11 persiste após recarregar a página
