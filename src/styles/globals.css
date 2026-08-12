@@ -1377,13 +1377,13 @@ table:not(.data-table) tr {
 }
 
 .ticker-symbol {
-  color: var(--text-soft);
+  color: var(--text-strong);
   font-weight: 700;
   letter-spacing: 0.5px;
 }
 
 .ticker-price {
-  color: #FFFFFF;
+  color: var(--text-strong);
 }
 
 .ticker-change {
