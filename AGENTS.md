@@ -2,6 +2,10 @@
 
 **Idioma:** Responda sempre em português brasileiro.
 
+## Preferência de execução
+
+Quando o usuário pedir para "abrir o projeto", "abrir no navegador" ou similar, SEMPRE abrir a versão publicada: **https://carteira-de-investimentos-beryl.vercel.app/** (produção na Vercel). Não usar o servidor de desenvolvimento local (localhost:5173) a menos que o usuário peça explicitamente para desenvolver/testar localmente.
+
 ## Ao final de cada sessão (quando o usuário se despedir ou encerrar)
 
 Salve um resumo da conversa em `CONVERSAS.md` no seguinte formato:

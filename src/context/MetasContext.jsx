@@ -2,13 +2,13 @@ import { createContext, useContext, useState, useEffect, useRef } from 'react';
 import db from '../services/storage';
 import { useAuth } from './AuthContext';
 
-const RfManualContext = createContext(null);
+const MetasContext = createContext(null);
 
-const STORAGE_NAME = 'rf_manual';
+const STORAGE_NAME = 'metas';
 
 function getInitialData() {
   try {
-    const raw = localStorage.getItem('investimento_rf_manual');
+    const raw = localStorage.getItem('investimento_metas');
     if (raw) {
       const data = JSON.parse(raw);
       if (data && typeof data === 'object' && Object.keys(data).length > 0) return data;
@@ -17,15 +17,15 @@ function getInitialData() {
   return {};
 }
 
-export function RfManualProvider({ children }) {
+export function MetasProvider({ children }) {
   const { user } = useAuth();
-  const [rfManual, setRfManual] = useState(getInitialData);
+  const [metas, setMetas] = useState(getInitialData);
   const [loaded, setLoaded] = useState(false);
-  const rfManualRef = useRef(rfManual);
+  const metasRef = useRef(metas);
 
   useEffect(() => {
-    rfManualRef.current = rfManual;
-  }, [rfManual]);
+    metasRef.current = metas;
+  }, [metas]);
 
   useEffect(() => {
     if (!user) return;
@@ -34,7 +34,7 @@ export function RfManualProvider({ children }) {
     db.read(STORAGE_NAME).then((data) => {
       if (!active) return;
       if (data && typeof data === 'object' && Object.keys(data).length > 0) {
-        setRfManual((prev) => {
+        setMetas((prev) => {
           if (Object.keys(prev).length > 0) return prev;
           return data;
         });
@@ -46,36 +46,36 @@ export function RfManualProvider({ children }) {
 
   useEffect(() => {
     if (!loaded) return;
-    localStorage.setItem('investimento_rf_manual', JSON.stringify(rfManual));
-    db.write(STORAGE_NAME, rfManual);
-  }, [rfManual, loaded]);
+    localStorage.setItem('investimento_metas', JSON.stringify(metas));
+    db.write(STORAGE_NAME, metas);
+  }, [metas, loaded]);
 
   useEffect(() => {
     const handleBeforeUnload = () => {
       if (loaded) {
-        localStorage.setItem('investimento_rf_manual', JSON.stringify(rfManualRef.current));
+        localStorage.setItem('investimento_metas', JSON.stringify(metasRef.current));
       }
     };
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [loaded]);
 
-  const updateRfManual = (updater) => {
-    setRfManual((prev) => {
+  const updateMetas = (updater) => {
+    setMetas((prev) => {
       const next = typeof updater === 'function' ? updater(prev) : updater;
       return next;
     });
   };
 
   return (
-    <RfManualContext.Provider value={{ rfManual, updateRfManual }}>
+    <MetasContext.Provider value={{ metas, updateMetas }}>
       {children}
-    </RfManualContext.Provider>
+    </MetasContext.Provider>
   );
 }
 
-export function useRfManual() {
-  const ctx = useContext(RfManualContext);
-  if (!ctx) throw new Error('useRfManual deve ser usado dentro de RfManualProvider');
+export function useMetas() {
+  const ctx = useContext(MetasContext);
+  if (!ctx) throw new Error('useMetas deve ser usado dentro de MetasProvider');
   return ctx;
 }

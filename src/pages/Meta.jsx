@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { formatCurrency, formatNumber } from '../services/format';
 import { useProventos } from '../context/ProventosContext';
 import { useTransactions } from '../context/TransactionsContext';
+import { useMetas } from '../context/MetasContext';
 import LogoImage from '../components/LogoImage';
 
 const typeIcons = {
@@ -49,24 +50,13 @@ function useLightTheme() {
   return isLight;
 }
 
-const META_STORAGE = 'investimento_metas';
-
-function loadMetas() {
-  try {
-    const raw = localStorage.getItem(META_STORAGE);
-    return raw ? JSON.parse(raw) : {};
-  } catch {
-    return {};
-  }
-}
-
 function Meta() {
   const { proventos } = useProventos();
   const { transactions } = useTransactions();
   const isLight = useLightTheme();
   const [anoFiltro, setAnoFiltro] = useState(() => String(new Date().getFullYear()));
   const [tipoFiltro, setTipoFiltro] = useState('');
-  const [metas, setMetas] = useState(loadMetas);
+  const { metas, updateMetas } = useMetas();
   const [focusedInput, setFocusedInput] = useState(null);
 
   const uniqueAnos = useMemo(() => {
@@ -137,11 +127,8 @@ function Meta() {
   const metaKey = (ticker) => ticker;
 
   const handleMetaChange = (ticker, campo, valor) => {
-    setMetas(prev => {
+    updateMetas(prev => {
       const next = { ...prev, [metaKey(ticker)]: { ...prev[metaKey(ticker)], [campo]: valor } };
-      try {
-        localStorage.setItem(META_STORAGE, JSON.stringify(next));
-      } catch {}
       return next;
     });
   };

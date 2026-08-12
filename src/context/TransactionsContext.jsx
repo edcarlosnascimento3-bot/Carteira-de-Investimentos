@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import db from '../services/storage';
+import { useAuth } from './AuthContext';
 import { buildRegistryFromTransactions } from '../services/tickerRegistry';
 import { TransactionsContext } from './TransactionsContextDef';
 
@@ -61,6 +62,7 @@ function getInitialData() {
 }
 
 export function TransactionsProvider({ children }) {
+  const { user } = useAuth();
   const [transactions, setTransactions] = useState(getInitialData);
   const [loaded, setLoaded] = useState(false);
   const transactionsRef = useRef(transactions);
@@ -70,7 +72,11 @@ export function TransactionsProvider({ children }) {
   }, [transactions]);
 
   useEffect(() => {
+    if (!user) return;
+
+    let active = true;
     db.read(STORAGE_NAME).then((data) => {
+      if (!active) return;
       if (data !== null && Array.isArray(data) && data.length > 0) {
         const normalized = normalizeTransactions(data);
         if (normalized !== data) {
@@ -80,10 +86,11 @@ export function TransactionsProvider({ children }) {
           setTransactions(dedupeIds(data));
         }
       }
-      buildRegistryFromTransactions(data && Array.isArray(data) && data.length > 0 ? data : transactions);
+      buildRegistryFromTransactions(data && Array.isArray(data) && data.length > 0 ? data : transactionsRef.current);
       setLoaded(true);
     });
-  }, []);
+    return () => { active = false; };
+  }, [user]);
 
   useEffect(() => {
     if (!loaded) return;

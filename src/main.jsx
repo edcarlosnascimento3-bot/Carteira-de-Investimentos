@@ -5,6 +5,7 @@ import { UserProvider } from './context/UserContext';
 import { TransactionsProvider } from './context/TransactionsContext';
 import { ProventosProvider } from './context/ProventosContext';
 import { RfManualProvider } from './context/RfManualContext';
+import { MetasProvider } from './context/MetasContext';
 import { AuthProvider } from './context/AuthContext';
 import './styles/globals.css';
 
@@ -15,7 +16,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(
         <TransactionsProvider>
           <ProventosProvider>
             <RfManualProvider>
-              <App />
+              <MetasProvider>
+                <App />
+              </MetasProvider>
             </RfManualProvider>
           </ProventosProvider>
         </TransactionsProvider>

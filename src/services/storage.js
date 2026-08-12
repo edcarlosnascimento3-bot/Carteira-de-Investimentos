@@ -43,6 +43,15 @@ function lsKey(name, userId) {
   return userId ? `investimento_${userId}_${name}` : `investimento_${name}`;
 }
 
+// Dados vazios (array [] ou objeto {}) no cache local não devem mascarar o
+// Supabase: `if (cached)` seria verdadeiro para []/{} e nunca chegaria ao remoto.
+function hasData(value) {
+  if (value == null) return false;
+  if (Array.isArray(value)) return value.length > 0;
+  if (typeof value === 'object') return Object.keys(value).length > 0;
+  return true;
+}
+
 function writeLocalStorage(name, data, userId) {
   try {
     localStorage.setItem(lsKey(name, userId), JSON.stringify(data));
@@ -131,11 +140,11 @@ const db = {
 
     // 1) Tenta localStorage escopado por userId
     const cached = readLocalStorage(name, userId);
-    if (cached) return cached;
+    if (hasData(cached)) return cached;
 
     // 2) Tenta Supabase
     const remote = await readSupabase(name);
-    if (remote) {
+    if (hasData(remote)) {
       writeLocalStorage(name, remote, userId);
       return remote;
     }
@@ -143,7 +152,7 @@ const db = {
     // 3) Tenta localStorage legacy (sem userId) e sincroniza pro Supabase
     if (userId) {
       const legacy = readLocalStorage(name, null);
-      if (legacy) {
+      if (hasData(legacy)) {
         await writeSupabase(name, legacy);
         writeLocalStorage(name, legacy, userId);
         return legacy;
@@ -152,7 +161,7 @@ const db = {
 
     try {
       const idb = await idbRead(name);
-      if (idb) {
+      if (hasData(idb)) {
         writeLocalStorage(name, idb, userId);
         return idb;
       }

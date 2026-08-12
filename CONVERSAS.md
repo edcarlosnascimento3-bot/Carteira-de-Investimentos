@@ -138,3 +138,41 @@
 - Deploy: `vercel --prod` (alias beryl) após build OK — commit 68a4375
 **Pendências:**
 - Conferir no deploy se o logo do VSLH11/BTER11 persiste após recarregar a página
+
+## 2026-08-10
+
+**Foco:** Correção de deploy Vercel abrindo em branco (dados "sumidos")
+**Arquivos alterados:** src/context/TransactionsContext.jsx, src/context/RfManualContext.jsx, src/context/UserContext.jsx, src/services/storage.js
+**Decisões:**
+- Providers (Transactions, RfManual, User) passam a depender de [user] e só carregam após login — antes liam no mount com deps [] e nunca re-buscavam
+- db.read agora trata []/{} (vazios) como "sem dados" via hasData() — cache local vazio não mascara mais o Supabase
+- storage.js reescrito limpo (IndexedDB real, sem stubs) com export default db
+**Pendências:**
+- Verificação manual pelo usuário: hard refresh (Ctrl+Shift+R) e login
+
+## 2026-08-10 (2)
+
+**Foco:** Investigação de "Renda Fixa ainda aparece na faixa de tickers" (apenas diagnóstico, sem alteração de código)
+**Arquivos alterados:** Nenhum
+**Decisões:**
+- Código do filtro está correto: `Principal.jsx:176-182` filtra `rfTickers` (tipo exato 'Renda Fixa') da faixa; não há outra faixa/scroll no app
+- `db_transactions.json` (via IPC Electron) tem 56 transações RF (IPCA+ 2032, 99 PAY, XP INVEST, SOFISA, RESERVA, LTBX11) com tipo exato — seriam todas removidas
+- Bundle `dist` (construído 10/08 20:57) já contém o filtro; `TransactionsContext` normaliza só `fii`→`FII`, guardando tipo verbatim
+**Pendências:**
+- Confirmar com usuário: quais tickers aparecem na faixa e como o app é executado (Vite dev vs Electron) — suspeitas: build stale/Electron sem rebuild ou dados vivos (localStorage/Supabase) com tipo divergente
+- Se necessário, endurecer filtro (trim/case-insensitive + excluir `ETFS_RENDA_FIXA` BTER11/LTBX11 independente do tipo)
+
+## 2026-08-11
+
+**Foco:** Corrigir logo do TRXF11 voltando à versão antiga (chaves minúsculas duplicadas) + deploy
+**Arquivos alterados:** src/components/LogoImage.jsx, src/database/TickerCatalogService.js, db_ativos.json, CONVERSAS.md
+**Decisões:**
+- Causa raiz: ativos no runtime guardavam `imagem` (minúsculo) duplicado de `IMAGEM`; `LogoImage` só lia `a.IMAGEM`. Corrigido para `a.IMAGEM || a.imagem`
+- `TickerCatalogService` ganhou `LEGACY_KEYS`/`stripLegacyKeys`/`mergeWith` em `adicionar`/`atualizar`/`importarRegistros` para eliminar chaves minúsculas no merge (evita recorrência)
+- `db_ativos.json`: removidas chaves legadas de BBAS3, GARE11, TRXF11, IPCA+ 2032; diff de 2 linhas; 946 ativos
+- Deploy feito via `vercel --prod` a partir de checkout limpo do commit `cde101d` (working tree tinha mudanças não commitadas de outra sessão que não deveriam ir) — publicado em carteira-de-investimentos-beryl.vercel.app (17s, status 200)
+- Supabase `app_data` retorna 0 registros com anon key (provável RLS) — runtime lê localStorage/Supabase, não `db_ativos.json`
+**Pendências:**
+- Commit `cde101d` NÃO pushado para origin/main (deploy via CLI, não via GitHub)
+- Mudanças de outras sessões seguem sem commit (auth/metas/filtro RF): RfManualContext, TransactionsContext, UserContext, MetasContext (novo), main.jsx, Meta.jsx, Principal.jsx, storage.js, AGENTS.md
+- Para o outro computador ver o logo corrigido: salvar o link do TRXF11 uma vez pela UI (modal "Link da Imagem / Logo do Ativo")

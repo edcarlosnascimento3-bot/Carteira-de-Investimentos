@@ -54,6 +54,14 @@ function Principal() {
     return [...new Set(portfolioTickers)];
   }, [transactions]);
 
+  const rfTickers = useMemo(() => {
+    const set = new Set();
+    transactions.forEach(t => {
+      if (t.tipo && t.tipo.replace(/Fii/g, 'FII') === 'Renda Fixa') set.add(t.ticker);
+    });
+    return set;
+  }, [transactions]);
+
   const { prices, changes } = usePrices(tickers);
 
   const portfolio = useMemo(() => {
@@ -165,11 +173,13 @@ function Principal() {
     return { ticker: selectedTicker, qtdTotal, investidoTotal, atualTotal, valorizacaoPct, firstDate, lastDate, maxPreco, minPreco, maxDiv, minDiv };
   }, [selectedTicker, transactions, proventos, portfolio]);
 
-  const tickerItems = tickers.map((t) => ({
-    ticker: t,
-    price: prices[t] ?? 0,
-    change: changes[t] ?? 0,
-  }));
+  const tickerItems = tickers
+    .filter((t) => !rfTickers.has(t))
+    .map((t) => ({
+      ticker: t,
+      price: prices[t] ?? 0,
+      change: changes[t] ?? 0,
+    }));
 
   return (
     <div>

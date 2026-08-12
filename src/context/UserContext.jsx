@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import db from '../services/storage';
+import { useAuth } from './AuthContext';
 
 const UserContext = createContext(null);
 
@@ -7,11 +8,14 @@ const STORAGE_NAME = 'user';
 const AVATAR_IDB_KEY = 'investimento_user_avatar';
 
 export function UserProvider({ children }) {
+  const { user } = useAuth();
   const [userName, setUserName] = useState('');
   const [avatar, setAvatar] = useState(null);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
+    if (!user) return;
+
     let active = true;
     // Carrega userName e avatar juntos para evitar gravar userName vazio
     // antes da leitura do storage principal terminar (race condition).
@@ -25,7 +29,7 @@ export function UserProvider({ children }) {
       setLoaded(true);
     });
     return () => { active = false; };
-  }, []);
+  }, [user]);
 
   // Avatar redimensionado (máx 256px) cabe folgado na quota — salvo junto com
   // o nome para persistir em qualquer navegador/dispositivo (localStorage +
