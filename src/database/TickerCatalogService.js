@@ -4,6 +4,19 @@ const STORAGE_NAME = 'ativos';
 
 let cache = null;
 
+const LEGACY_KEYS = ['nome', 'cnpj', 'tipo', 'imagem', 'link'];
+
+function stripLegacyKeys(entry) {
+  if (!entry || typeof entry !== 'object') return entry;
+  const clean = { ...entry };
+  for (const k of LEGACY_KEYS) delete clean[k];
+  return clean;
+}
+
+function mergeWith(entry, sanitized) {
+  return stripLegacyKeys({ ...entry, ...sanitized });
+}
+
 export async function listar() {
   if (cache) return cache;
   const data = await db.read(STORAGE_NAME);
@@ -24,7 +37,7 @@ export async function adicionar(ativo) {
   };
   const existing = lista.findIndex(a => a.TICKER === sanitized.TICKER);
   if (existing !== -1) {
-    lista[existing] = { ...lista[existing], ...sanitized };
+    lista[existing] = mergeWith(lista[existing], sanitized);
   } else {
     lista.push(sanitized);
   }
@@ -45,7 +58,7 @@ export async function atualizar(ticker, dados) {
     IMAGEM: dados.IMAGEM ?? dados.imagem ?? '',
     LINK: dados.LINK ?? dados.link ?? ''
   };
-  lista[idx] = { ...lista[idx], ...normalized };
+  lista[idx] = mergeWith(lista[idx], normalized);
   await db.write(STORAGE_NAME, lista);
   cache = lista;
   return lista[idx];
@@ -96,7 +109,7 @@ export async function importarRegistros(ativos) {
     };
     const existing = lista.findIndex(a => a.TICKER === ticker);
     if (existing !== -1) {
-      lista[existing] = { ...lista[existing], ...sanitized };
+      lista[existing] = mergeWith(lista[existing], sanitized);
     } else {
       lista.push(sanitized);
     }

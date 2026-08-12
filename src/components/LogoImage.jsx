@@ -37,7 +37,9 @@ function loadAtivos() {
     listar()
   ).then((data) => {
     const map = {};
-    (data || []).forEach(a => { if (a && a.TICKER) map[a.TICKER.toUpperCase()] = a.IMAGEM || ''; });
+    (data || []).forEach(a => {
+      if (a && a.TICKER) map[a.TICKER.toUpperCase()] = a.IMAGEM || a.imagem || '';
+    });
     // Lista vazia (ex.: chamada antes da sessão ficar pronta) não deve travar
     // o cache — permite nova tentativa na próxima montagem.
     if (Object.keys(map).length === 0) cachePromise = null;
