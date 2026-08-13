@@ -838,7 +838,7 @@ function Graficos() {
             <div style={{ flex: 1, minHeight: 0 }}>
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={qtdData} layout="vertical" margin={{ left: 8, right: 30, top: 4, bottom: 4 }} barSize={36} barCategoryGap="50%">
-                  <XAxis type="number" tick={{ fill: 'var(--text-muted)', fontSize: 10 }} axisLine={{ stroke: 'var(--border)' }} tickLine={false} />
+                  <XAxis type="number" tick={{ fill: 'var(--text-muted)', fontSize: 10 }} axisLine={{ stroke: 'var(--border)' }} tickLine={false} padding={{ right: 45 }} />
                   <YAxis type="category" dataKey="name" tick={{ fill: 'var(--text)', fontSize: 12 }} axisLine={false} tickLine={false} width={100} interval={0} tickFormatter={(n) => String(n).replace(/ /g, '\u00A0')} />
                   <Tooltip cursor={false} contentStyle={tooltipStyle} formatter={(v) => [v.toLocaleString('pt-BR'), 'Quantidade']} />
                   <Bar dataKey="quantidade" radius={[0, 50, 50, 0]} cursor="pointer" activeBar={{ stroke: '#FFF', strokeWidth: 2, filter: 'brightness(1.15)' }}>
@@ -1149,7 +1149,7 @@ function Graficos() {
               <div style={{ flex: 1, minHeight: 0 }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={proventosMediaData} layout="vertical" margin={{ left: 30, right: 80, top: 10, bottom: 10 }} barSize={30} barCategoryGap="40%">
-                    <XAxis type="number" tick={{ fill: isLight ? '#000000' : 'var(--text-muted)', fontSize: 11 }} axisLine={{ stroke: 'var(--border)' }} tickLine={false} />
+                    <XAxis type="number" tick={{ fill: isLight ? '#000000' : 'var(--text-muted)', fontSize: 11 }} axisLine={{ stroke: 'var(--border)' }} tickLine={false} padding={{ right: 50 }} />
                     <YAxis type="category" dataKey="name" tick={{ fill: isLight ? '#000000' : 'var(--text)', fontSize: 12 }} axisLine={false} tickLine={false} width={30} />
                     <Tooltip cursor={false} contentStyle={tooltipStyle} formatter={(v) => formatCurrency(v)} />
                     <Bar dataKey="value" radius={[0, 50, 50, 0]} fill="#2E7D32" activeBar={{ stroke: '#FFF', strokeWidth: 2, filter: 'brightness(1.15)' }}>
@@ -1332,7 +1332,7 @@ function Graficos() {
               <LineChart data={patrimonioEvolData} margin={{ left: 30, right: 30, top: 30, bottom: 10 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                 <XAxis dataKey="name" tick={{ fill: 'var(--gold-soft)', fontSize: 13, fontWeight: 700 }} axisLine={{ stroke: 'var(--border)' }} tickLine={false} />
-                <YAxis tick={{ fill: 'var(--text-muted)', fontSize: 11 }} axisLine={{ stroke: 'var(--border)' }} tickLine={false} />
+                <YAxis tick={{ fill: 'var(--text-muted)', fontSize: 11 }} axisLine={{ stroke: 'var(--border)' }} tickLine={false} padding={{ top: 30 }} />
                 <Tooltip contentStyle={tooltipStyle} formatter={(v) => formatCurrency(v)} />
                 <Line type="monotone" dataKey="value" stroke="#2E7D32" strokeWidth={3} dot={{ r: 7, fill: '#2E7D32', stroke: '#2E7D32', strokeWidth: 0 }} animationDuration={2000}>
                   <LabelList dataKey="value" content={renderPatrimonioLabel} />
