@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { formatCurrency, formatNumber } from '../services/format';
 import { useProventos } from '../context/ProventosContext';
 import { useTransactions } from '../context/TransactionsContext';
@@ -50,6 +50,133 @@ function useLightTheme() {
   return isLight;
 }
 
+const editableBtnStyle = {
+  cursor: 'pointer',
+  background: '#C8B800',
+  color: '#121212',
+  border: 'none',
+  borderRadius: 6,
+  padding: '4px 12px',
+  fontSize: '0.82em',
+  fontFamily: 'inherit',
+  fontWeight: 600,
+};
+
+function EditableField({ value, formatCard, formatDraft, parse, initialDraft, placeholder, onSave, inputStyleOverride }) {
+  const [popoverPos, setPopoverPos] = useState(null);
+  const [draft, setDraft] = useState('');
+  const btnRef = useRef(null);
+
+  const fieldInputStyle = {
+    background: 'var(--surface-dark)',
+    color: 'var(--text)',
+    border: '1px solid #C8B800AA',
+    borderRadius: 6,
+    padding: '4px 8px',
+    fontSize: '0.82em',
+    fontFamily: 'inherit',
+    outline: 'none',
+    width: 90,
+    textAlign: 'right',
+  };
+
+  const openEditor = () => {
+    const el = btnRef.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    setDraft(initialDraft(value));
+    setPopoverPos({ top: r.bottom + 8, left: r.left });
+  };
+
+  const close = () => setPopoverPos(null);
+
+  const save = () => {
+    onSave(draft);
+    close();
+  };
+
+  return (
+    <>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <input
+          type="text"
+          inputMode="decimal"
+          readOnly
+          value={formatCard(value)}
+          placeholder={placeholder}
+          onClick={openEditor}
+          style={{ ...fieldInputStyle, ...(inputStyleOverride || {}), cursor: 'pointer' }}
+        />
+        <button
+          ref={btnRef}
+          type="button"
+          title="Editar"
+          aria-label="Editar"
+          onClick={openEditor}
+          style={{
+            cursor: 'pointer',
+            background: 'transparent',
+            border: 'none',
+            padding: 4,
+            lineHeight: 1,
+            display: 'flex',
+            alignItems: 'center',
+            flexShrink: 0,
+          }}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C8B800" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+            <path d="m15 5 4 4" />
+          </svg>
+        </button>
+      </div>
+      {popoverPos && (
+        <>
+          <div onClick={close} style={{ position: 'fixed', inset: 0, zIndex: 999 }} />
+          <div style={{
+            position: 'fixed',
+            top: popoverPos.top,
+            left: popoverPos.left,
+            zIndex: 1000,
+            background: 'var(--surface-dark)',
+            border: '1px solid #C8B80066',
+            borderRadius: 8,
+            padding: 10,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 8,
+            minWidth: 200,
+            boxShadow: '0 6px 20px rgba(0,0,0,0.45)',
+          }}>
+            <input
+              type="text"
+              inputMode="decimal"
+              autoFocus
+              value={formatDraft(draft)}
+              placeholder={placeholder}
+              onChange={e => setDraft(parse(e.target.value))}
+              onKeyDown={e => { if (e.key === 'Enter') save(); }}
+              style={{ ...fieldInputStyle, width: '100%', boxSizing: 'border-box', fontSize: '1em', padding: '6px 10px', textAlign: 'right' }}
+            />
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                onClick={close}
+                style={{ ...editableBtnStyle, background: 'transparent', color: 'var(--text-faint)', border: '1px solid var(--border)' }}
+              >Cancelar</button>
+              <button
+                type="button"
+                onClick={save}
+                style={editableBtnStyle}
+              >Salvar</button>
+            </div>
+          </div>
+        </>
+      )}
+    </>
+  );
+}
+
 function Meta() {
   const { proventos } = useProventos();
   const { transactions } = useTransactions();
@@ -57,7 +184,6 @@ function Meta() {
   const [anoFiltro, setAnoFiltro] = useState(() => String(new Date().getFullYear()));
   const [tipoFiltro, setTipoFiltro] = useState('');
   const { metas, updateMetas } = useMetas();
-  const [focusedInput, setFocusedInput] = useState(null);
 
   const uniqueAnos = useMemo(() => {
     return [...new Set(proventos.map(p => p.ano))].sort((a, b) => b - a);
@@ -133,19 +259,6 @@ function Meta() {
     });
   };
 
-  const inputStyle = {
-    background: 'var(--surface-dark)',
-    color: 'var(--text)',
-    border: '1px solid #C8B800AA',
-    borderRadius: 6,
-    padding: '4px 8px',
-    fontSize: '0.82em',
-    fontFamily: 'inherit',
-    outline: 'none',
-    width: 90,
-    textAlign: 'right',
-  };
-
   const barStyle = (pct, cor) => ({
     height: 12,
     borderRadius: 6,
@@ -163,22 +276,12 @@ function Meta() {
     return '#00E676';
   };
 
-  const formatDesejadoInput = (raw, focused) => {
-    if (!raw) return '';
-    const num = parseFloat(raw);
-    if (isNaN(num)) return '';
-    return focused ? num.toFixed(2) : formatCurrency(num);
-  };
-
   const parseDesejadoInput = (text) => {
     const digits = text.replace(/\D/g, '');
     if (!digits) return '';
     const cents = parseInt(digits, 10);
     return (cents / 100).toFixed(2);
   };
-
-  const globalDesejadoFocused = focusedInput === 'global-desejado';
-  const globalDesejadoDisplay = formatDesejadoInput(metasGlobal.recebimento, globalDesejadoFocused);
 
   return (
     <div className="page-meta">
@@ -199,15 +302,15 @@ function Meta() {
         <div className="widget-card">
           <div className="card-content" style={{ flex: 1 }}>
             <div className="label">VALOR MENSAL DESEJADO</div>
-            <input
-              type="text"
-              inputMode="decimal"
-              value={globalDesejadoDisplay}
+            <EditableField
+              value={metasGlobal.recebimento || ''}
+              formatCard={v => (parseFloat(v) || 0) > 0 ? formatCurrency(parseFloat(v)) : ''}
+              formatDraft={d => d ? formatNumber(parseFloat(d), 2) : ''}
+              parse={parseDesejadoInput}
+              initialDraft={v => (parseFloat(v) || 0) > 0 ? parseFloat(v).toFixed(2) : ''}
               placeholder="R$ 0,00"
-              onChange={e => handleMetaChange('__global__', 'recebimento', parseDesejadoInput(e.target.value))}
-              onFocus={() => setFocusedInput('global-desejado')}
-              onBlur={() => setFocusedInput(null)}
-              style={{ ...inputStyle, width: '100%', boxSizing: 'border-box', fontSize: '1.1em', padding: '6px 10px', textAlign: 'left' }}
+              onSave={d => handleMetaChange('__global__', 'recebimento', parseDesejadoInput(d))}
+              inputStyleOverride={{ width: '100%', boxSizing: 'border-box', fontSize: '1.1em', padding: '6px 10px', textAlign: 'left' }}
             />
           </div>
           <div className="card-icon icon-float" style={{ fontSize: 36 }}>🎯</div>
@@ -390,20 +493,23 @@ function Meta() {
                 <div style={{ marginTop: 14 }} />
 
                   <div style={{ fontSize: '0.82em' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '3px 0', flexWrap: 'wrap', marginBottom: 14 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '3px 0' }}>
                       <span style={{ color: 'var(--text-muted)', whiteSpace: 'nowrap', fontSize: '1.1em' }}>Cotas</span>
                       <span style={{ color: 'var(--text)', fontWeight: 600, whiteSpace: 'nowrap', fontSize: '1.1em' }}>
                         {formatNumber(quantidades[card.ticker] || 0, 0)}
                       </span>
-                      <span style={{ color: 'var(--text-muted)', whiteSpace: 'nowrap', marginLeft: 'auto' }}>Meta</span>
-                      <input
-                        type="text"
-                        inputMode="numeric"
-                        pattern="[0-9]*"
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '3px 0', marginBottom: 14 }}>
+                      <span style={{ color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>Meta</span>
+                      <EditableField
                         value={metasCard.meta || ''}
+                        formatCard={v => v}
+                        formatDraft={d => d}
+                        parse={d => d.replace(/\D/g, '')}
+                        initialDraft={v => v}
                         placeholder="0"
-                        onChange={e => handleMetaChange(card.ticker, 'meta', e.target.value.replace(/\D/g, ''))}
-                        style={{ ...inputStyle, minWidth: 48, maxWidth: 72 }}
+                        onSave={d => handleMetaChange(card.ticker, 'meta', d.replace(/\D/g, ''))}
+                        inputStyleOverride={{ minWidth: 48, maxWidth: 72 }}
                       />
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
