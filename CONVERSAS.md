@@ -176,3 +176,42 @@
 - Commit `cde101d` NÃO pushado para origin/main (deploy via CLI, não via GitHub)
 - Mudanças de outras sessões seguem sem commit (auth/metas/filtro RF): RfManualContext, TransactionsContext, UserContext, MetasContext (novo), main.jsx, Meta.jsx, Principal.jsx, storage.js, AGENTS.md
 - Para o outro computador ver o logo corrigido: salvar o link do TRXF11 uma vez pela UI (modal "Link da Imagem / Logo do Ativo")
+
+
+## 2026-08-12
+
+**Foco:** Card VALOR MENSAL DESEJADO (página Meta) trocou input direto por exibição de valor + popover de edição com lápis
+**Arquivos alterados:** src/pages/Meta.jsx
+**Decisões:**
+- Valor exibido como texto formatado (R$ X) com botão lápis; input agora vive em popover (Salvar/Cancelar) que fecha ao clicar fora
+- Popover pré-carrega valor atual e mantém máscara parseDesejadoInput/formatDesejadoInput; persistência continua via handleMetaChange('__global__', 'recebimento', ...) (MetasContext)
+- Removidos estado focusedInput e helpers globalDesejadoFocused/globalDesejadoDisplay (sem uso); adicionado estilo smallBtnStyle
+- Build de produção OK (apenas warnings pré-existentes de chunk size)
+**Pendências:**
+- Mesmas do dia 2026-08-11 (commits não pushados)
+
+
+## 2026-08-12 (2)
+
+**Foco:** Refatoração: componente reutilizável EditableField aplicado ao card global e ao campo Meta dos cards de ticker (página Meta)
+**Arquivos alterados:** src/pages/Meta.jsx, CONVERSAS.md
+**Decisões:**
+- Criado `EditableField` em Meta.jsx (fora de `Meta()`): input readOnly + lápis SVG + popover `position:fixed` (evita corte do `overflow:hidden` do .widget-card) posicionado via `getBoundingClientRect`, com props formatCard/formatDraft/parse/initialDraft/placeholder/onSave/inputStyleOverride
+- Card global VALOR MENSAL DESEJADO usa `EditableField` com máscara moeda pt-BR (vírgula em tempo real) e `onSave` persistindo em `handleMetaChange('__global__','recebimento', parseDesejadoInput(d))`
+- Campo Meta dos cards de ticker usa `EditableField` com parse só-dígitos (`.replace(/\D/g,'')`) e `onSave` → `handleMetaChange(card.ticker,'meta', ...)`
+- Removidos estado/funções antigos do popover global (`draftValor`, `popoverPos`, `editRef`, `openMetaEditor`, `closeMetaEditor`, `saveMetaEditor`) e estilos `inputStyle`/`smallBtnStyle` do corpo de `Meta()` (componente tem o seu próprio)
+- Build de produção OK; deploy via `vercel --prod` pendente após essa sessão
+**Pendências:**
+- Mesmas do dia 2026-08-11 (commits não pushados)
+
+
+## 2026-08-12 (3)
+
+**Foco:** Ajuste de layout do campo Meta nos cards de ticker (página Meta)
+**Arquivos alterados:** src/pages/Meta.jsx, CONVERSAS.md
+**Decisões:**
+- No card de ticker, o rótulo "Meta" e o campo de preenchimento agora ficam na mesma linha, abaixo da linha "Cotas" (antes tudo numa única linha com `flexWrap: wrap` e `marginLeft: auto`)
+- Estrutura: linha 1 = "Cotas" + valor; linha 2 = "Meta" + `EditableField` (sem quebra)
+- Build de produção OK; deploy feito via `vercel --prod` (alias carteira-de-investimentos-beryl.vercel.app, 19s)
+**Pendências:**
+- Mesmas do dia 2026-08-11 (commits não pushados)
