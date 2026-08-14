@@ -204,6 +204,14 @@
 **Pendências:**
 - Mesmas do dia 2026-08-11 (commits não pushados)
 
+## 2026-08-13
+
+**Foco:** Ajuste de cache no navegador (Edge) e correção de overflow dos rótulos nos gráficos da página Gráficos
+**Arquivos alterados:** src/pages/Graficos.jsx, CONVERSAS.md
+**Decisões:**
+- Logos de ativos: usuário confirmou que o problema era cache; solução `Ctrl+F5` (instruções de limpeza do Edge fornecidas). `db_ativos.json` já continha 99 logos não-bastter.
+- Gráficos com rótulo cortado (Quantidade de Ativos, Média Mensal dos Proventos, Evolução do Patrimônio): adicionado `padding` nos eixos — XAxis `right` nos gráficos de barra horizontal e YAxis `top` + XAxis `right` no de linha.
+- Push agora usa `git -c credential.helper=manager push` (o `gh` não está instalado e não há credential helper global).
 
 ## 2026-08-12 (3)
 
