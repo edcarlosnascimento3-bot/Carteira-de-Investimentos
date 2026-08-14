@@ -223,3 +223,16 @@
 - Build de produção OK; deploy feito via `vercel --prod` (alias carteira-de-investimentos-beryl.vercel.app, 19s)
 **Pendências:**
 - Mesmas do dia 2026-08-11 (commits não pushados)
+
+## 2026-08-14
+
+**Foco:** Logos vindos 100% do `db_ativos.json` (links da planilha) — corrigido MXRF11 e ativos que mostravam imagens não cadastradas
+**Arquivos alterados:** src/components/LogoImage.jsx, CONVERSAS.md
+**Decisões:**
+- Usuário esclareceu que subiu planilha para popular o `db_ativos` e que as imagens devem vir desses links (incluindo as automáticas do Bastter) — não são só as manuais
+- Diagnóstico: Supabase `app_data` NÃO tem o catálogo `ativos` (0 registros com anon key) → o navegador lia dados antigos do localStorage/IndexedDB com imagens de StatusInvest/TradingView etc. salvas pelo código anterior; o MXRF11 estava sim no `db_ativos.json` com `files.bastter.com/fii/MXRF11.gif`
+- `LogoImage` reescrito para importar **diretamente** `db_ativos.json` (`import dbAtivos`) e montar `ativosMap` TICKER→IMAGEM, eliminando a dependência do storage persistido; mantido evento `ticker-logo-updated` para edição via UI e fallback letra inicial
+- Removidas todas as fontes externas (Clearbit, TradingView, StatusInvest, cryptologos, favicons) — já não existiam desde o commit 7942d33, agora nem o storage é consultado
+- Build OK (826 módulos; bundle 1.486 kB por causa do JSON embutido); commit `e919de6` + push `7942d33..e919de6` → deploy Vercel ● Ready
+**Pendências:**
+- Usuário deve abrir https://carteira-de-investimentos-beryl.vercel.app/ e fazer hard refresh (Ctrl+F5)/limpar dados do site para descartar caches antigos
