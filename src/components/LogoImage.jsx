@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback } from 'react';
-import domains from '../data/companyDomains';
 
 const indexMap = {};
 let nextIdx = 1;
@@ -9,22 +8,6 @@ function hashColor(ticker) {
     indexMap[ticker] = palette[(nextIdx++) % palette.length];
   }
   return indexMap[ticker];
-}
-
-const cryptoNameMap = {
-  BTC: 'bitcoin', ETH: 'ethereum', SOL: 'solana', ADA: 'cardano',
-  XRP: 'xrp', DOGE: 'dogecoin', DOT: 'polkadot', MATIC: 'polygon',
-  AVAX: 'avalanche', LINK: 'chainlink', UNI: 'uniswap', ATOM: 'cosmos',
-};
-
-function isCrypto(t) {
-  if (['DOLAR', 'EURO'].includes(t)) return false;
-  return !/[0-9]/.test(t) && t === t.toUpperCase() && t.length <= 5;
-}
-
-const URL_UNSAFE = /[^a-zA-Z0-9]/g;
-function sanitizeTicker(t) {
-  return t.replace(URL_UNSAFE, '');
 }
 
 let ativosCache = null;
@@ -60,84 +43,29 @@ if (typeof window !== 'undefined') {
   });
 }
 
-function getLogoSources(ticker, imagemUrl) {
-  if (!ticker) return [];
-  const t = ticker.toUpperCase();
-  const domain = domains[t];
-  const sources = [];
-
-  if (imagemUrl) {
-    sources.push(imagemUrl);
-  }
-
-  if (domain) {
-    const clearbitUrl = `https://logo.clearbit.com/${domain}`;
-    if (!sources.includes(clearbitUrl)) sources.push(clearbitUrl);
-  }
-
-  if (/[0-9]/.test(t)) {
-    const st = sanitizeTicker(t);
-    sources.push(`https://s3-symbol-logo.tradingview.com/brazil/${st}--big.svg`);
-    sources.push(`https://statusinvest.com.br/img/company/avatar/${st.toLowerCase()}.jpeg`);
-  }
-
-  if (isCrypto(t)) {
-    const lc = t.toLowerCase();
-    sources.push(`https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/${lc}.png`);
-    if (cryptoNameMap[t]) {
-      const name = cryptoNameMap[t];
-      sources.push(`https://cryptologos.cc/logos/${name}-${lc}-logo.png?v=040`);
-    }
-  }
-
-  if (domain) {
-    sources.push(`https://www.google.com/s2/favicons?domain=${domain}&sz=64`);
-  }
-
-  return sources;
-}
-
 function LogoImage({ ticker, fallback, style, size }) {
-  const [srcIdx, setSrcIdx] = useState(0);
   const [imagemUrl, setImagemUrl] = useState(null);
   const [ready, setReady] = useState(false);
   const s = size || 32;
   const bg = hashColor(ticker || '');
 
-  const advance = useCallback(() => {
-    setSrcIdx((i) => {
-      const next = i + 1;
-      console.debug(`[LogoImage] ${ticker} fallback ${i} -> ${next}`);
-      return next;
-    });
-  }, [ticker]);
-
-  const handleLoad = useCallback((e) => {
-    const src = e.target.currentSrc || e.target.src;
-    const phantomPixel = src && src.includes('logo.clearbit.com') &&
-      e.target.naturalWidth <= 1 && e.target.naturalHeight <= 1;
-    if (phantomPixel) {
-      console.debug(`[LogoImage] ${ticker} Clearbit phantom pixel detected, advancing`);
-      advance();
-    }
-  }, [ticker, advance]);
+  const handleError = useCallback(() => {
+    setImagemUrl(null);
+  }, []);
 
   useEffect(() => {
     if (!ticker) return;
     let cancelled = false;
     setReady(false);
-    setSrcIdx(0);
     loadAtivos().then(map => {
       if (cancelled) return;
       setImagemUrl(map[ticker.toUpperCase()] || null);
       setReady(true);
-      setSrcIdx(0);
     });
 
     const handleUpdate = (e) => {
       if (e.detail && e.detail.ticker.toUpperCase() === ticker.toUpperCase()) {
         setImagemUrl(e.detail.url || null);
-        setSrcIdx(0);
       }
     };
 
@@ -173,9 +101,7 @@ function LogoImage({ ticker, fallback, style, size }) {
     return <span style={containerStyle} />;
   }
 
-  const sources = getLogoSources(ticker, imagemUrl);
-
-  if (srcIdx >= sources.length) {
+  if (!imagemUrl) {
     return (
       <span style={{ ...containerStyle, background: bg, fontSize: s * 0.45, fontWeight: 700, color: '#FFFFFF' }}>
         {fallback || ticker[0]}
@@ -186,13 +112,11 @@ function LogoImage({ ticker, fallback, style, size }) {
   return (
     <span style={containerStyle}>
       <img
-        key={srcIdx}
-        src={sources[srcIdx]}
+        src={imagemUrl}
         alt={ticker}
         referrerPolicy="no-referrer"
         style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-        onError={advance}
-        onLoad={handleLoad}
+        onError={handleError}
       />
     </span>
   );
