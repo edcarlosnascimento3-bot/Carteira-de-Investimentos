@@ -1331,8 +1331,8 @@ function Graficos() {
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={patrimonioEvolData} margin={{ left: 30, right: 30, top: 30, bottom: 10 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                <XAxis dataKey="name" tick={{ fill: 'var(--gold-soft)', fontSize: 13, fontWeight: 700 }} axisLine={{ stroke: 'var(--border)' }} tickLine={false} />
-                <YAxis tick={{ fill: 'var(--text-muted)', fontSize: 11 }} axisLine={{ stroke: 'var(--border)' }} tickLine={false} padding={{ top: 30 }} />
+                <XAxis dataKey="name" tick={{ fill: 'var(--gold-soft)', fontSize: 13, fontWeight: 700 }} axisLine={{ stroke: 'var(--border)' }} tickLine={false} padding={{ right: 40 }} />
+                <YAxis tick={{ fill: 'var(--text-muted)', fontSize: 11 }} axisLine={{ stroke: 'var(--border)' }} tickLine={false} padding={{ top: 45 }} />
                 <Tooltip contentStyle={tooltipStyle} formatter={(v) => formatCurrency(v)} />
                 <Line type="monotone" dataKey="value" stroke="#2E7D32" strokeWidth={3} dot={{ r: 7, fill: '#2E7D32', stroke: '#2E7D32', strokeWidth: 0 }} animationDuration={2000}>
                   <LabelList dataKey="value" content={renderPatrimonioLabel} />
