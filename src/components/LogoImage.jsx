@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import dbAtivos from '../../db_ativos.json';
 
 const indexMap = {};
 let nextIdx = 1;
@@ -10,38 +11,10 @@ function hashColor(ticker) {
   return indexMap[ticker];
 }
 
-let ativosCache = null;
-let cachePromise = null;
-
-function loadAtivos() {
-  if (ativosCache) return Promise.resolve(ativosCache);
-  if (cachePromise) return cachePromise;
-  cachePromise = import('../database/TickerCatalogService').then(({ listar }) =>
-    listar()
-  ).then((data) => {
-    const map = {};
-    (data || []).forEach(a => {
-      if (a && a.TICKER) map[a.TICKER.toUpperCase()] = a.IMAGEM || a.imagem || '';
-    });
-    // Lista vazia (ex.: chamada antes da sessão ficar pronta) não deve travar
-    // o cache — permite nova tentativa na próxima montagem.
-    if (Object.keys(map).length === 0) cachePromise = null;
-    else ativosCache = map;
-    return map;
-  }).catch(() => {
-    cachePromise = null;
-    return {};
-  });
-  return cachePromise;
-}
-
-if (typeof window !== 'undefined') {
-  window.addEventListener('ticker-logo-updated', (e) => {
-    if (ativosCache && e.detail) {
-      ativosCache[e.detail.ticker.toUpperCase()] = e.detail.url;
-    }
-  });
-}
+const ativosMap = (Array.isArray(dbAtivos) ? dbAtivos : []).reduce((map, a) => {
+  if (a && a.TICKER) map[a.TICKER.toUpperCase()] = a.IMAGEM || '';
+  return map;
+}, {});
 
 function LogoImage({ ticker, fallback, style, size }) {
   const [imagemUrl, setImagemUrl] = useState(null);
@@ -55,13 +28,9 @@ function LogoImage({ ticker, fallback, style, size }) {
 
   useEffect(() => {
     if (!ticker) return;
-    let cancelled = false;
     setReady(false);
-    loadAtivos().then(map => {
-      if (cancelled) return;
-      setImagemUrl(map[ticker.toUpperCase()] || null);
-      setReady(true);
-    });
+    setImagemUrl(ativosMap[ticker.toUpperCase()] || null);
+    setReady(true);
 
     const handleUpdate = (e) => {
       if (e.detail && e.detail.ticker.toUpperCase() === ticker.toUpperCase()) {
@@ -70,10 +39,7 @@ function LogoImage({ ticker, fallback, style, size }) {
     };
 
     window.addEventListener('ticker-logo-updated', handleUpdate);
-    return () => {
-      cancelled = true;
-      window.removeEventListener('ticker-logo-updated', handleUpdate);
-    };
+    return () => window.removeEventListener('ticker-logo-updated', handleUpdate);
   }, [ticker]);
 
   const containerStyle = {
