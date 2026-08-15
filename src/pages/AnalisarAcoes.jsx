@@ -7,6 +7,36 @@ const selectStyle = {
   cursor: 'pointer', outline: 'none', textAlign: 'center', textAlignLast: 'center',
 };
 
+const secaoIndicadores = [
+  {
+    titulo: 'Indicadores de Valuation',
+    itens: [
+      'D.Y', 'P/L', 'PEG RATIO', 'P/VP', 'EV/EBITIDA', 'EV/EBIT',
+      'P/EBITIDA', 'P/EBIT', 'VPA', 'P/ATIVO', 'LPA', 'P/SR',
+      'P/CAP GIRO', 'P/ATIVO CIRC LIQ.',
+    ],
+  },
+  {
+    titulo: 'Indicadores de Endividamento',
+    itens: [
+      'DIV. LIQUIDA/PL', 'DIV. LIQUIDA/EBITIDA', 'DIV. LIQUIDA/EBIT',
+      'PL/ATIVOS', 'PASSIVOS/ATIVOS', 'LIQ. CORRENTE',
+    ],
+  },
+  {
+    titulo: 'Indicadores de Eficiência',
+    itens: ['M. BRUTA', 'M. EBITIDA', 'M. EBIT', 'M. LIQUÍDA'],
+  },
+  {
+    titulo: 'Indicadores de Rentabilidade',
+    itens: ['ROE', 'ROA', 'ROIC', 'GIRO ATIVOS'],
+  },
+  {
+    titulo: 'Indicadores de Crescimento',
+    itens: ['CAGR RECEITA  ANOS', 'CAGR LUCROS  ANOS'],
+  },
+];
+
 function AnalisarAcoes() {
   const [allStocks, setAllStocks] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -26,10 +56,6 @@ function AnalisarAcoes() {
   const sortedStocks = useMemo(() => {
     return [...allStocks].sort((a, b) => a.stock.localeCompare(b.stock));
   }, [allStocks]);
-
-  const selectedInfo = useMemo(() => {
-    return allStocks.find(s => s.stock === selected) || null;
-  }, [allStocks, selected]);
 
   return (
     <div>
@@ -54,23 +80,23 @@ function AnalisarAcoes() {
         </select>
       </div>
 
-      {selected && selectedInfo && (
-        <div style={{
-          background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10,
-          padding: '14px 20px', marginBottom: 24,
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-            <span style={{ fontSize: '1.3em', fontWeight: 700, color: '#C8B800' }}>{selectedInfo.stock}</span>
-            <span style={{ color: 'var(--text-soft)', fontSize: '0.95em' }}>{selectedInfo.name}</span>
-            {selectedInfo.sector && (
-              <span style={{
-                fontSize: '0.75em', padding: '3px 10px', borderRadius: 6,
-                background: 'var(--surface-hover)', color: 'var(--text-soft)',
-              }}>{selectedInfo.sector}</span>
-            )}
+      {secaoIndicadores.map((secao, si) => (
+        <div key={si} style={{ marginBottom: si === secaoIndicadores.length - 1 ? 0 : 30 }}>
+          <div style={{
+            color: '#C8B800', fontWeight: 700, fontSize: '0.9em', letterSpacing: '1px',
+            marginBottom: 10,
+          }}>
+            {secao.titulo}
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {secao.itens.map((item, ii) => (
+              <div key={ii} style={{ color: 'var(--text)', fontSize: '0.88em' }}>
+                {item}
+              </div>
+            ))}
           </div>
         </div>
-      )}
+      ))}
     </div>
   );
 }
