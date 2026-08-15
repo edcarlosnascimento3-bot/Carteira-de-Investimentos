@@ -265,24 +265,24 @@ function Principal() {
 
         <div className="widget-card">
           <div className="card-content">
-            <div className="label">RENDIMENTOS</div>
-            <div className="value" style={{ color: rendimentosAno > 0 ? '#00E676' : 'var(--text-faint)' }}>
-              {formatCurrency(rendimentosAno)}
+            <div className="label">DIVIDENDOS</div>
+            <div className="value" style={{ color: dividendosMes > 0 ? '#00E676' : 'var(--text-faint)' }}>
+              {formatCurrency(dividendosMes)}
             </div>
-            <div className="change positive">ano atual</div>
+            <div className="change positive">Este mês</div>
           </div>
-          <div className="card-icon icon-float" style={{ fontSize: 36 }}>📈</div>
+          <div className="card-icon icon-bounce" style={{ fontSize: 36 }}>💵</div>
         </div>
 
         <div className="widget-card">
           <div className="card-content">
             <div className="label">DIVIDENDOS</div>
-            <div className="value" style={{ color: dividendosMes > 0 ? '#00E676' : 'var(--text-faint)' }}>
-              {formatCurrency(dividendosMes)}
+            <div className="value" style={{ color: rendimentosAno > 0 ? '#00E676' : 'var(--text-faint)' }}>
+              {formatCurrency(rendimentosAno)}
             </div>
-            <div className="change positive">este mês</div>
+            <div className="change positive">Ano atual</div>
           </div>
-          <div className="card-icon icon-bounce" style={{ fontSize: 36 }}>💵</div>
+          <div className="card-icon icon-float" style={{ fontSize: 36 }}>📈</div>
         </div>
 
         <div className="widget-card">

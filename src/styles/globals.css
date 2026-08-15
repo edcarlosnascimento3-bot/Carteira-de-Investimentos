@@ -530,7 +530,7 @@ body {
 .widget-card .card-content {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 10px;
   position: relative;
   z-index: 1;
 }
