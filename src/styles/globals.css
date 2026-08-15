@@ -383,7 +383,7 @@ body {
   font-size: 0.55em;
   text-transform: uppercase;
   letter-spacing: 1.5px;
-  color: var(--text-faint);
+  color: #FFFFFF;
   font-weight: 600;
 }
 
@@ -441,6 +441,11 @@ body {
   font-family: 'JetBrains Mono', monospace;
   text-align: left;
   white-space: nowrap;
+}
+
+[data-theme='light'] .cotas-label,
+[data-theme='light'] .info-label {
+  color: #000000;
 }
 
 .asset-card-arrow {
