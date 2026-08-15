@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { fetchAllStocksWithSectors } from '../services/api';
+import { fetchAllStocksWithSectors, fetchBrapiAnalysisData } from '../services/api';
 
 const selectStyle = {
   background: 'var(--surface-dark)', color: 'var(--text)', border: '1px solid #C8B800AA',
@@ -41,6 +41,9 @@ function AnalisarAcoes() {
   const [allStocks, setAllStocks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState('');
+  const [dados, setDados] = useState(null);
+  const [loadingDados, setLoadingDados] = useState(false);
+  const [apiError, setApiError] = useState(null);
 
   useEffect(() => {
     setLoading(true);
@@ -52,6 +55,30 @@ function AnalisarAcoes() {
       setLoading(false);
     });
   }, []);
+
+  useEffect(() => {
+    if (!selected) {
+      setDados(null);
+      setApiError(null);
+      return;
+    }
+    let cancelled = false;
+    setLoadingDados(true);
+    setApiError(null);
+    fetchBrapiAnalysisData(selected).then(data => {
+      if (cancelled) return;
+      setDados(data);
+      if (!data) setApiError('Dados fundamentalistas não disponíveis para este ativo.');
+      setLoadingDados(false);
+    }).catch(() => {
+      if (!cancelled) {
+        setDados(null);
+        setApiError('Erro ao carregar os dados.');
+        setLoadingDados(false);
+      }
+    });
+    return () => { cancelled = true; };
+  }, [selected]);
 
   const sortedStocks = useMemo(() => {
     return [...allStocks].sort((a, b) => a.stock.localeCompare(b.stock));
@@ -78,7 +105,21 @@ function AnalisarAcoes() {
             </option>
           ))}
         </select>
+        {loadingDados && (
+          <span style={{ color: 'var(--text-faint)', fontSize: '0.85em' }}>
+            Carregando indicadores...
+          </span>
+        )}
       </div>
+
+      {apiError && !loadingDados && (
+        <div style={{
+          background: '#FF555522', border: '1px solid #FF555544', borderRadius: 8,
+          padding: '12px 16px', color: '#FF5555', fontSize: '0.9em', marginBottom: 20,
+        }}>
+          {apiError}
+        </div>
+      )}
 
       {secaoIndicadores.map((secao, si) => (
         <div key={si} style={{ marginBottom: si === secaoIndicadores.length - 1 ? 0 : 30 }}>
@@ -90,8 +131,11 @@ function AnalisarAcoes() {
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             {secao.itens.map((item, ii) => (
-              <div key={ii} style={{ color: 'var(--text)', fontSize: '0.88em' }}>
-                {item}
+              <div key={ii} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.88em' }}>
+                <span style={{ color: 'var(--text)' }}>{item}</span>
+                <span style={{ color: '#C8B800', fontWeight: 700, fontFamily: "'Consolas', monospace" }}>
+                  {dados ? dados[item] ?? '—' : '—'}
+                </span>
               </div>
             ))}
           </div>

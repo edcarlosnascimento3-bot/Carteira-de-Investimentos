@@ -516,4 +516,94 @@ export async function fetchAllStocksWithSectors() {
   }
 }
 
+/**
+ * Busca dados fundamentalistas completos para exibicao na analise de acoes
+ * Mapeia cada indicador da lista da pagina para o campo correspondente da brapi
+ * @param {string} ticker - Ex: 'PETR4'
+ * @returns {Promise<Object|null>} Mapa { nomeIndicador: valorFormatado }
+ */
+export async function fetchBrapiAnalysisData(ticker) {
+  try {
+    const symbol = ticker.replace('.SA', '');
+    const url = `/api/brapi/quote/${symbol}?modules=defaultKeyStatistics,financialData&token=${API_CONFIG.brapi.token}`;
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const json = await res.json();
+    const item = json?.results?.[0];
+    if (!item) return null;
+
+    const stats = item.defaultKeyStatistics?.[0] || {};
+    const fin = item.financialData?.[0] || {};
+
+    const val = (v) => (v == null || isNaN(Number(v)) ? null : Number(v));
+    const pct = (v) => (v == null ? '—' : `${(v * 100).toFixed(2)}%`);
+    const n2 = (v) => (v == null ? '—' : v.toFixed(2));
+    const ratio = (num, den) => (num == null || den == null || den === 0 ? '—' : (num / den).toFixed(2));
+
+    const trailingPE = val(stats.trailingPE);
+    const priceToBook = val(stats.priceToBook);
+    const dividendYield = val(stats.dividendYield);
+    const pegRatio = val(stats.pegRatio);
+    const enterpriseToEbitda = val(stats.enterpriseToEbitda);
+    const enterpriseValue = val(stats.enterpriseValue);
+    const bookValue = val(stats.bookValue);
+    const trailingEps = val(stats.trailingEps);
+    const marketCap = val(stats.marketCap);
+    const shares = val(stats.sharesOutstanding);
+
+    const totalDebt = val(fin.totalDebt);
+    const totalCash = val(fin.totalCash);
+    const ebitda = val(fin.ebitda);
+    const totalRevenue = val(fin.totalRevenue);
+    const grossMargins = val(fin.grossMargins);
+    const ebitdaMargins = val(fin.ebitdaMargins);
+    const operatingMargins = val(fin.operatingMargins);
+    const profitMargins = val(fin.profitMargins);
+    const returnOnEquity = val(fin.returnOnEquity);
+    const returnOnAssets = val(fin.returnOnAssets);
+    const currentRatio = val(fin.currentRatio);
+    const revenueGrowthAnnual = val(fin.revenueGrowthAnnual);
+    const earningsGrowthAnnual = val(fin.earningsGrowthAnnual);
+
+    const ebit = operatingMargins != null && totalRevenue != null ? operatingMargins * totalRevenue : null;
+    const dividaLiquida = totalDebt != null && totalCash != null ? totalDebt - totalCash : null;
+    const patrimonio = bookValue != null && shares != null ? bookValue * shares : null;
+
+    return {
+      'D.Y': pct(dividendYield),
+      'P/L': n2(trailingPE),
+      'PEG RATIO': n2(pegRatio),
+      'P/VP': n2(priceToBook),
+      'EV/EBITIDA': n2(enterpriseToEbitda),
+      'EV/EBIT': ratio(enterpriseValue, ebit),
+      'P/EBITIDA': ratio(marketCap, ebitda),
+      'P/EBIT': ratio(marketCap, ebit),
+      'VPA': n2(bookValue),
+      'P/ATIVO': '—',
+      'LPA': n2(trailingEps),
+      'P/SR': ratio(marketCap, totalRevenue),
+      'P/CAP GIRO': '—',
+      'P/ATIVO CIRC LIQ.': '—',
+      'DIV. LIQUIDA/PL': ratio(dividaLiquida, patrimonio),
+      'DIV. LIQUIDA/EBITIDA': ratio(dividaLiquida, ebitda),
+      'DIV. LIQUIDA/EBIT': ratio(dividaLiquida, ebit),
+      'PL/ATIVOS': '—',
+      'PASSIVOS/ATIVOS': '—',
+      'LIQ. CORRENTE': n2(currentRatio),
+      'M. BRUTA': pct(grossMargins),
+      'M. EBITIDA': pct(ebitdaMargins),
+      'M. EBIT': pct(operatingMargins),
+      'M. LIQUÍDA': pct(profitMargins),
+      'ROE': pct(returnOnEquity),
+      'ROA': pct(returnOnAssets),
+      'ROIC': '—',
+      'GIRO ATIVOS': '—',
+      'CAGR RECEITA  ANOS': pct(revenueGrowthAnnual),
+      'CAGR LUCROS  ANOS': pct(earningsGrowthAnnual),
+    };
+  } catch {
+    return null;
+  }
+}
+
 export default API_CONFIG;
