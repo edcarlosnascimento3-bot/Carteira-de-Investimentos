@@ -421,16 +421,16 @@ body {
 .info-row {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 2px;
 }
 
 .info-label {
   font-size: 0.58em;
-  color: var(--text-faint);
+  color: #FFFFFF;
   text-transform: uppercase;
   letter-spacing: 0.8px;
   flex-shrink: 0;
-  width: 72px;
+  width: 52px;
   white-space: nowrap;
   font-weight: 600;
 }
