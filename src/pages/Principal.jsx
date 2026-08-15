@@ -132,6 +132,10 @@ function Principal() {
       .reduce((soma, p) => soma + (p.dividendos || 0) + (p.jcp || 0) + (p.rendimento || 0) + (p.reembolso || 0), 0);
   }, [proventos]);
 
+  const dividendosAcumulado = useMemo(() => {
+    return proventos.reduce((soma, p) => soma + (p.dividendos || 0) + (p.jcp || 0) + (p.rendimento || 0) + (p.reembolso || 0), 0);
+  }, [proventos]);
+
   const formatNumber = (v) =>
     v.toLocaleString('pt-BR');
 
@@ -252,23 +256,23 @@ function Principal() {
 
         <div className="widget-card">
           <div className="card-content">
+            <div className="label">DIVIDENDOS</div>
+            <div className="value" style={{ color: dividendosAcumulado > 0 ? '#00E676' : 'var(--text-faint)' }}>
+              {formatCurrency(dividendosAcumulado)}
+            </div>
+            <div className="change positive">Acumulado</div>
+          </div>
+          <div className="card-icon icon-bounce" style={{ fontSize: 36 }}>💵</div>
+        </div>
+
+        <div className="widget-card">
+          <div className="card-content">
             <div className="label">RENDIMENTO</div>
             <div className="value" style={{ color: totals.diferenca >= 0 ? '#00E676' : '#FF3D71' }}>
               {totals.diferenca >= 0 ? '+' : ''}{formatNumber(totals.rendimentoPct)}%
             </div>
           </div>
           <div className="card-icon icon-float" style={{ fontSize: 36 }}>📊</div>
-        </div>
-
-        <div className="widget-card" style={{
-          background: 'linear-gradient(135deg, rgba(255,61,113,0.08) 0%, rgba(255,61,113,0.03) 100%)',
-          borderColor: 'rgba(255,61,113,0.25)'
-        }}>
-          <div className="card-content">
-            <div className="label" style={{ color: '#FF3D71' }}>TAXAS</div>
-            <div className="value">{formatCurrency(totals.totalTax)}</div>
-          </div>
-          <div className="card-icon icon-bounce" style={{ fontSize: 36 }}>🧾</div>
         </div>
       </div>
 
