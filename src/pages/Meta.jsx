@@ -221,6 +221,7 @@ function Meta() {
       }
     });
     return Object.values(groups)
+      .filter(g => (quantidades[g.ticker] || 0) >= 1)
       .map(g => {
         const total = g.meses.reduce((s, v) => s + v, 0);
         const mesesComValor = g.meses.filter(v => v > 0).length;
