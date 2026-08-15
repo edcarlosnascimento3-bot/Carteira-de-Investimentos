@@ -544,13 +544,17 @@ body {
   font-size: 0.68em;
   text-transform: uppercase;
   letter-spacing: 2px;
-  color: var(--text-faint);
+  color: #FFFFFF;
   font-weight: 600;
   font-family: 'Outfit', sans-serif;
 }
 
+[data-theme='light'] .widget-card .label {
+  color: #000000;
+}
+
 .widget-card .value {
-  font-size: 1.35em;
+  font-size: 1.15em;
   font-weight: 700;
   color: var(--text-soft);
   font-family: 'Outfit', sans-serif;

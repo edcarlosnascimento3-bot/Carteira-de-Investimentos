@@ -136,6 +136,16 @@ function Principal() {
     return proventos.reduce((soma, p) => soma + (p.dividendos || 0) + (p.jcp || 0) + (p.rendimento || 0) + (p.reembolso || 0), 0);
   }, [proventos]);
 
+  const rendimentosAno = useMemo(() => {
+    const ano = new Date().getFullYear();
+    return proventos
+      .filter((p) => {
+        const partes = p.data?.split('/');
+        return partes && Number(partes[2]) === ano;
+      })
+      .reduce((soma, p) => soma + (p.rendimento || 0), 0);
+  }, [proventos]);
+
   const formatNumber = (v) =>
     v.toLocaleString('pt-BR');
 
@@ -245,6 +255,27 @@ function Principal() {
 
         <div className="widget-card">
           <div className="card-content">
+            <div className="label">RENDIMENTO</div>
+            <div className="value" style={{ color: totals.diferenca >= 0 ? '#00E676' : '#FF3D71' }}>
+              {totals.diferenca >= 0 ? '+' : ''}{formatNumber(totals.rendimentoPct)}%
+            </div>
+          </div>
+          <div className="card-icon icon-float" style={{ fontSize: 36 }}>📊</div>
+        </div>
+
+        <div className="widget-card">
+          <div className="card-content">
+            <div className="label">RENDIMENTOS</div>
+            <div className="value" style={{ color: rendimentosAno > 0 ? '#00E676' : 'var(--text-faint)' }}>
+              {formatCurrency(rendimentosAno)}
+            </div>
+            <div className="change positive">ano atual</div>
+          </div>
+          <div className="card-icon icon-float" style={{ fontSize: 36 }}>📈</div>
+        </div>
+
+        <div className="widget-card">
+          <div className="card-content">
             <div className="label">DIVIDENDOS</div>
             <div className="value" style={{ color: dividendosMes > 0 ? '#00E676' : 'var(--text-faint)' }}>
               {formatCurrency(dividendosMes)}
@@ -263,16 +294,6 @@ function Principal() {
             <div className="change positive">Acumulado</div>
           </div>
           <div className="card-icon icon-bounce" style={{ fontSize: 36 }}>💵</div>
-        </div>
-
-        <div className="widget-card">
-          <div className="card-content">
-            <div className="label">RENDIMENTO</div>
-            <div className="value" style={{ color: totals.diferenca >= 0 ? '#00E676' : '#FF3D71' }}>
-              {totals.diferenca >= 0 ? '+' : ''}{formatNumber(totals.rendimentoPct)}%
-            </div>
-          </div>
-          <div className="card-icon icon-float" style={{ fontSize: 36 }}>📊</div>
         </div>
       </div>
 
