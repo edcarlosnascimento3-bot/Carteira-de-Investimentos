@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import dbAtivos from '../../db_ativos.json';
+import { getTickerInfo } from '../services/tickerRegistry';
 
 const indexMap = {};
 let nextIdx = 1;
@@ -29,7 +30,17 @@ function LogoImage({ ticker, fallback, style, size }) {
   useEffect(() => {
     if (!ticker) return;
     setReady(false);
-    setImagemUrl(ativosMap[ticker.toUpperCase()] || null);
+
+    const key = ticker.toUpperCase();
+    let url = ativosMap[key] || null;
+    try {
+      const info = getTickerInfo(key);
+      if (info && info.imagem) url = info.imagem;
+    } catch (e) {
+      console.warn('[LogoImage] getTickerInfo error:', e);
+    }
+
+    setImagemUrl(url);
     setReady(true);
 
     const handleUpdate = (e) => {
