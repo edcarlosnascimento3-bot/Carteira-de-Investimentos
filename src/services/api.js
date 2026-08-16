@@ -517,38 +517,56 @@ export async function fetchAllStocksWithSectors() {
 }
 
 /**
- * Busca dados fundamentalistas completos para exibicao na analise de acoes
- * Mapeia cada indicador da lista da pagina para o campo correspondente da brapi
+ * Busca dados fundamentalistas para exibicao na analise de acoes
+ * Tenta modules (defaultKeyStatistics/financialData) para dados completos;
+ * fallback para dados basicos (priceEarnings/earningsPerShare) que funcionam para todos os ativos.
  * @param {string} ticker - Ex: 'PETR4'
  * @returns {Promise<Object|null>} Mapa { nomeIndicador: valorFormatado }
  */
 export async function fetchBrapiAnalysisData(ticker) {
   try {
     const symbol = ticker.replace('.SA', '');
-    const url = `/api/brapi/quote/${symbol}?modules=defaultKeyStatistics,financialData&token=${API_CONFIG.brapi.token}`;
-    const res = await fetch(url);
-    if (!res.ok) return null;
-    const json = await res.json();
-    const item = json?.results?.[0];
-    if (!item) return null;
+    const token = API_CONFIG.brapi.token;
 
-    const stats = item.defaultKeyStatistics || {};
-    const fin = item.financialData || {};
+    // Busca basica (disponivel para todos os ativos)
+    const resBasic = await fetch(`/api/brapi/quote/${symbol}?token=${token}`);
+    if (!resBasic.ok) return null;
+    const jsonBasic = await resBasic.json();
+    const itemBasic = jsonBasic?.results?.[0];
+    if (!itemBasic) return null;
+
+    const priceEarnings = itemBasic.priceEarnings;
+    const earningsPerShare = itemBasic.earningsPerShare;
+    const marketCapBasic = itemBasic.marketCap;
+
+    // Busca modules (disponivel apenas para alguns ativos)
+    let stats = {};
+    let fin = {};
+    try {
+      const resMod = await fetch(`/api/brapi/quote/${symbol}?modules=defaultKeyStatistics,financialData&token=${token}`);
+      if (resMod.ok) {
+        const jsonMod = await resMod.json();
+        const itemMod = jsonMod?.results?.[0];
+        stats = itemMod?.defaultKeyStatistics || {};
+        fin = itemMod?.financialData || {};
+      }
+    } catch { /* modules indisponiveis, usa dados basicos */ }
 
     const val = (v) => (v == null || isNaN(Number(v)) ? null : Number(v));
     const pct = (v) => (v == null ? '—' : `${(v * 100).toFixed(2)}%`);
     const n2 = (v) => (v == null ? '—' : v.toFixed(2));
     const ratio = (num, den) => (num == null || den == null || den === 0 ? '—' : (num / den).toFixed(2));
 
-    const trailingPE = val(stats.trailingPE);
-    const priceToBook = val(stats.priceToBook);
+    // Prioriza modules quando disponivel; fallback para dados basicos
+    const trailingPE = val(stats.trailingPE) ?? val(priceEarnings);
+    const trailingEps = val(stats.trailingEps) ?? val(earningsPerShare);
+    const marketCap = val(stats.marketCap) ?? val(marketCapBasic);
     const dividendYield = val(stats.dividendYield);
+    const priceToBook = val(stats.priceToBook);
     const pegRatio = val(stats.pegRatio);
     const enterpriseToEbitda = val(stats.enterpriseToEbitda);
     const enterpriseValue = val(stats.enterpriseValue);
     const bookValue = val(stats.bookValue);
-    const trailingEps = val(stats.trailingEps);
-    const marketCap = val(stats.marketCap);
     const shares = val(stats.sharesOutstanding);
 
     const totalDebt = val(fin.totalDebt);
