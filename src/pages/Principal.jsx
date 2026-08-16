@@ -108,7 +108,7 @@ function Principal() {
   }, [transactions, prices, rfManual]);
 
   const sortedPortfolio = useMemo(() => {
-    return [...portfolio].sort((a, b) => b.atual - a.atual);
+    return [...portfolio].sort((a, b) => b.atual - a.atual || a.ticker.localeCompare(b.ticker));
   }, [portfolio]);
 
   const totals = useMemo(() => {
