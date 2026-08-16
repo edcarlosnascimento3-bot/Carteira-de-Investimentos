@@ -230,8 +230,8 @@ export async function fetchBrapiFundamentals(ticker) {
     const item = json?.results?.[0];
     if (!item) return null;
 
-    const stats = item.defaultKeyStatistics?.[0] || {};
-    const fin = item.financialData?.[0] || {};
+    const stats = item.defaultKeyStatistics || {};
+    const fin = item.financialData || {};
 
     const formatIndicator = (obj, key, rating = 'neutro') => {
       const raw = obj?.[key]?.[0]?.raw;
@@ -532,8 +532,8 @@ export async function fetchBrapiAnalysisData(ticker) {
     const item = json?.results?.[0];
     if (!item) return null;
 
-    const stats = item.defaultKeyStatistics?.[0] || {};
-    const fin = item.financialData?.[0] || {};
+    const stats = item.defaultKeyStatistics || {};
+    const fin = item.financialData || {};
 
     const val = (v) => (v == null || isNaN(Number(v)) ? null : Number(v));
     const pct = (v) => (v == null ? '—' : `${(v * 100).toFixed(2)}%`);
