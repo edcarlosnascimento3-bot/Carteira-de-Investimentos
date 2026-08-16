@@ -1,4 +1,4 @@
-import { listar as listarAtivos, atualizar as atualizarAtivo, adicionar as adicionarAtivo } from '../database/TickerCatalogService';
+import { listar as listarAtivos, atualizar as atualizarAtivo, adicionar as adicionarAtivo, invalidateCache } from '../database/TickerCatalogService';
 
 const STORAGE_KEY = 'investimento_ticker_registry';
 
@@ -93,8 +93,9 @@ export async function saveTickerInfo(ticker, info) {
         IMAGEM: info.imagem || '',
         LINK: info.link || ''
       });
-      syncToServerJson(ticker, info);
     }
+    invalidateCache();
+    syncToServerJson(ticker, info);
   } catch (e) {
     console.warn('[tickerRegistry] saveTickerInfo error:', e);
     throw e;

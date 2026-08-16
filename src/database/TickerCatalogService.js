@@ -4,6 +4,10 @@ const STORAGE_NAME = 'ativos';
 
 let cache = null;
 
+export function invalidateCache() {
+  cache = null;
+}
+
 const LEGACY_KEYS = ['nome', 'cnpj', 'tipo', 'imagem', 'link'];
 
 function stripLegacyKeys(entry) {
