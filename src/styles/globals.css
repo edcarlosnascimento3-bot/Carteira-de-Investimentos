@@ -2060,12 +2060,22 @@ table:not(.data-table) tr {
 
   .graficos-subgrid {
     grid-template-columns: 1fr !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 16px !important;
   }
 
   .chart-card {
     height: auto !important;
     min-height: 300px;
     grid-column: auto !important;
+    grid-row: auto !important;
+  }
+
+  /* Forçar chart-cards dentro do subgrid a serem blocos */
+  .graficos-subgrid .chart-card {
+    width: 100% !important;
+    min-width: 0 !important;
   }
 
   /* Controles de seleção de ano: layout empilhado */

@@ -832,7 +832,7 @@ function Graficos() {
         )}
 
         {qtdData.length > 0 && (
-          <div ref={qtdRef} className="chart-card" style={{ display: 'flex', flexDirection: 'column', position: 'relative', gridRow: '1 / 3', gridColumn: '3', minHeight: qtdHeight || undefined }}>
+          <div ref={qtdRef} className="chart-card" style={{ display: 'flex', flexDirection: 'column', position: 'relative', minHeight: qtdHeight || undefined }}>
             <h2 style={{ textAlign: 'center' }}>Quantidade de Ativos</h2>
             <SelectionBadge data={qtdData} selectedName={selectedTicker} valueKey="quantidade" formatFn={(v) => `${v.toLocaleString('pt-BR')} un`} />
             <div style={{ flex: 1, minHeight: 0 }}>
@@ -867,7 +867,7 @@ function Graficos() {
           </div>
         )}
 
-        <div className="chart-card" style={{ display: 'flex', flexDirection: 'column', position: 'relative', gridRow: '2', gridColumn: '1', minHeight: 320 }}>
+        <div className="chart-card" style={{ display: 'flex', flexDirection: 'column', position: 'relative', minHeight: 320 }}>
           <h2 style={{ textAlign: 'center' }}>Internacional</h2>
           <SelectionBadge data={internacionalData} selectedName={selectedTicker} />
           <div style={{ flex: 1, minHeight: 0 }}>
@@ -913,7 +913,7 @@ function Graficos() {
           </div>
         </div>
 
-        <div className="chart-card" style={{ display: 'flex', flexDirection: 'column', position: 'relative', gridRow: '2', gridColumn: '2', minHeight: 420 }}>
+        <div className="chart-card" style={{ display: 'flex', flexDirection: 'column', position: 'relative', minHeight: 420 }}>
           <h2 style={{ textAlign: 'center' }}>Por Corretora</h2>
           {selectedCorretora && (
             <div style={{
