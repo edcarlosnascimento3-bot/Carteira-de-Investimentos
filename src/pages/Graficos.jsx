@@ -703,8 +703,8 @@ function Graficos() {
   }, []);
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 400px), 1fr))', gap: 16 }}>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, gridColumn: '1 / -1' }}>
+    <div className="graficos-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 400px), 1fr))', gap: 16 }}>
+      <div className="graficos-subgrid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, gridColumn: '1 / -1' }}>
         {tipoData.length > 0 && (
           <div className="chart-card" style={{ display: 'flex', flexDirection: 'column', position: 'relative', minHeight: 320 }}>
             <h2 style={{ textAlign: 'center' }}>Distribuição por Tipo</h2>

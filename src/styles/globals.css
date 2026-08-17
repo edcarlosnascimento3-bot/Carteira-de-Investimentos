@@ -2052,5 +2052,45 @@ table:not(.data-table) tr {
   .eventos-lista ul {
     column-count: 1;
   }
+
+  /* ─── Página Graficos: empilhar tudo verticalmente ─────── */
+  .graficos-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .graficos-subgrid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .chart-card {
+    height: auto !important;
+    min-height: 300px;
+    grid-column: auto !important;
+  }
+
+  /* Controles de seleção de ano: layout empilhado */
+  .graficos-grid .chart-card > div[style*="flex"] > span[style*="fontSize: '2em'"] {
+    display: none;
+  }
+
+  /* Flex rows dentro dos chart-cards: empilhar no mobile */
+  .chart-card > div[style*="display: flex"][style*="flexDirection: row"],
+  .chart-card > div[style*="display: flex"][style*="gap: 12"] {
+    flex-direction: column !important;
+  }
+
+  /* Proventos Tipo: sidebar de checkboxes vira linha horizontal */
+  .chart-card div[style*="width: 160px"] {
+    width: 100% !important;
+    flex-direction: row !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+    overflow-y: visible !important;
+  }
+
+  /* Tickers/rótulos menores no mobile */
+  .graficos-grid .chart-card h2 {
+    font-size: 0.95em;
+  }
 }
 
