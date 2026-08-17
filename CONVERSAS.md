@@ -236,3 +236,16 @@
 - Build OK (826 módulos; bundle 1.486 kB por causa do JSON embutido); commit `e919de6` + push `7942d33..e919de6` → deploy Vercel ● Ready
 **Pendências:**
 - Usuário deve abrir https://carteira-de-investimentos-beryl.vercel.app/ e fazer hard refresh (Ctrl+F5)/limpar dados do site para descartar caches antigos
+
+## 2026-08-16
+
+**Foco:** Layout mobile da página Graficos — empilhar gráficos verticalmente
+**Arquivos alterados:** src/pages/Graficos.jsx, src/styles/globals.css
+**Decisões:**
+- Problema: chart-cards com `gridRow`/`gridColumn` inline forçavam posições fixas na grade 3-colunas, impedindo empilhamento no mobile
+- Solução: removidas propriedades `gridRow`/`gridColumn` dos cards "Quantidade de Ativos", "Internacional" e "Por Corretora"
+- Adicionadas classes `graficos-grid` e `graficos-subgrid` aos containers de grid
+- CSS mobile (max-width: 768px): subgrid vira `flex-direction: column`, chart-cards perdem `grid-column/row` fixos, altura vira `auto`
+- Commits: `a4f178f` (classes + media queries), `1372c97` (remoção de gridRow/gridColumn + CSS refinado)
+**Pendências:**
+- Usuário deve testar no DevTools mobile para confirmar empilhamento
