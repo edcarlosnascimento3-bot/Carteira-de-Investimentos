@@ -45,6 +45,7 @@ const menuItems = [
 
 function Sidebar({ activePage, onNavigate }) {
   const [openMenus, setOpenMenus] = useState([]);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const toggleMenu = (id) => {
     setOpenMenus((prev) => prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]);
@@ -52,52 +53,69 @@ function Sidebar({ activePage, onNavigate }) {
 
   const navigate = (target) => {
     setOpenMenus([]);
+    setSidebarOpen(false);
     onNavigate(target);
   };
 
   return (
-    <aside className="sidebar">
-      <div className="sidebar-header">
-        <h1 className="app-title">📊 InvestPro</h1>
-        <p className="app-subtitle">Carteira de Investimentos</p>
-      </div>
+    <>
+      {/* Botão hamburger — visível só no mobile */}
+      <button
+        className="sidebar-toggle"
+        onClick={() => setSidebarOpen((prev) => !prev)}
+        aria-label={sidebarOpen ? 'Fechar menu' : 'Abrir menu'}
+      >
+        {sidebarOpen ? '✕' : '☰'}
+      </button>
 
-      <nav className="menu">
-        {menuItems.map((item) => (
-          <div key={item.id} className={`menu-group ${openMenus.includes(item.id) ? 'open' : ''}`}>
-            {/* Item principal do menu */}
-            <button
-              className={`menu-item ${activePage === item.id ? 'active' : ''}`}
-              onClick={() => { if (item.submenu) toggleMenu(item.id); else navigate(item.id); }}
-              title={item.label}
-            >
-              <span className="menu-item-icon">{item.icon}</span>
-              <span className="menu-item-label">{item.label}</span>
-              {item.submenu && <span className="menu-arrow">▼</span>}
-            </button>
+      {/* Overlay — fecha o menu ao clicar fora */}
+      {sidebarOpen && (
+        <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)} />
+      )}
 
-            {/* Submenu (ex: Ordens > Compra, Venda) */}
-            {item.submenu && (
-              <div className="submenu">
-                {item.submenu.map((sub) => (
-                  <button
-                    key={sub.id}
-                    className="submenu-item"
-                    onClick={() => navigate(sub.target)}
-                  >
-                    {sub.label}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        ))}
-      </nav>
+      <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
+        <div className="sidebar-header">
+          <h1 className="app-title">📊 InvestPro</h1>
+          <p className="app-subtitle">Carteira de Investimentos</p>
+        </div>
 
-      <div className="sidebar-footer">
-        <p>v1.0.0</p>
-      </div>
-    </aside>
+        <nav className="menu">
+          {menuItems.map((item) => (
+            <div key={item.id} className={`menu-group ${openMenus.includes(item.id) ? 'open' : ''}`}>
+              {/* Item principal do menu */}
+              <button
+                className={`menu-item ${activePage === item.id ? 'active' : ''}`}
+                onClick={() => { if (item.submenu) toggleMenu(item.id); else navigate(item.id); }}
+                title={item.label}
+              >
+                <span className="menu-item-icon">{item.icon}</span>
+                <span className="menu-item-label">{item.label}</span>
+                {item.submenu && <span className="menu-arrow">▼</span>}
+              </button>
+
+              {/* Submenu (ex: Ordens > Compra, Venda) */}
+              {item.submenu && (
+                <div className="submenu">
+                  {item.submenu.map((sub) => (
+                    <button
+                      key={sub.id}
+                      className="submenu-item"
+                      onClick={() => navigate(sub.target)}
+                    >
+                      {sub.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
+        </nav>
+
+        <div className="sidebar-footer">
+          <p>v1.0.0</p>
+        </div>
+      </aside>
+    </>
   );
 }
 

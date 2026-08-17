@@ -1992,3 +1992,65 @@ table:not(.data-table) tr {
   transform: translateX(26px);
 }
 
+/* ============================================================
+   RESPONSIVO — MOBILE (< 768px)
+   ============================================================ */
+@media (max-width: 768px) {
+  .main-content {
+    margin-left: 0;
+    padding: 16px;
+    padding-top: 70px;
+  }
+
+  .user-header {
+    padding: 10px 16px;
+    padding-left: 64px;
+  }
+
+  .user-name {
+    display: none;
+  }
+
+  .user-avatar,
+  .user-avatar-placeholder {
+    width: 40px;
+    height: 40px;
+  }
+
+  .asset-cards-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .summary-widgets {
+    grid-template-columns: 1fr;
+  }
+
+  .widgets-grid {
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  }
+
+  .page-meta {
+    margin-top: -60px;
+  }
+
+  .compra-page {
+    max-width: 100%;
+  }
+
+  .calendario-container {
+    flex-direction: column;
+  }
+
+  .eventos-lista {
+    width: 100%;
+    border-left: none;
+    padding-left: 0;
+    border-top: 1px solid var(--border);
+    padding-top: 20px;
+  }
+
+  .eventos-lista ul {
+    column-count: 1;
+  }
+}
+
