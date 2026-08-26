@@ -830,7 +830,7 @@ function Graficos() {
         )}
 
         {qtdData.length > 0 && (
-          <div ref={qtdRef} className="chart-card" style={{ display: 'flex', flexDirection: 'column', position: 'relative', minHeight: qtdHeight || undefined }}>
+          <div ref={qtdRef} className="chart-card" style={{ display: 'flex', flexDirection: 'column', position: 'relative', minHeight: qtdHeight || undefined, gridRow: '1 / span 2' }}>
             <h2 style={{ textAlign: 'center' }}>Quantidade de Ativos</h2>
             <SelectionBadge data={qtdData} selectedName={selectedTicker} valueKey="quantidade" formatFn={(v) => `${v.toLocaleString('pt-BR')} un`} />
             <div style={{ flex: 1, minHeight: 0 }}>
