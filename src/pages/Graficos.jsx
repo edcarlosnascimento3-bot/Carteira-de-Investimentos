@@ -829,6 +829,42 @@ function Graficos() {
           </div>
         )}
 
+        {qtdData.length > 0 && (
+          <div ref={qtdRef} className="chart-card" style={{ display: 'flex', flexDirection: 'column', position: 'relative', minHeight: qtdHeight || undefined }}>
+            <h2 style={{ textAlign: 'center' }}>Quantidade de Ativos</h2>
+            <SelectionBadge data={qtdData} selectedName={selectedTicker} valueKey="quantidade" formatFn={(v) => `${v.toLocaleString('pt-BR')} un`} />
+            <div style={{ flex: 1, minHeight: 0 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={qtdData} layout="vertical" margin={{ left: 8, right: 30, top: 4, bottom: 4 }} barSize={36} barCategoryGap="50%">
+                  <XAxis type="number" tick={{ fill: 'var(--text-muted)', fontSize: 10 }} axisLine={{ stroke: 'var(--border)' }} tickLine={false} padding={{ right: 45 }} />
+                  <YAxis type="category" dataKey="name" tick={{ fill: 'var(--text)', fontSize: 12 }} axisLine={false} tickLine={false} width={100} interval={0} tickFormatter={(n) => String(n).replace(/ /g, '\u00A0')} />
+                  <Tooltip cursor={false} contentStyle={tooltipStyle} formatter={(v) => [v.toLocaleString('pt-BR'), 'Quantidade']} />
+                  <Bar dataKey="quantidade" radius={[0, 50, 50, 0]} cursor="pointer" activeBar={{ stroke: '#FFF', strokeWidth: 2, filter: 'brightness(1.15)' }}>
+                    {qtdData.map((entry) => (
+                      <Cell
+                        key={entry.name}
+                        fill={selColor}
+                        fillOpacity={getBarOpacity(entry.name)}
+                        onClick={() => handleTickerClick(entry.name)}
+                      />
+                    ))}
+                    <LabelList dataKey="quantidade" position="right" fill={selColor} fontSize={12} fontWeight={700} />
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+            {(hasFilter && !selectedTicker) && (
+              <div style={{
+                position: 'absolute', top: 8, right: 8, zIndex: 10,
+                background: 'var(--gold)', color: 'var(--ink)', border: 'none', borderRadius: 6,
+                padding: '3px 10px', fontSize: '0.75em', cursor: 'pointer', fontWeight: 700,
+              }} onClick={() => { setSelectedType(null); setSelectedTicker(null); }}>
+                ✕ LIMPAR
+              </div>
+            )}
+          </div>
+        )}
+
         {fiisData.length > 0 && (
           <div className="chart-card" style={{ display: 'flex', flexDirection: 'column', position: 'relative', minHeight: 320 }}>
             <h2 style={{ textAlign: 'center' }}>FIIs</h2>
@@ -914,42 +950,6 @@ function Graficos() {
                 </PieChart>
               </ResponsiveContainer>
             </div>
-          </div>
-        )}
-
-        {qtdData.length > 0 && (
-          <div ref={qtdRef} className="chart-card" style={{ display: 'flex', flexDirection: 'column', position: 'relative', minHeight: qtdHeight || undefined }}>
-            <h2 style={{ textAlign: 'center' }}>Quantidade de Ativos</h2>
-            <SelectionBadge data={qtdData} selectedName={selectedTicker} valueKey="quantidade" formatFn={(v) => `${v.toLocaleString('pt-BR')} un`} />
-            <div style={{ flex: 1, minHeight: 0 }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={qtdData} layout="vertical" margin={{ left: 8, right: 30, top: 4, bottom: 4 }} barSize={36} barCategoryGap="50%">
-                  <XAxis type="number" tick={{ fill: 'var(--text-muted)', fontSize: 10 }} axisLine={{ stroke: 'var(--border)' }} tickLine={false} padding={{ right: 45 }} />
-                  <YAxis type="category" dataKey="name" tick={{ fill: 'var(--text)', fontSize: 12 }} axisLine={false} tickLine={false} width={100} interval={0} tickFormatter={(n) => String(n).replace(/ /g, '\u00A0')} />
-                  <Tooltip cursor={false} contentStyle={tooltipStyle} formatter={(v) => [v.toLocaleString('pt-BR'), 'Quantidade']} />
-                  <Bar dataKey="quantidade" radius={[0, 50, 50, 0]} cursor="pointer" activeBar={{ stroke: '#FFF', strokeWidth: 2, filter: 'brightness(1.15)' }}>
-                    {qtdData.map((entry) => (
-                      <Cell
-                        key={entry.name}
-                        fill={selColor}
-                        fillOpacity={getBarOpacity(entry.name)}
-                        onClick={() => handleTickerClick(entry.name)}
-                      />
-                    ))}
-                    <LabelList dataKey="quantidade" position="right" fill={selColor} fontSize={12} fontWeight={700} />
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-            {(hasFilter && !selectedTicker) && (
-              <div style={{
-                position: 'absolute', top: 8, right: 8, zIndex: 10,
-                background: 'var(--gold)', color: 'var(--ink)', border: 'none', borderRadius: 6,
-                padding: '3px 10px', fontSize: '0.75em', cursor: 'pointer', fontWeight: 700,
-              }} onClick={() => { setSelectedType(null); setSelectedTicker(null); }}>
-                ✕ LIMPAR
-              </div>
-            )}
           </div>
         )}
 
