@@ -829,6 +829,94 @@ function Graficos() {
           </div>
         )}
 
+        {fiisData.length > 0 && (
+          <div className="chart-card" style={{ display: 'flex', flexDirection: 'column', position: 'relative', minHeight: 320 }}>
+            <h2 style={{ textAlign: 'center' }}>FIIs</h2>
+            <SelectionBadge data={fiisData} selectedName={selectedTicker} />
+            <div style={{ flex: 1, minHeight: 0 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <defs>
+                    <filter id="pieShadowFiis" x="-20%" y="-20%" width="140%" height="140%">
+                      <feDropShadow dx="3" dy="3" stdDeviation="4" flood-color="#000" flood-opacity="0.5" />
+                    </filter>
+                  </defs>
+                  <Pie
+                    data={fiisData}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    outerRadius="55%"
+                    innerRadius="15%"
+                    paddingAngle={2}
+                    label={renderTickerLabel(isLight)}
+                    labelLine={{ stroke: 'var(--border-strong)', strokeWidth: 1 }}
+                    onClick={(entry) => handleTickerClick(entry.name)}
+                  >
+                    {fiisData.map((entry, idx) => (
+                      <Cell
+                        key={entry.name}
+                        fill={CHART_COLORS[idx % CHART_COLORS.length]}
+                        fillOpacity={getTickerOpacity(entry.name)}
+                        stroke={selectedTicker === entry.name ? selColor : 'transparent'}
+                        strokeWidth={selectedTicker === entry.name ? 2 : 0}
+                        cursor="pointer"
+                        filter="url(#pieShadowFiis)"
+                      />
+                    ))}
+                  </Pie>
+                  <Tooltip contentStyle={tooltipStyle} formatter={(v) => formatCurrency(v)} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        )}
+
+        {rendaFixaData.length > 0 && (
+          <div className="chart-card" style={{ display: 'flex', flexDirection: 'column', position: 'relative', minHeight: 320 }}>
+            <h2 style={{ textAlign: 'center' }}>Renda Fixa / ETF</h2>
+            <SelectionBadge data={rendaFixaData} selectedName={selectedTicker} />
+            <div style={{ flex: 1, minHeight: 0 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <defs>
+                    <filter id="pieShadowRF" x="-20%" y="-20%" width="140%" height="140%">
+                      <feDropShadow dx="3" dy="3" stdDeviation="4" flood-color="#000" flood-opacity="0.5" />
+                    </filter>
+                  </defs>
+                  <Pie
+                    data={rendaFixaData}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    outerRadius="55%"
+                    innerRadius="15%"
+                    paddingAngle={2}
+                    label={renderTickerLabelWithValue(isLight)}
+                    labelLine={{ stroke: 'var(--border-strong)', strokeWidth: 1 }}
+                    onClick={(entry) => handleTickerClick(entry.name)}
+                  >
+                    {rendaFixaData.map((entry, idx) => (
+                      <Cell
+                        key={entry.name}
+                        fill={CHART_COLORS[idx % CHART_COLORS.length]}
+                        fillOpacity={getTickerOpacity(entry.name)}
+                        stroke={selectedTicker === entry.name ? selColor : 'transparent'}
+                        strokeWidth={selectedTicker === entry.name ? 2 : 0}
+                        cursor="pointer"
+                        filter="url(#pieShadowRF)"
+                      />
+                    ))}
+                  </Pie>
+                  <Tooltip contentStyle={tooltipStyle} formatter={(v) => formatCurrency(v)} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        )}
+
         {qtdData.length > 0 && (
           <div ref={qtdRef} className="chart-card" style={{ display: 'flex', flexDirection: 'column', position: 'relative', minHeight: qtdHeight || undefined }}>
             <h2 style={{ textAlign: 'center' }}>Quantidade de Ativos</h2>
@@ -1029,90 +1117,6 @@ function Graficos() {
                       strokeWidth={selectedTicker === entry.name ? 2 : 0}
                       cursor="pointer"
                       filter="url(#pieShadowAcoes)"
-                    />
-                  ))}
-                </Pie>
-                <Tooltip contentStyle={tooltipStyle} formatter={(v) => formatCurrency(v)} />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        <div className="chart-card" style={{ display: 'flex', flexDirection: 'column', position: 'relative', minHeight: 320 }}>
-          <h2 style={{ textAlign: 'center' }}>FIIs</h2>
-          <SelectionBadge data={fiisData} selectedName={selectedTicker} />
-          <div style={{ flex: 1, minHeight: 0 }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <defs>
-                  <filter id="pieShadowFiis" x="-20%" y="-20%" width="140%" height="140%">
-                    <feDropShadow dx="3" dy="3" stdDeviation="4" flood-color="#000" flood-opacity="0.5" />
-                  </filter>
-                </defs>
-                <Pie
-                  data={fiisData}
-                  dataKey="value"
-                  nameKey="name"
-                  cx="50%"
-                  cy="50%"
-                  outerRadius="55%"
-                  innerRadius="15%"
-                  paddingAngle={2}
-                  label={renderTickerLabel(isLight)}
-                  labelLine={{ stroke: 'var(--border-strong)', strokeWidth: 1 }}
-                  onClick={(entry) => handleTickerClick(entry.name)}
-                >
-                  {fiisData.map((entry, idx) => (
-                    <Cell
-                      key={entry.name}
-                      fill={CHART_COLORS[idx % CHART_COLORS.length]}
-                      fillOpacity={getTickerOpacity(entry.name)}
-                      stroke={selectedTicker === entry.name ? selColor : 'transparent'}
-                      strokeWidth={selectedTicker === entry.name ? 2 : 0}
-                      cursor="pointer"
-                      filter="url(#pieShadowFiis)"
-                    />
-                  ))}
-                </Pie>
-                <Tooltip contentStyle={tooltipStyle} formatter={(v) => formatCurrency(v)} />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        <div className="chart-card" style={{ display: 'flex', flexDirection: 'column', position: 'relative', minHeight: 320 }}>
-          <h2 style={{ textAlign: 'center' }}>Renda Fixa / ETF</h2>
-          <SelectionBadge data={rendaFixaData} selectedName={selectedTicker} />
-          <div style={{ flex: 1, minHeight: 0 }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <defs>
-                  <filter id="pieShadowRF" x="-20%" y="-20%" width="140%" height="140%">
-                    <feDropShadow dx="3" dy="3" stdDeviation="4" flood-color="#000" flood-opacity="0.5" />
-                  </filter>
-                </defs>
-                <Pie
-                  data={rendaFixaData}
-                  dataKey="value"
-                  nameKey="name"
-                  cx="50%"
-                  cy="50%"
-                  outerRadius="55%"
-                  innerRadius="15%"
-                  paddingAngle={2}
-                  label={renderTickerLabelWithValue(isLight)}
-                  labelLine={{ stroke: 'var(--border-strong)', strokeWidth: 1 }}
-                  onClick={(entry) => handleTickerClick(entry.name)}
-                >
-                  {rendaFixaData.map((entry, idx) => (
-                    <Cell
-                      key={entry.name}
-                      fill={CHART_COLORS[idx % CHART_COLORS.length]}
-                      fillOpacity={getTickerOpacity(entry.name)}
-                      stroke={selectedTicker === entry.name ? selColor : 'transparent'}
-                      strokeWidth={selectedTicker === entry.name ? 2 : 0}
-                      cursor="pointer"
-                      filter="url(#pieShadowRF)"
                     />
                   ))}
                 </Pie>
