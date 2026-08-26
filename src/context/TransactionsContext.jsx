@@ -1,23 +1,14 @@
-import { useState, useEffect, useRef } from 'react';
-import db from '../services/storage';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import db, { subscribeToChanges } from '../services/storage';
 import { useAuth } from './AuthContext';
 import { buildRegistryFromTransactions } from '../services/tickerRegistry';
 import { TransactionsContext } from './TransactionsContextDef';
+import { normalizeTipo, makeId } from '../utils/helpers';
 
 export { TransactionsContext };
 
 const STORAGE_NAME = 'transactions';
 
-// Id único: randomUUID (navegadores modernos) com fallback para timestamp + aleatório.
-// Nunca usar apenas Date.now() — importações em massa criam ids duplicados no mesmo ms.
-function makeId() {
-  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
-    return crypto.randomUUID();
-  }
-  return `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
-}
-
-// Corrige ids duplicados/nulos reatribuindo ids únicos (migração de dados legados).
 function dedupeIds(list) {
   const seen = new Set();
   let changed = false;
@@ -31,11 +22,6 @@ function dedupeIds(list) {
     return { ...t, id };
   });
   return changed ? out : list;
-}
-
-function normalizeTipo(tipo) {
-  if (typeof tipo !== 'string') return tipo;
-  return tipo.replace(/fii/gi, 'FII');
 }
 
 function normalizeTransactions(list) {
@@ -71,11 +57,12 @@ export function TransactionsProvider({ children }) {
     transactionsRef.current = transactions;
   }, [transactions]);
 
+  // Carrega dados do Supabase (sempre remoto)
   useEffect(() => {
     if (!user) return;
 
     let active = true;
-    db.read(STORAGE_NAME).then((data) => {
+    db.readForce(STORAGE_NAME).then((data) => {
       if (!active) return;
       if (data !== null && Array.isArray(data) && data.length > 0) {
         const normalized = normalizeTransactions(data);
@@ -92,6 +79,50 @@ export function TransactionsProvider({ children }) {
     return () => { active = false; };
   }, [user]);
 
+  // Realtime: recebe atualizações de outros dispositivos
+  useEffect(() => {
+    if (!user || !loaded) return;
+
+    const unsub = subscribeToChanges(STORAGE_NAME, (remoteData) => {
+      if (Array.isArray(remoteData) && remoteData.length > 0) {
+        const normalized = normalizeTransactions(remoteData);
+        const deduped = dedupeIds(normalized);
+        // Só atualiza se os dados realmente mudaram
+        const currentStr = JSON.stringify(transactionsRef.current);
+        const newStr = JSON.stringify(deduped);
+        if (currentStr !== newStr) {
+          setTransactions(deduped);
+        }
+      }
+    });
+
+    return unsub;
+  }, [user, loaded]);
+
+  // Refresh ao voltar à aba (visibilitychange)
+  useEffect(() => {
+    if (!user || !loaded) return;
+
+    const handler = () => {
+      if (document.visibilityState === 'visible') {
+        db.readForce(STORAGE_NAME).then((data) => {
+          if (data !== null && Array.isArray(data) && data.length > 0) {
+            const normalized = normalizeTransactions(data);
+            const deduped = dedupeIds(normalized);
+            const currentStr = JSON.stringify(transactionsRef.current);
+            const newStr = JSON.stringify(deduped);
+            if (currentStr !== newStr) {
+              setTransactions(deduped);
+            }
+          }
+        });
+      }
+    };
+    document.addEventListener('visibilitychange', handler);
+    return () => document.removeEventListener('visibilitychange', handler);
+  }, [user, loaded]);
+
+  // Salva local + Supabase quando muda
   useEffect(() => {
     if (!loaded) return;
     localStorage.setItem(`investimento_${STORAGE_NAME}`, JSON.stringify(transactions));
@@ -140,6 +171,4 @@ export function TransactionsProvider({ children }) {
   );
 }
 
-// O hook useTransactions está em ./useTransactions.js — re-exportado aqui para
-// manter compatibilidade com todos os arquivos que importam de TransactionsContext.
 export { useTransactions } from './useTransactions';

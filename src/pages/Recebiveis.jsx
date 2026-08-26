@@ -6,7 +6,7 @@ import { useUser } from '../context/UserContext';
 import EditProventoModal from '../components/Modals/EditProventoModal';
 import ConfirmModal from '../components/Modals/ConfirmModal';
 import Toast from '../components/Toast';
-import * as XLSX from 'xlsx';
+import XlsxPopulate from 'xlsx-populate';
 
 const columns = [
   { key: 'ticker', label: 'TICKER', width: 90 },
@@ -195,12 +195,17 @@ function Proventos() {
     const file = e.target.files[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = (evt) => {
+    reader.onload = async (evt) => {
       try {
         const data = new Uint8Array(evt.target.result);
-        const workbook = XLSX.read(data, { type: 'array' });
-        const sheet = workbook.Sheets[workbook.SheetNames[0]];
-        const rows = XLSX.utils.sheet_to_json(sheet, { defval: '', header: 1 });
+        const workbook = await XlsxPopulate.fromDataAsync(data);
+        const sheet = workbook.sheet(0);
+        const usedRange = sheet.usedRange();
+        if (!usedRange) {
+          setMassStatus({ type: 'error', msg: 'A planilha está vazia.' });
+          return;
+        }
+        const rows = usedRange.value();
 
         if (!rows.length) {
           setMassStatus({ type: 'error', msg: 'A planilha está vazia.' });

@@ -172,6 +172,33 @@ const db = {
     return null;
   },
 
+  async readForce(name) {
+    const userId = await getCurrentUserId();
+
+    // Sempre busca do Supabase primeiro (ignora cache local)
+    const remote = await readSupabase(name);
+    if (hasData(remote)) {
+      writeLocalStorage(name, remote, userId);
+      return remote;
+    }
+
+    // Fallback: cache local
+    const cached = readLocalStorage(name, userId);
+    if (hasData(cached)) return cached;
+
+    // Fallback: legacy
+    if (userId) {
+      const legacy = readLocalStorage(name, null);
+      if (hasData(legacy)) {
+        await writeSupabase(name, legacy);
+        writeLocalStorage(name, legacy, userId);
+        return legacy;
+      }
+    }
+
+    return null;
+  },
+
   async write(name, data) {
     const userId = await getCurrentUserId();
     writeLocalStorage(name, data, userId);
@@ -187,5 +214,46 @@ const db = {
     return true;
   },
 };
+
+// Realtime subscriptions — mantém referências para evitar duplicates
+const activeChannels = new Map();
+
+export function subscribeToChanges(name, callback) {
+  const channelKey = `app_data:${name}`;
+
+  // Remove subscription anterior se existir
+  if (activeChannels.has(channelKey)) {
+    supabase.removeChannel(activeChannels.get(channelKey));
+    activeChannels.delete(channelKey);
+  }
+
+  const channel = supabase
+    .channel(channelKey)
+    .on('postgres_changes', {
+      event: '*',
+      schema: 'public',
+      table: 'app_data',
+      filter: `key=eq.${name}`,
+    }, (payload) => {
+      if (payload.new?.value) {
+        callback(payload.new.value);
+      }
+    })
+    .subscribe();
+
+  activeChannels.set(channelKey, channel);
+
+  return () => {
+    supabase.removeChannel(channel);
+    activeChannels.delete(channelKey);
+  };
+}
+
+export function unsubscribeAll() {
+  for (const [, channel] of activeChannels) {
+    supabase.removeChannel(channel);
+  }
+  activeChannels.clear();
+}
 
 export default db;

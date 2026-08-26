@@ -13,6 +13,14 @@ function ensureDataDir() {
   }
 }
 
+function sanitizeDbName(name) {
+  if (typeof name !== 'string') return null;
+  if (/[/\\]/.test(name)) return null;
+  if (/\.\./.test(name)) return null;
+  if (!/^[a-zA-Z0-9_-]+$/.test(name)) return null;
+  return name;
+}
+
 function getFilePath(name) {
   return path.join(DATA_DIR, `${name}.json`);
 }
@@ -35,8 +43,13 @@ function writeToBoth(name, data) {
 }
 
 ipcMain.handle('db:read', (_event, name) => {
+  const safeName = sanitizeDbName(name);
+  if (!safeName) {
+    console.error('db:read — nome inválido:', name);
+    return null;
+  }
   // Tenta ler do projeto primeiro (dados mais recentes)
-  const projPath = getProjectFilePath(name);
+  const projPath = getProjectFilePath(safeName);
   try {
     if (fs.existsSync(projPath)) {
       return JSON.parse(fs.readFileSync(projPath, 'utf-8'));
@@ -46,7 +59,7 @@ ipcMain.handle('db:read', (_event, name) => {
   }
   // Fallback para userData
   ensureDataDir();
-  const fp = getFilePath(name);
+  const fp = getFilePath(safeName);
   try {
     if (fs.existsSync(fp)) {
       return JSON.parse(fs.readFileSync(fp, 'utf-8'));
@@ -58,8 +71,13 @@ ipcMain.handle('db:read', (_event, name) => {
 });
 
 ipcMain.handle('db:write', (_event, name, data) => {
+  const safeName = sanitizeDbName(name);
+  if (!safeName) {
+    console.error('db:write — nome inválido:', name);
+    return false;
+  }
   try {
-    writeToBoth(name, data);
+    writeToBoth(safeName, data);
     return true;
   } catch (e) {
     console.error('Erro ao escrever', name, e.message);

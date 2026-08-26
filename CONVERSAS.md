@@ -249,3 +249,25 @@
 - Commits: `a4f178f` (classes + media queries), `1372c97` (remoção de gridRow/gridColumn + CSS refinado)
 **Pendências:**
 - Usuário deve testar no DevTools mobile para confirmar empilhamento
+
+## 2026-08-25
+
+**Foco:** Auditoria completa (Fases 1-3): Segurança, Sincronização, Arquitetura
+**Arquivos alterados:** .gitignore, .env, .env.production (removido do git), main.js, src/services/storage.js, src/services/api.js, src/context/TransactionsContext.jsx, src/context/ProventosContext.jsx, src/context/RfManualContext.jsx, src/context/MetasContext.jsx, src/context/AppProviders.jsx (novo), src/utils/helpers.js (novo), src/App.jsx, src/main.jsx, src/components/Layout/Sidebar.jsx, src/pages/Lancamentos.jsx, src/pages/Meta.jsx, src/pages/Principal.jsx, src/pages/Carteira.jsx, src/pages/Graficos.jsx, supabase-migration.sql, package.json
+**Decisões:**
+- Fase 1 (Segurança): .env.production removido do git; BRAPI_TOKEN migrado para VITE_ prefix; path traversal fix em main.js com sanitizeDbName(); db_*.json e vite*.log adicionados ao .gitignore
+- Fase 2 (Sincronização): storage.js ganhou readForce() e subscribeToChanges(); todos os contexts (Transactions, Proventos, RfManual, Metas) usam readForce no mount + Realtime subscription + visibilitychange refresh; Realtime habilitado via SQL migration
+- Fase 3 (Arquitetura): react-router-dom instalado; navegação migrada de useState para Routes/NavLink; AppProviders.jsx consolida todos os providers; utils/helpers.js centraliza normalizeTipo, typeIcons, typeColors, typeBorders, monthNames, makeId
+**Pendências:**
+- Fase 4 (Qualidade de Código): remover xlsx (CVEs), bundle splitting com lazy routes, testes unitários
+
+## 2026-08-25 (2)
+
+**Foco:** Fase 4 — Qualidade de Código: remover xlsx, lazy routes, testes unitários
+**Arquivos alterados:** package.json, src/pages/Lancamentos.jsx, src/pages/Recebiveis.jsx, src/App.jsx, vitest.config.js (novo), src/test/setup.js (novo), src/utils/helpers.test.js (novo), src/utils/sanitize.test.js (novo)
+**Decisões:**
+- xlsx (CVEs altas sem fix) substituído por xlsx-populate (leve, sem CVEs)
+- App.jsx migrado para React.lazy() + Suspense: cada página agora é chunk separado (code splitting)
+- Vitest + @testing-library/react + jsdom instalados; 17 testes unitários cobrindo normalizeTipo, typeIcons, typeColors, typeBorders, monthNames, makeId e sanitizeDbName
+**Pendências:**
+- Todos os commits desta sessão precisam ser pushados para origin/main

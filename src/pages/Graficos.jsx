@@ -7,6 +7,7 @@ import { usePrices } from '../hooks/usePrices';
 import * as CorretoraService from '../database/CorretoraService';
 import { ETFS_RENDA_FIXA } from '../data/etfRendaFixa';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LabelList, LineChart, Line, CartesianGrid, Sector } from 'recharts';
+import { normalizeTipo, monthNames } from '../utils/helpers';
 
 const defaultTickers = ['PETR4', 'VALE3', 'ITUB4', 'ABEV3', 'BBAS3', 'WEGE3', 'HGLG11', 'KNRI11', 'BTC', 'ETH'];
 
@@ -236,9 +237,6 @@ function Graficos() {
       setQtdHeight(prev => prev === h ? prev : h);
     }
   });
-
-  const monthNames = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-  const normalizeTipo = (tipo) => tipo === 'FII Agro' ? 'FII' : tipo;
 
   const uniqueAnos = useMemo(() => {
     const anos = [...new Set(transactions.map(t => t.ano))].sort((a, b) => b - a);

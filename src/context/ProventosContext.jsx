@@ -1,18 +1,11 @@
-import { createContext, useContext, useState, useEffect } from 'react';
-import db from '../services/storage';
-import { supabase } from '../services/supabaseClient';
+import { createContext, useContext, useState, useEffect, useRef } from 'react';
+import db, { subscribeToChanges } from '../services/storage';
 import { useAuth } from './AuthContext';
+import { normalizeTipo, makeId } from '../utils/helpers';
 
 const ProventosContext = createContext(null);
 
 const STORAGE_NAME = 'proventos';
-
-let _proventoNextId = Date.now();
-
-function normalizeTipo(tipo) {
-  if (typeof tipo !== 'string') return tipo;
-  return tipo.replace(/fii/gi, 'FII');
-}
 
 function normalizeProventos(list) {
   let changed = false;
@@ -30,17 +23,24 @@ export function ProventosProvider({ children }) {
   const { user } = useAuth();
   const [proventos, setProventos] = useState([]);
   const [loaded, setLoaded] = useState(false);
+  const proventosRef = useRef(proventos);
 
+  useEffect(() => {
+    proventosRef.current = proventos;
+  }, [proventos]);
+
+  // Carrega dados do Supabase (sempre remoto)
   useEffect(() => {
     if (!user) return;
 
-    db.read(STORAGE_NAME).then((data) => {
+    let active = true;
+    db.readForce(STORAGE_NAME).then((data) => {
+      if (!active) return;
       if (data && Array.isArray(data) && data.length > 0) {
         const normalized = normalizeProventos(data);
         if (normalized !== data) db.write(STORAGE_NAME, normalized);
         setProventos(normalized);
       } else {
-        // fallback: tentar carregar do localStorage legacy (antes do escopo por user_id)
         try {
           const legacy = localStorage.getItem('investimento_proventos');
           if (legacy) {
@@ -58,8 +58,50 @@ export function ProventosProvider({ children }) {
       }
       setLoaded(true);
     });
+    return () => { active = false; };
   }, [user]);
 
+  // Realtime: recebe atualizações de outros dispositivos
+  useEffect(() => {
+    if (!user || !loaded) return;
+
+    const unsub = subscribeToChanges(STORAGE_NAME, (remoteData) => {
+      if (Array.isArray(remoteData) && remoteData.length > 0) {
+        const normalized = normalizeProventos(remoteData);
+        const currentStr = JSON.stringify(proventosRef.current);
+        const newStr = JSON.stringify(normalized);
+        if (currentStr !== newStr) {
+          setProventos(normalized);
+        }
+      }
+    });
+
+    return unsub;
+  }, [user, loaded]);
+
+  // Refresh ao voltar à aba
+  useEffect(() => {
+    if (!user || !loaded) return;
+
+    const handler = () => {
+      if (document.visibilityState === 'visible') {
+        db.readForce(STORAGE_NAME).then((data) => {
+          if (data && Array.isArray(data) && data.length > 0) {
+            const normalized = normalizeProventos(data);
+            const currentStr = JSON.stringify(proventosRef.current);
+            const newStr = JSON.stringify(normalized);
+            if (currentStr !== newStr) {
+              setProventos(normalized);
+            }
+          }
+        });
+      }
+    };
+    document.addEventListener('visibilitychange', handler);
+    return () => document.removeEventListener('visibilitychange', handler);
+  }, [user, loaded]);
+
+  // Salva local quando muda
   useEffect(() => {
     if (loaded && proventos.length > 0) {
       localStorage.setItem(`investimento_proventos`, JSON.stringify(proventos));
@@ -67,7 +109,7 @@ export function ProventosProvider({ children }) {
   }, [proventos, loaded]);
 
   const addProvento = (entry) => {
-    const newProv = { id: ++_proventoNextId, ...entry, tipo: normalizeTipo(entry.tipo) };
+    const newProv = { id: makeId(), ...entry, tipo: normalizeTipo(entry.tipo) };
     setProventos((prev) => {
       const next = [newProv, ...prev];
       db.write(STORAGE_NAME, next);

@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useRef } from 'react';
-import db from '../services/storage';
+import db, { subscribeToChanges } from '../services/storage';
 import { useAuth } from './AuthContext';
 
 const MetasContext = createContext(null);
@@ -27,11 +27,12 @@ export function MetasProvider({ children }) {
     metasRef.current = metas;
   }, [metas]);
 
+  // Carrega dados do Supabase (sempre remoto)
   useEffect(() => {
     if (!user) return;
 
     let active = true;
-    db.read(STORAGE_NAME).then((data) => {
+    db.readForce(STORAGE_NAME).then((data) => {
       if (!active) return;
       if (data && typeof data === 'object' && Object.keys(data).length > 0) {
         setMetas((prev) => {
@@ -44,6 +45,45 @@ export function MetasProvider({ children }) {
     return () => { active = false; };
   }, [user]);
 
+  // Realtime: recebe atualizações de outros dispositivos
+  useEffect(() => {
+    if (!user || !loaded) return;
+
+    const unsub = subscribeToChanges(STORAGE_NAME, (remoteData) => {
+      if (remoteData && typeof remoteData === 'object' && Object.keys(remoteData).length > 0) {
+        const currentStr = JSON.stringify(metasRef.current);
+        const newStr = JSON.stringify(remoteData);
+        if (currentStr !== newStr) {
+          setMetas(remoteData);
+        }
+      }
+    });
+
+    return unsub;
+  }, [user, loaded]);
+
+  // Refresh ao voltar à aba
+  useEffect(() => {
+    if (!user || !loaded) return;
+
+    const handler = () => {
+      if (document.visibilityState === 'visible') {
+        db.readForce(STORAGE_NAME).then((data) => {
+          if (data && typeof data === 'object' && Object.keys(data).length > 0) {
+            const currentStr = JSON.stringify(metasRef.current);
+            const newStr = JSON.stringify(data);
+            if (currentStr !== newStr) {
+              setMetas(data);
+            }
+          }
+        });
+      }
+    };
+    document.addEventListener('visibilitychange', handler);
+    return () => document.removeEventListener('visibilitychange', handler);
+  }, [user, loaded]);
+
+  // Salva local + Supabase quando muda
   useEffect(() => {
     if (!loaded) return;
     localStorage.setItem('investimento_metas', JSON.stringify(metas));

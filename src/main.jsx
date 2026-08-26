@@ -1,28 +1,16 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
+import { BrowserRouter } from 'react-router-dom';
 import App from './App';
-import { UserProvider } from './context/UserContext';
-import { TransactionsProvider } from './context/TransactionsContext';
-import { ProventosProvider } from './context/ProventosContext';
-import { RfManualProvider } from './context/RfManualContext';
-import { MetasProvider } from './context/MetasContext';
-import { AuthProvider } from './context/AuthContext';
+import AppProviders from './context/AppProviders';
 import './styles/globals.css';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <AuthProvider>
-      <UserProvider>
-        <TransactionsProvider>
-          <ProventosProvider>
-            <RfManualProvider>
-              <MetasProvider>
-                <App />
-              </MetasProvider>
-            </RfManualProvider>
-          </ProventosProvider>
-        </TransactionsProvider>
-      </UserProvider>
-    </AuthProvider>
+    <BrowserRouter>
+      <AppProviders>
+        <App />
+      </AppProviders>
+    </BrowserRouter>
   </React.StrictMode>
 );

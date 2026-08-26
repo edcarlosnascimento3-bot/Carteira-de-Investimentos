@@ -1,57 +1,44 @@
-import { useEffect } from 'react';
+import { useEffect, useState, lazy, Suspense } from 'react';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useUser } from './context/UserContext';
 import { useAuth } from './context/AuthContext';
 import LoginPage from './pages/LoginPage';
 import { loadAtivosRegistry } from './services/tickerRegistry';
 import Sidebar from './components/Layout/Sidebar';
 import Principal from './pages/Principal';
-import Ordens from './pages/Ordens';
-import Compra from './pages/Compra';
-import Venda from './pages/Venda';
-import Bonificacao from './pages/Bonificacao';
-import Lancamentos from './pages/Lancamentos';
-import Carteira from './pages/Carteira';
-import Recebiveis from './pages/Recebiveis';
-import Rendimentos from './pages/Rendimentos';
-import Ranking from './pages/Ranking';
-import Graficos from './pages/Graficos';
-import IRRF from './pages/IRRF';
-import Relatorios from './pages/Relatorios';
-import MIDI from './pages/MIDI';
-import Meta from './pages/Meta';
-import Analitico from './pages/Analitico';
-import AnalisarAcoes from './pages/AnalisarAcoes';
-import AnalisarFIIs from './pages/AnalisarFIIs';
-import Conferencia from './pages/Conferencia';
-import { useState } from 'react';
 
-const pages = {
-  principal: Principal,
-  ordens: Ordens,
-  compra: Compra,
-  venda: Venda,
-  bonificacao: Bonificacao,
-  lancamentos: Lancamentos,
-  carteira: Carteira,
-  recebiveis: Recebiveis,
-  rendimentos: Rendimentos,
-  ranking: Ranking,
-  graficos: Graficos,
-  irrf: IRRF,
-  relatorios: Relatorios,
-  midi: MIDI,
-  meta: Meta,
-  analitico: Analitico,
-  'analisar-acoes': AnalisarAcoes,
-  'analisar-fiis': AnalisarFIIs,
-  conferencia: Conferencia,
-};
+const Ordens = lazy(() => import('./pages/Ordens'));
+const Compra = lazy(() => import('./pages/Compra'));
+const Venda = lazy(() => import('./pages/Venda'));
+const Bonificacao = lazy(() => import('./pages/Bonificacao'));
+const Lancamentos = lazy(() => import('./pages/Lancamentos'));
+const Carteira = lazy(() => import('./pages/Carteira'));
+const Recebiveis = lazy(() => import('./pages/Recebiveis'));
+const Rendimentos = lazy(() => import('./pages/Rendimentos'));
+const Ranking = lazy(() => import('./pages/Ranking'));
+const Graficos = lazy(() => import('./pages/Graficos'));
+const IRRF = lazy(() => import('./pages/IRRF'));
+const Relatorios = lazy(() => import('./pages/Relatorios'));
+const MIDI = lazy(() => import('./pages/MIDI'));
+const Meta = lazy(() => import('./pages/Meta'));
+const Analitico = lazy(() => import('./pages/Analitico'));
+const AnalisarAcoes = lazy(() => import('./pages/AnalisarAcoes'));
+const AnalisarFIIs = lazy(() => import('./pages/AnalisarFIIs'));
+const Conferencia = lazy(() => import('./pages/Conferencia'));
+
+function PageLoader() {
+  return (
+    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh', opacity: 0.6 }}>
+      <span>Carregando...</span>
+    </div>
+  );
+}
 
 function App() {
   const { user, loading, signOut } = useAuth();
-  const [activePage, setActivePage] = useState('principal');
   const [theme, setTheme] = useState(() => localStorage.getItem('app-theme') || 'dark');
   const { userName, setUserName, avatar, setAvatar } = useUser();
+  const location = useLocation();
 
   useEffect(() => { loadAtivosRegistry(); }, []);
 
@@ -67,8 +54,6 @@ function App() {
   if (!user) {
     return <LoginPage />;
   }
-
-  const PageComponent = pages[activePage] || Principal;
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
@@ -99,7 +84,7 @@ function App() {
 
   return (
     <div className="app">
-      <Sidebar activePage={activePage} onNavigate={setActivePage} />
+      <Sidebar />
 
       <div className="user-header">
         <input
@@ -150,7 +135,31 @@ function App() {
       </div>
 
       <main className="main-content">
-        <PageComponent />
+        <Suspense fallback={<PageLoader />}>
+          <Routes>
+            <Route path="/" element={<Navigate to="/principal" replace />} />
+            <Route path="/principal" element={<Principal />} />
+            <Route path="/compra" element={<Compra />} />
+            <Route path="/venda" element={<Venda />} />
+            <Route path="/bonificacao" element={<Bonificacao />} />
+            <Route path="/lancamentos" element={<Lancamentos />} />
+            <Route path="/carteira" element={<Carteira />} />
+            <Route path="/recebiveis" element={<Recebiveis />} />
+            <Route path="/rendimentos" element={<Rendimentos />} />
+            <Route path="/ranking" element={<Ranking />} />
+            <Route path="/graficos" element={<Graficos />} />
+            <Route path="/irrf" element={<IRRF />} />
+            <Route path="/relatorios" element={<Relatorios />} />
+            <Route path="/midi" element={<MIDI />} />
+            <Route path="/meta" element={<Meta />} />
+            <Route path="/analitico" element={<Analitico />} />
+            <Route path="/analisar-acoes" element={<AnalisarAcoes />} />
+            <Route path="/analisar-fiis" element={<AnalisarFIIs />} />
+            <Route path="/conferencia" element={<Conferencia />} />
+            <Route path="/ordens" element={<Ordens />} />
+            <Route path="*" element={<Navigate to="/principal" replace />} />
+          </Routes>
+        </Suspense>
       </main>
     </div>
   );

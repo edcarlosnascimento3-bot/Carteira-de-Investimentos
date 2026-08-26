@@ -1,4 +1,4 @@
-const BRAPI_TOKEN = 'aRS1vgdPiC9c7WwVDu4Tnq';
+const BRAPI_TOKEN = import.meta.env.VITE_BRAPI_TOKEN;
 
 const API_CONFIG = {
   yahooFinance: {

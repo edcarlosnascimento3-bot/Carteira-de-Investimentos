@@ -8,7 +8,8 @@ import Toast from '../components/Toast';
 import LogoImage from '../components/LogoImage';
 import { listar as listarAtivos } from '../database/TickerCatalogService';
 import { ETFS_RENDA_FIXA } from '../data/etfRendaFixa';
-import * as XLSX from 'xlsx';
+import { typeIcons, normalizeTipo } from '../utils/helpers';
+import XlsxPopulate from 'xlsx-populate';
 
 const columns = [
   { key: 'imagem', label: 'Imagem', width: 50 },
@@ -65,22 +66,6 @@ const corretoraPorTicker = {
   SANB3: 'RICO', SAPR3: 'RICO', TAEE11: 'RICO',
   DÓLAR: 'WISE', EURO: 'WISE',
 };
-
-const typeIcons = {
-  'Ação': '📈',
-  'FII': '🏗️',
-  'Renda Fixa': '🔒',
-};
-
-// ─── Funções auxiliares fora do componente (estáveis, sem re-criação) ────────
-function normalizeTipo(t) {
-  if (!t) return '';
-  const s = String(t).trim();
-  if (s.toLowerCase() === 'fii') return 'FII';
-  return s.charAt(0).toUpperCase() + s.slice(1);
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
 
 const selectStyle = {
   background: 'var(--surface-dark)',
@@ -225,12 +210,17 @@ function Lancamentos() {
     const file = e.target.files[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = (evt) => {
+    reader.onload = async (evt) => {
       try {
         const data = new Uint8Array(evt.target.result);
-        const workbook = XLSX.read(data, { type: 'array' });
-        const sheet = workbook.Sheets[workbook.SheetNames[0]];
-        const rows = XLSX.utils.sheet_to_json(sheet, { defval: '', header: 1 });
+        const workbook = await XlsxPopulate.fromDataAsync(data);
+        const sheet = workbook.sheet(0);
+        const usedRange = sheet.usedRange();
+        if (!usedRange) {
+          setMassStatus({ type: 'error', msg: 'A planilha está vazia.' });
+          return;
+        }
+        const rows = usedRange.value();
 
         if (!rows.length) {
           setMassStatus({ type: 'error', msg: 'A planilha está vazia.' });

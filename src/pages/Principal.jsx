@@ -6,30 +6,7 @@ import { useRfManual } from '../context/RfManualContext';
 import { usePrices } from '../hooks/usePrices';
 import LogoImage from '../components/LogoImage';
 import { ETFS_RENDA_FIXA } from '../data/etfRendaFixa';
-
-const typeIcons = {
-  'Ação': '📈',
-  'FII': '🏗️',
-  'Renda Fixa': '🔒',
-};
-
-const typeColors = {
-  'Ação': '#C8B800',
-  'FII': '#CC8800',
-  'Renda Fixa': '#0099CC',
-};
-
-const borderColors = {
-  'Ação': '#FF3333',         // Vermelho
-  'FII': '#00CC66',          // Verde
-  'Renda Fixa': '#FFD700',   // Amarelo
-  'Dólar': '#D485FF',        // Lilás
-  'Euro': '#D485FF',         // Lilás
-  'Criptoativo': '#3399FF',  // Azul
-  'Cripto': '#3399FF',       // Azul
-  'Criptoativos': '#3399FF', // Azul
-  'Ouro': '#FFD700',
-};
+import { typeIcons, typeColors, typeBorders } from '../utils/helpers';
 
 function Principal() {
   const { transactions } = useTransactions();
@@ -308,7 +285,7 @@ function Principal() {
             {sortedPortfolio.map((asset) => {
               const isProfit = asset.resultado >= 0;
               const tipoNorm = asset.tipo.replace(/Fii/g, 'FII');
-              const accent = borderColors[tipoNorm] || 'var(--text-faint)';
+              const accent = typeBorders[tipoNorm] || 'var(--text-faint)';
               return (
                 <div key={asset.ticker} className="asset-card" style={{ '--card-accent': accent }} onClick={() => setSelectedTicker(asset.ticker)}>
                   <div className="asset-card-bar"></div>

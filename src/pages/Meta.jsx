@@ -4,28 +4,7 @@ import { useProventos } from '../context/ProventosContext';
 import { useTransactions } from '../context/TransactionsContext';
 import { useMetas } from '../context/MetasContext';
 import LogoImage from '../components/LogoImage';
-
-const typeIcons = {
-  'Ação': '📈',
-  'FII': '🏗️',
-  'Renda Fixa': '🔒',
-};
-
-const typeBorders = {
-  'Ação': '#FF3333',        // Vermelho
-  'FII': '#00CC66',         // Verde
-  'Renda Fixa': '#FFD700',  // Amarelo
-};
-
-const monthNames = [
-  'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
-  'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
-];
-
-function normalizeTipo(tipo) {
-  const t = String(tipo || '').trim();
-  return /^fii/i.test(t) ? 'FII' : t;
-}
+import { typeIcons, typeBorders, normalizeTipo, monthNames } from '../utils/helpers';
 
 function proventoTotal(p) {
   return (p.dividendos || 0) + (p.jcp || 0) + (p.rendimento || 0) + (p.reembolso || 0);

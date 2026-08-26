@@ -7,18 +7,7 @@ import Toast from '../components/Toast';
 import { getTickerInfo, saveTickerInfo } from '../services/tickerRegistry';
 import { useRfManual } from '../context/RfManualContext';
 import { ETFS_RENDA_FIXA } from '../data/etfRendaFixa';
-
-const typeIcons = {
-  'Ação': '📈',
-  'FII': '🏗️',
-  'Renda Fixa': '🔒',
-};
-
-const typeColors = {
-  'Ação': '#C8B800',
-  'FII': '#CC8800',
-  'Renda Fixa': '#0099CC',
-};
+import { typeIcons, typeColors } from '../utils/helpers';
 
 const columns = [
   { key: 'imagem', label: 'Imagem', width: 65 },

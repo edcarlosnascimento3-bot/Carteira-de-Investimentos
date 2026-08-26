@@ -40,3 +40,6 @@ INSERT INTO app_data (key, value, user_id) VALUES
   ('corretoras', '[]'::jsonb, '00000000-0000-0000-0000-000000000000'),
   ('rf_manual', '[]'::jsonb, '00000000-0000-0000-0000-000000000000')
 ON CONFLICT (user_id, key) DO NOTHING;
+
+-- 8. Habilitar Realtime na tabela app_data (sincronização entre dispositivos)
+ALTER PUBLICATION supabase_realtime ADD TABLE app_data;
