@@ -25,10 +25,21 @@ DROP POLICY IF EXISTS "Liberar tudo para todos" ON app_data;
 DROP POLICY IF EXISTS "Usuarios veem apenas seus dados" ON app_data;
 
 -- Usuarios autenticados: acesso total apenas aos proprios registros
--- Legacy (placeholder) tambem acessivel para compatibilidade durante migracao
+-- Legacy (placeholder) acessivel SOMENTE enquanto o usuario ainda nao tem
+-- dados proprios (fluxo de migracao/adocao), evitando bucket publico
+-- compartilhado entre usuarios distintos.
 CREATE POLICY "Usuarios veem apenas seus dados" ON app_data
   FOR ALL
-  USING (user_id IN ('00000000-0000-0000-0000-000000000000', auth.uid()))
+  USING (
+    user_id = auth.uid()
+    OR (
+      user_id = '00000000-0000-0000-0000-000000000000'
+      AND NOT EXISTS (
+        SELECT 1 FROM app_data AS own
+        WHERE own.user_id = auth.uid()
+      )
+    )
+  )
   WITH CHECK (user_id = auth.uid());
 
 -- 7. Valores iniciais para novos usuarios (com placeholder)

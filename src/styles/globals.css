@@ -1038,81 +1038,64 @@ table:not(.data-table) tr {
    FORMULÁRIO DE COMPRA / VENDA
    ============================================================ */
 .compra-page {
-  max-width: 620px;
 }
 
 .compra-header {
-  background: var(--gold);
-  color: var(--ink);
-  font-size: 1.4em;
-  font-weight: 700;
-  text-align: center;
-  padding: 18px 0;
-  border-radius: 10px;
-  margin-bottom: 28px;
-  letter-spacing: 2px;
-  text-transform: uppercase;
+  display: none;
 }
 
 .compra-form {
-  background: var(--surface);
-  border: 1px solid var(--border);
+  background: var(--card-bg, #fff);
+  border: 2px solid #C8B800;
   border-radius: 12px;
-  padding: 28px;
+  padding: 20px;
 }
 
 .compra-total {
-  flex: 1;
-  padding: 10px 14px;
-  background: var(--surface-dark);
-  border: 1px solid #C8B80044;
-  border-radius: 8px;
-  color: var(--text-strong);
-  font-size: 1.1em;
+  padding: 8px 10px;
+  background: var(--surface-dark, #f8f8f8);
+  border: 1px solid var(--border, #ddd);
+  border-radius: 6px;
+  color: var(--text, #333);
+  font-size: 1em;
   font-weight: 700;
-  font-family: 'Consolas', monospace;
+  font-family: inherit;
 }
 
 .compra-actions {
   display: flex;
-  gap: 16px;
+  gap: 8px;
   justify-content: flex-end;
-  margin-top: 24px;
-  padding-top: 20px;
-  border-top: 1px solid var(--border);
+  margin-top: 16px;
 }
 
 .compra-btn {
-  padding: 12px 32px;
+  padding: 8px 16px;
   border: none;
   border-radius: 8px;
-  font-size: 0.95em;
+  font-size: 13px;
   font-family: inherit;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
-  transition: all 0.2s ease;
 }
 
 .compra-btn-clear {
   background: transparent;
-  color: var(--text-muted);
-  border: 1px solid var(--border);
+  color: var(--text-secondary, #888);
+  border: 1px solid var(--border, #eee);
 }
 
 .compra-btn-clear:hover {
   background: var(--surface-hover);
-  color: #FF5555;
-  border-color: #FF555544;
 }
 
 .compra-btn-save {
-  background: var(--gold);
-  color: var(--ink);
+  background: #C8B800;
+  color: #121212;
 }
 
 .compra-btn-save:hover {
-  background: var(--gold-soft);
-  transform: translateY(-1px);
+  background: #C8B800;
 }
 
 .compra-error {
@@ -1125,7 +1108,6 @@ table:not(.data-table) tr {
   font-size: 0.9em;
   font-weight: 500;
   line-height: 1.6;
-  animation: fadeIn 0.3s ease;
 }
 
 .compra-success {

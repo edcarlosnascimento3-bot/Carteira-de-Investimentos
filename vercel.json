@@ -6,8 +6,8 @@
       "destination": "https://query1.finance.yahoo.com/v8/finance/:path*"
     },
     {
-      "source": "/api/brapi/:path*",
-      "destination": "https://brapi.dev/api/:path*"
+      "source": "/api/bcb/:path*",
+      "destination": "https://api.bcb.gov.br/:path*"
     },
     {
       "source": "/(.*)",

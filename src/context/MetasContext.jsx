@@ -1,6 +1,5 @@
-import { createContext, useContext, useState, useEffect, useRef } from 'react';
-import db, { subscribeToChanges } from '../services/storage';
-import { useAuth } from './AuthContext';
+import { createContext, useContext } from 'react';
+import { useStorageSync } from '../hooks/useStorageSync';
 
 const MetasContext = createContext(null);
 
@@ -17,94 +16,19 @@ function getInitialData() {
   return {};
 }
 
+function isEmptyObject(value) {
+  return !value || typeof value !== 'object' || Array.isArray(value) || Object.keys(value).length === 0;
+}
+
 export function MetasProvider({ children }) {
-  const { user } = useAuth();
-  const [metas, setMetas] = useState(getInitialData);
-  const [loaded, setLoaded] = useState(false);
-  const metasRef = useRef(metas);
-
-  useEffect(() => {
-    metasRef.current = metas;
-  }, [metas]);
-
-  // Carrega dados do Supabase (sempre remoto)
-  useEffect(() => {
-    if (!user) return;
-
-    let active = true;
-    db.readForce(STORAGE_NAME).then((data) => {
-      if (!active) return;
-      if (data && typeof data === 'object' && Object.keys(data).length > 0) {
-        setMetas((prev) => {
-          if (Object.keys(prev).length > 0) return prev;
-          return data;
-        });
-      }
-      setLoaded(true);
-    });
-    return () => { active = false; };
-  }, [user]);
-
-  // Realtime: recebe atualizações de outros dispositivos
-  useEffect(() => {
-    if (!user || !loaded) return;
-
-    const unsub = subscribeToChanges(STORAGE_NAME, (remoteData) => {
-      if (remoteData && typeof remoteData === 'object' && Object.keys(remoteData).length > 0) {
-        const currentStr = JSON.stringify(metasRef.current);
-        const newStr = JSON.stringify(remoteData);
-        if (currentStr !== newStr) {
-          setMetas(remoteData);
-        }
-      }
-    });
-
-    return unsub;
-  }, [user, loaded]);
-
-  // Refresh ao voltar à aba
-  useEffect(() => {
-    if (!user || !loaded) return;
-
-    const handler = () => {
-      if (document.visibilityState === 'visible') {
-        db.readForce(STORAGE_NAME).then((data) => {
-          if (data && typeof data === 'object' && Object.keys(data).length > 0) {
-            const currentStr = JSON.stringify(metasRef.current);
-            const newStr = JSON.stringify(data);
-            if (currentStr !== newStr) {
-              setMetas(data);
-            }
-          }
-        });
-      }
-    };
-    document.addEventListener('visibilitychange', handler);
-    return () => document.removeEventListener('visibilitychange', handler);
-  }, [user, loaded]);
-
-  // Salva local + Supabase quando muda
-  useEffect(() => {
-    if (!loaded) return;
-    localStorage.setItem('investimento_metas', JSON.stringify(metas));
-    db.write(STORAGE_NAME, metas);
-  }, [metas, loaded]);
-
-  useEffect(() => {
-    const handleBeforeUnload = () => {
-      if (loaded) {
-        localStorage.setItem('investimento_metas', JSON.stringify(metasRef.current));
-      }
-    };
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [loaded]);
+  const { data: metas, setData: setMetas } = useStorageSync(STORAGE_NAME, {
+    initialValue: getInitialData,
+    isEmpty: isEmptyObject,
+    keepLocalIfPresent: true,
+  });
 
   const updateMetas = (updater) => {
-    setMetas((prev) => {
-      const next = typeof updater === 'function' ? updater(prev) : updater;
-      return next;
-    });
+    setMetas((prev) => (typeof updater === 'function' ? updater(prev) : updater));
   };
 
   return (

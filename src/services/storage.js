@@ -119,6 +119,41 @@ async function readSupabase(name, retries = 5, delay = 600) {
   return null;
 }
 
+const WRITE_DEBOUNCE_MS = 500;
+
+// Writes coalescidos: várias chamadas seguidas de db.write() para o MESMO name
+// (ou nomes diferentes) disparam uma única flush para o Supabase com o dado mais recente.
+const pendingWrites = new Map();
+let flushTimer = null;
+
+function scheduleFlush(name, data) {
+  pendingWrites.set(name, data);
+  if (flushTimer) return;
+  flushTimer = setTimeout(() => {
+    flushTimer = null;
+    void flushPendingWrites();
+  }, WRITE_DEBOUNCE_MS);
+}
+
+async function flushPendingWrites() {
+  const entries = Array.from(pendingWrites.entries());
+  pendingWrites.clear();
+  try {
+    const userId = await getCurrentUserId();
+    for (const [name, data] of entries) {
+      writeLocalStorage(name, data, userId);
+      await writeSupabase(name, data);
+      try {
+        await idbWrite(name, data);
+      } catch (e) {
+        console.warn('[storage] IndexedDB write falhou:', name, e);
+      }
+    }
+  } catch (e) {
+    console.warn('[storage] flush de writes falhou:', e);
+  }
+}
+
 async function writeSupabase(name, data) {
   try {
     const userId = await getCurrentUserId();
@@ -202,32 +237,26 @@ const db = {
   async write(name, data) {
     const userId = await getCurrentUserId();
     writeLocalStorage(name, data, userId);
-
-    await writeSupabase(name, data);
-
-    try {
-      await idbWrite(name, data);
-    } catch (e) {
-      console.warn('[storage] IndexedDB write falhou:', name, e);
-    }
-
+    scheduleFlush(name, data);
     return true;
+  },
+
+  // Força flush imediato dos writes pendentes (debounce) — usado em pagehide/visibilitychange.
+  async flush() {
+    if (flushTimer) {
+      clearTimeout(flushTimer);
+      flushTimer = null;
+    }
+    await flushPendingWrites();
   },
 };
 
 // Realtime subscriptions — mantém referências para evitar duplicates
 const activeChannels = new Map();
+let subscriptionsPaused = false;
 
-export function subscribeToChanges(name, callback) {
-  const channelKey = `app_data:${name}`;
-
-  // Remove subscription anterior se existir
-  if (activeChannels.has(channelKey)) {
-    supabase.removeChannel(activeChannels.get(channelKey));
-    activeChannels.delete(channelKey);
-  }
-
-  const channel = supabase
+function createChannel(channelKey, name, callback) {
+  return supabase
     .channel(channelKey)
     .on('postgres_changes', {
       event: '*',
@@ -240,20 +269,65 @@ export function subscribeToChanges(name, callback) {
       }
     })
     .subscribe();
+}
 
-  activeChannels.set(channelKey, channel);
+// Aba oculta não precisa de realtime — mantém o registro para recriar ao voltar
+export function pauseSubscriptions() {
+  if (subscriptionsPaused) return;
+  subscriptionsPaused = true;
+  for (const entry of activeChannels.values()) {
+    if (entry.channel) {
+      supabase.removeChannel(entry.channel);
+      entry.channel = null;
+    }
+  }
+}
+
+export function resumeSubscriptions() {
+  if (!subscriptionsPaused) return;
+  subscriptionsPaused = false;
+  for (const [channelKey, entry] of activeChannels) {
+    if (!entry.channel) {
+      entry.channel = createChannel(channelKey, entry.name, entry.callback);
+    }
+  }
+}
+
+export function subscribeToChanges(name, callback) {
+  const channelKey = `app_data:${name}`;
+
+  // Remove subscription anterior se existir
+  if (activeChannels.has(channelKey)) {
+    const prev = activeChannels.get(channelKey);
+    if (prev.channel) supabase.removeChannel(prev.channel);
+    activeChannels.delete(channelKey);
+  }
+
+  const entry = { name, callback, channel: null };
+  if (!subscriptionsPaused) {
+    entry.channel = createChannel(channelKey, name, callback);
+  }
+  activeChannels.set(channelKey, entry);
 
   return () => {
-    supabase.removeChannel(channel);
+    if (entry.channel) supabase.removeChannel(entry.channel);
     activeChannels.delete(channelKey);
   };
 }
 
 export function unsubscribeAll() {
-  for (const [, channel] of activeChannels) {
-    supabase.removeChannel(channel);
+  for (const entry of activeChannels.values()) {
+    if (entry.channel) supabase.removeChannel(entry.channel);
   }
   activeChannels.clear();
+}
+
+// Pausa as subscriptions quando a aba perde visibilidade e retoma ao voltar
+if (typeof document !== 'undefined') {
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') pauseSubscriptions();
+    else resumeSubscriptions();
+  });
 }
 
 export default db;

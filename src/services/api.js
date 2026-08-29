@@ -1,4 +1,21 @@
-const BRAPI_TOKEN = import.meta.env.VITE_BRAPI_TOKEN;
+let apiErrorReporter = null;
+
+/**
+ * Registra handler opcional para receber erros de rede/API.
+ * Por padrao os erros sao apenas logados (os fallbacks ja existem).
+ */
+export function setApiErrorReporter(fn) {
+  apiErrorReporter = fn;
+}
+
+function reportApiError(scope, error) {
+  if (apiErrorReporter) {
+    try {
+      apiErrorReporter(scope, error);
+    } catch {}
+  }
+  console.warn('[api] ' + scope, error);
+}
 
 const API_CONFIG = {
   yahooFinance: {
@@ -12,9 +29,23 @@ const API_CONFIG = {
   },
   brapi: {
     baseUrl: 'https://brapi.dev/api',
-    token: BRAPI_TOKEN,
   },
 };
+
+async function brapiRequest(path, params = {}) {
+  try {
+    const res = await fetch('/api/brapi', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ path, params }),
+    });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch (e) {
+    reportApiError('brapi', e);
+    return null;
+  }
+}
 
 const cryptoMap = {
   BTC: 'BTC-USD', ETH: 'ETH-USD', SOL: 'SOL-USD',
@@ -59,7 +90,9 @@ async function fetchYahoo(ticker) {
           change: change,
         };
       }
-    } catch {}
+    } catch (e) {
+      reportApiError('yahoo', e);
+    }
   }
   return null;
 }
@@ -87,7 +120,9 @@ async function fetchYahooViaProxy(ticker) {
         change: change,
       };
     }
-  } catch {}
+  } catch (e) {
+    reportApiError('yahoo-proxy', e);
+  }
   return null;
 }
 
@@ -124,7 +159,9 @@ export async function fetchYahooDividends(ticker) {
       if (dividends.length > 0) {
         return dividends.sort((a, b) => b.year - a.year);
       }
-    } catch {}
+    } catch (e) {
+      reportApiError('yahoo-dividends', e);
+    }
   }
   return [];
 }
@@ -143,7 +180,9 @@ async function fetchMfinance(ticker) {
         change: json.changePercent ?? 0,
       };
     }
-  } catch {}
+  } catch (e) {
+    reportApiError('mfinance', e);
+  }
   return null;
 }
 
@@ -153,10 +192,7 @@ async function fetchMfinance(ticker) {
 export async function fetchBrapiQuote(ticker) {
   try {
     const symbol = ticker.replace('.SA', '');
-    const url = `/api/brapi/quote/${symbol}?token=${API_CONFIG.brapi.token}`;
-    const res = await fetch(url);
-    if (!res.ok) return null;
-    const json = await res.json();
+    const json = await brapiRequest(`quote/${symbol}`);
     const item = json?.results?.[0];
     if (item?.regularMarketPrice) {
       return {
@@ -164,7 +200,9 @@ export async function fetchBrapiQuote(ticker) {
         change: item.regularMarketChangePercent ?? 0,
       };
     }
-  } catch {}
+  } catch (e) {
+    reportApiError('brapi-quote', e);
+  }
   return null;
 }
 
@@ -176,10 +214,8 @@ export async function fetchBrapiQuote(ticker) {
 export async function fetchBrapiDividends(ticker) {
   try {
     const symbol = ticker.replace('.SA', '');
-    const url = `/api/brapi/quote/${symbol}?dividends=true&token=${API_CONFIG.brapi.token}`;
-    const res = await fetch(url);
-    if (!res.ok) return [];
-    const json = await res.json();
+    const json = await brapiRequest(`quote/${symbol}`, { dividends: 'true' });
+    if (!json) return [];
     const item = json?.results?.[0];
     if (!item?.dividendsData?.cashDividends) return [];
 
@@ -210,7 +246,8 @@ export async function fetchBrapiDividends(ticker) {
       });
     }
     return dividends.sort((a, b) => b.year - a.year);
-  } catch {
+  } catch (e) {
+    reportApiError('brapi-dividends', e);
     return [];
   }
 }
@@ -223,10 +260,8 @@ export async function fetchBrapiDividends(ticker) {
 export async function fetchBrapiFundamentals(ticker) {
   try {
     const symbol = ticker.replace('.SA', '');
-    const url = `/api/brapi/quote/${symbol}?modules=defaultKeyStatistics,financialData&token=${API_CONFIG.brapi.token}`;
-    const res = await fetch(url);
-    if (!res.ok) return null;
-    const json = await res.json();
+    const json = await brapiRequest(`quote/${symbol}`, { modules: 'defaultKeyStatistics,financialData' });
+    if (!json) return null;
     const item = json?.results?.[0];
     if (!item) return null;
 
@@ -321,7 +356,8 @@ export async function fetchBrapiFundamentals(ticker) {
     return Object.fromEntries(
       Object.entries(data).filter(([, v]) => v.length > 0)
     );
-  } catch {
+  } catch (e) {
+    reportApiError('brapi-fundamentals', e);
     return null;
   }
 }
@@ -329,21 +365,34 @@ export async function fetchBrapiFundamentals(ticker) {
 /**
  * Busca cotacao atual de acoes brasileiras (B3)
  * @param {string[]} tickers - Ex: ['PETR4', 'VALE3', 'ITUB4']
+ * @param {number} [concurrency=5] - Máximo de requisições simultâneas
  * @returns {Promise<Object>} Mapa { ticker: { price, change } }
  */
-export async function fetchStockQuotes(tickers) {
+export async function fetchStockQuotes(tickers, concurrency = 5) {
   const results = {};
   const unique = [...new Set(tickers)];
+  const limit = Math.max(1, Math.min(concurrency, unique.length));
 
-  const fetches = unique.map(async (ticker) => {
-    let data = await fetchBrapiQuote(ticker);
-    if (!data) data = await fetchYahooViaProxy(ticker);
-    if (!data) data = await fetchYahoo(ticker);
-    if (!data && !cryptoMap[ticker]) data = await fetchMfinance(ticker);
-    results[ticker] = data ?? null;
-  });
+  // Worker pool: cada worker reserva o próximo ticker atômico
+  let nextIndex = 0;
+  const worker = async () => {
+    while (nextIndex < unique.length) {
+      const ticker = unique[nextIndex++];
+      try {
+        let data = await fetchBrapiQuote(ticker);
+        if (!data) data = await fetchYahooViaProxy(ticker);
+        if (!data) data = await fetchYahoo(ticker);
+        if (!data && !cryptoMap[ticker]) data = await fetchMfinance(ticker);
+        results[ticker] = data ?? null;
+      } catch (e) {
+        reportApiError('stock-quotes', e);
+        results[ticker] = null;
+      }
+    }
+  };
 
-  await Promise.allSettled(fetches);
+  const workers = Array.from({ length: limit }, () => worker());
+  await Promise.allSettled(workers);
   return results;
 }
 
@@ -357,10 +406,8 @@ export async function fetchStockQuotes(tickers) {
 export async function fetchHistoricalData(ticker, range = '1y', interval = '1d') {
   try {
     const symbol = ticker.replace('.SA', '');
-    const url = `/api/brapi/quote/${symbol}?range=${range}&interval=${interval}&token=${API_CONFIG.brapi.token}`;
-    const res = await fetch(url);
-    if (!res.ok) return [];
-    const json = await res.json();
+    const json = await brapiRequest(`quote/${symbol}`, { range, interval });
+    if (!json) return [];
     const item = json?.results?.[0];
     if (!item?.historicalDataPrice) return [];
 
@@ -376,7 +423,8 @@ export async function fetchHistoricalData(ticker, range = '1y', interval = '1d')
         close: h.close,
         volume: h.volume || 0,
       }));
-  } catch {
+  } catch (e) {
+    reportApiError('brapi-historical', e);
     return [];
   }
 }
@@ -391,7 +439,8 @@ export async function fetchCryptoData(coins) {
     const res = await fetch(url);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return await res.json();
-  } catch {
+  } catch (e) {
+    reportApiError('coingecko', e);
     return null;
   }
 }
@@ -404,10 +453,8 @@ export async function fetchCryptoData(coins) {
 export async function fetchBrapiProfile(ticker) {
   try {
     const symbol = ticker.replace('.SA', '');
-    const url = `/api/brapi/quote/${symbol}?modules=summaryProfile&token=${API_CONFIG.brapi.token}`;
-    const res = await fetch(url);
-    if (!res.ok) return null;
-    const json = await res.json();
+    const json = await brapiRequest(`quote/${symbol}`, { modules: 'summaryProfile' });
+    if (!json) return null;
     const item = json?.results?.[0];
     if (!item?.summaryProfile?.[0]) return null;
     const profile = item.summaryProfile[0];
@@ -415,7 +462,8 @@ export async function fetchBrapiProfile(ticker) {
       sector: (profile.sector || '').trim(),
       industry: (profile.industry || '').trim(),
     };
-  } catch {
+  } catch (e) {
+    reportApiError('brapi-profile', e);
     return null;
   }
 }
@@ -438,11 +486,7 @@ export async function fetchBrapiProfilesBatch(tickers, concurrency = 20) {
     
     try {
       const symbolsStr = chunk.join(',');
-      const url = `/api/brapi/quote/${symbolsStr}?modules=summaryProfile&token=${API_CONFIG.brapi.token}`;
-      const res = await fetch(url);
-      
-      if (!res.ok) continue;
-      const json = await res.json();
+      const json = await brapiRequest(`quote/${symbolsStr}`, { modules: 'summaryProfile' });
       
       if (!json?.results) continue;
       
@@ -476,10 +520,7 @@ export async function fetchFIIs(tickers) {
   const results = {};
   try {
     const symbols = [...new Set(tickers.map(t => t.replace('.SA', '')))].join(',');
-    const url = `/api/brapi/quote/${symbols}?token=${API_CONFIG.brapi.token}`;
-    const res = await fetch(url);
-    if (!res.ok) return results;
-    const json = await res.json();
+    const json = await brapiRequest(`quote/${symbols}`);
     if (!json?.results) return results;
     for (const item of json.results) {
       if (item?.regularMarketPrice) {
@@ -489,7 +530,9 @@ export async function fetchFIIs(tickers) {
         };
       }
     }
-  } catch {}
+  } catch (e) {
+    reportApiError('brapi-fiis', e);
+  }
   return results;
 }
 
@@ -499,10 +542,7 @@ export async function fetchFIIs(tickers) {
  */
 export async function fetchAllStocksWithSectors() {
   try {
-    const url = `/api/brapi/quote/list?token=${API_CONFIG.brapi.token}`;
-    const res = await fetch(url);
-    if (!res.ok) return [];
-    const json = await res.json();
+    const json = await brapiRequest('quote/list');
     if (!json?.stocks) return [];
     return json.stocks
       .filter(s => s.type === 'stock' && s.sector)
@@ -511,7 +551,8 @@ export async function fetchAllStocksWithSectors() {
         sector: (s.sector || '').trim(),
         name: (s.name || '').trim(),
       }));
-  } catch {
+  } catch (e) {
+    reportApiError('brapi-list', e);
     return [];
   }
 }
@@ -526,12 +567,10 @@ export async function fetchAllStocksWithSectors() {
 export async function fetchBrapiAnalysisData(ticker) {
   try {
     const symbol = ticker.replace('.SA', '');
-    const token = API_CONFIG.brapi.token;
 
     // Busca basica (disponivel para todos os ativos)
-    const resBasic = await fetch(`/api/brapi/quote/${symbol}?token=${token}`);
-    if (!resBasic.ok) return null;
-    const jsonBasic = await resBasic.json();
+    const jsonBasic = await brapiRequest(`quote/${symbol}`);
+    if (!jsonBasic) return null;
     const itemBasic = jsonBasic?.results?.[0];
     if (!itemBasic) return null;
 
@@ -543,9 +582,8 @@ export async function fetchBrapiAnalysisData(ticker) {
     let stats = {};
     let fin = {};
     try {
-      const resMod = await fetch(`/api/brapi/quote/${symbol}?modules=defaultKeyStatistics,financialData&token=${token}`);
-      if (resMod.ok) {
-        const jsonMod = await resMod.json();
+      const jsonMod = await brapiRequest(`quote/${symbol}`, { modules: 'defaultKeyStatistics,financialData' });
+      if (jsonMod) {
         const itemMod = jsonMod?.results?.[0];
         stats = itemMod?.defaultKeyStatistics || {};
         fin = itemMod?.financialData || {};
@@ -619,7 +657,8 @@ export async function fetchBrapiAnalysisData(ticker) {
       'CAGR RECEITA  ANOS': pct(revenueGrowthAnnual),
       'CAGR LUCROS  ANOS': pct(earningsGrowthAnnual),
     };
-  } catch {
+  } catch (e) {
+    reportApiError('brapi-analysis', e);
     return null;
   }
 }

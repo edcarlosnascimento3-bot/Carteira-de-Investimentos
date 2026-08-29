@@ -17,6 +17,7 @@ function Compra() {
     nome: '',
     cnpj: '',
     tipo: '',
+    segmento: '',
     data: '',
     quantidade: '',
     valor: '',
@@ -31,6 +32,8 @@ function Compra() {
   const vlr = Number(form.valor) || 0;
   const tx = Number(form.taxas) || 0;
   const total = qtd * vlr + tx;
+
+  const segmentos = ['Agronegócio', 'Consumo', 'Energia', 'Financeiro', 'Imobiliário', 'Infraestrutura', 'Mineração', 'Saneamento', 'Tecnologia', 'Transporte'];
 
   const tickers = [...new Set(transactions.map((t) => t.ticker))].sort();
 
@@ -55,7 +58,7 @@ function Compra() {
   };
 
   const confirmClear = () => {
-    setForm({ ticker: '', nome: '', cnpj: '', tipo: '', data: '', quantidade: '', valor: '', taxas: '' });
+    setForm({ ticker: '', nome: '', cnpj: '', tipo: '', segmento: '', data: '', quantidade: '', valor: '', taxas: '' });
     setSaved(false);
     setErrors([]);
     setShowConfirm(false);
@@ -71,6 +74,7 @@ function Compra() {
     if (!form.nome.trim()) missing.push('Nome');
     if (!form.cnpj.trim()) missing.push('CNPJ');
     if (!form.tipo) missing.push('Tipo');
+    if (!form.segmento) missing.push('Segmento');
     if (!form.data) missing.push('Data');
     if (!form.quantidade || Number(form.quantidade) <= 0) missing.push('Quantidade');
     if (!form.valor || Number(form.valor) <= 0) missing.push('Valor Unitário');
@@ -98,7 +102,7 @@ function Compra() {
       ativo: form.nome,
       cnpj: form.cnpj,
       tipo: form.tipo,
-      segmento: '',
+      segmento: form.segmento,
       operacao: 'Compra',
       data: dataBR,
       ano,
@@ -125,152 +129,152 @@ function Compra() {
 
     setSaved(true);
     setErrors([]);
-    setForm({ ticker: '', nome: '', cnpj: '', tipo: '', data: '', quantidade: '', valor: '', taxas: '' });
+    setForm({ ticker: '', nome: '', cnpj: '', tipo: '', segmento: '', data: '', quantidade: '', valor: '', taxas: '' });
     setTimeout(() => setSaved(false), 3000);
   };
 
   const inputStyle = {
-    flex: 1,
-    padding: '10px 14px',
-    background: 'var(--surface-void)',
-    border: '1px solid var(--border)',
-    borderRadius: '8px',
-    color: 'var(--text)',
-    fontSize: '0.95em',
+    width: '100%',
+    boxSizing: 'border-box',
+    background: 'var(--surface-dark, #f8f8f8)',
+    color: 'var(--text, #333)',
+    border: '1px solid var(--border, #ddd)',
+    borderRadius: '6px',
+    padding: '8px 10px',
+    fontSize: '13px',
     fontFamily: 'inherit',
     outline: 'none',
-    transition: 'border-color 0.2s ease',
-  };
-
-  const rowStyle = {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '16px',
-    marginBottom: '14px',
   };
 
   const labelStyle = {
-    width: '140px',
-    color: 'var(--text-soft)',
-    fontSize: '0.9em',
-    fontWeight: 500,
-    flexShrink: 0,
+    display: 'block',
+    fontSize: '12px',
+    color: 'var(--text-secondary, #888)',
+    marginBottom: '4px',
+    textTransform: 'uppercase',
+    letterSpacing: '0.3',
+  };
+
+  const formGridStyle = {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+    gap: '12px',
   };
 
   return (
     <div className="compra-page">
-      <div className="compra-header">
-        <span>Compra</span>
-      </div>
+      <h2 style={{ fontSize: '1.2em', fontWeight: 700, color: 'var(--text)', marginBottom: 16 }}>Compra</h2>
 
       <form className="compra-form" onSubmit={handleSubmit}>
-        <div style={rowStyle}>
-          <label style={labelStyle}>Ticker</label>
-          <input
-            style={inputStyle}
-            list="ticker-list"
-            value={form.ticker}
-            onChange={(e) => handleChange('ticker', e.target.value.toUpperCase())}
-            placeholder="Ex: PETR4"
-          />
-          <datalist id="ticker-list">
-            {tickers.map((t) => (
-              <option key={t} value={t} />
-            ))}
-          </datalist>
-        </div>
-
-        <div style={rowStyle}>
-          <label style={labelStyle}>Nome</label>
-          <input
-            style={inputStyle}
-            value={form.nome}
-            onChange={(e) => handleChange('nome', e.target.value)}
-            placeholder="Nome do ativo"
-          />
-        </div>
-
-        <div style={rowStyle}>
-          <label style={labelStyle}>CNPJ</label>
-          <input
-            style={inputStyle}
-            value={form.cnpj}
-            onChange={(e) => handleChange('cnpj', e.target.value)}
-            placeholder="00.000.000/0001-00"
-          />
-        </div>
-
-        <div style={rowStyle}>
-          <label style={labelStyle}>Tipo</label>
-          <select
-            style={{ ...inputStyle, color: form.tipo ? 'var(--text)' : 'var(--text-faint)' }}
-            value={form.tipo}
-            onChange={(e) => handleChange('tipo', e.target.value)}
-          >
-            <option value="" disabled hidden>Selecione o tipo</option>
-            <option value="Ação">Ação</option>
-            <option value="FII">FII</option>
-            <option value="Renda Fixa">Renda Fixa</option>
-          </select>
-        </div>
-
-        <div style={rowStyle}>
-          <label style={labelStyle}>Data</label>
-          <input
-            style={{
-              ...inputStyle,
-              colorScheme: 'dark',
-            }}
-            type="date"
-            value={form.data}
-            onChange={(e) => handleChange('data', e.target.value)}
-          />
-        </div>
-
-        <div style={rowStyle}>
-          <label style={labelStyle}>Quantidade</label>
-          <input
-            style={inputStyle}
-            type="number"
-            step="1"
-            min="0"
-            value={form.quantidade}
-            onChange={(e) => handleChange('quantidade', e.target.value)}
-            placeholder="0"
-          />
-        </div>
-
-        <div style={rowStyle}>
-          <label style={labelStyle}>Valor Unitário</label>
-          <input
-            style={inputStyle}
-            type="number"
-            step="0.01"
-            min="0"
-            value={form.valor}
-            onChange={(e) => handleChange('valor', e.target.value)}
-            placeholder="0,00"
-          />
-        </div>
-
-        <div style={rowStyle}>
-          <label style={labelStyle}>Taxas</label>
-          <input
-            style={inputStyle}
-            type="number"
-            step="0.01"
-            min="0"
-            value={form.taxas}
-            onChange={(e) => handleChange('taxas', e.target.value)}
-            placeholder="0,00"
-          />
-        </div>
-
-        <div style={rowStyle}>
-          <label style={labelStyle}>Total</label>
-          <div className="compra-total">
-            {formatCurrency(total)}
+        <div style={formGridStyle}>
+          <div>
+            <label style={labelStyle}>Ticker</label>
+            <input
+              style={inputStyle}
+              list="ticker-list"
+              value={form.ticker}
+              onChange={(e) => handleChange('ticker', e.target.value.toUpperCase())}
+              placeholder="Ex: PETR4"
+            />
+            <datalist id="ticker-list">
+              {tickers.map((t) => (
+                <option key={t} value={t} />
+              ))}
+            </datalist>
           </div>
+          <div>
+            <label style={labelStyle}>Nome</label>
+            <input
+              style={inputStyle}
+              value={form.nome}
+              onChange={(e) => handleChange('nome', e.target.value)}
+              placeholder="Nome do ativo"
+            />
+          </div>
+          <div>
+            <label style={labelStyle}>CNPJ</label>
+            <input
+              style={inputStyle}
+              value={form.cnpj}
+              onChange={(e) => handleChange('cnpj', e.target.value)}
+              placeholder="00.000.000/0001-00"
+            />
+          </div>
+          <div>
+            <label style={labelStyle}>Tipo</label>
+            <select
+              style={{ ...inputStyle, color: form.tipo ? 'var(--text)' : 'var(--text-faint)' }}
+              value={form.tipo}
+              onChange={(e) => handleChange('tipo', e.target.value)}
+            >
+              <option value="" disabled hidden>Selecione o tipo</option>
+              <option value="Ação">Ação</option>
+              <option value="FII">FII</option>
+              <option value="Renda Fixa">Renda Fixa</option>
+            </select>
+          </div>
+          <div>
+            <label style={labelStyle}>Segmento</label>
+            <select
+              style={{ ...inputStyle, color: form.segmento ? 'var(--text)' : 'var(--text-faint)' }}
+              value={form.segmento}
+              onChange={(e) => handleChange('segmento', e.target.value)}
+            >
+              <option value="" disabled hidden>Selecione o segmento</option>
+              {segmentos.map((s) => (
+                <option key={s} value={s}>{s}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label style={labelStyle}>Data</label>
+            <input
+              style={{ ...inputStyle, colorScheme: 'dark' }}
+              type="date"
+              value={form.data}
+              onChange={(e) => handleChange('data', e.target.value)}
+            />
+          </div>
+          <div>
+            <label style={labelStyle}>Quantidade</label>
+            <input
+              style={inputStyle}
+              type="number"
+              step="1"
+              min="0"
+              value={form.quantidade}
+              onChange={(e) => handleChange('quantidade', e.target.value)}
+              placeholder="0"
+            />
+          </div>
+          <div>
+            <label style={labelStyle}>Valor Unitário</label>
+            <input
+              style={inputStyle}
+              type="number"
+              step="0.01"
+              min="0"
+              value={form.valor}
+              onChange={(e) => handleChange('valor', e.target.value)}
+              placeholder="0,00"
+            />
+          </div>
+          <div>
+            <label style={labelStyle}>Taxas</label>
+            <input
+              style={inputStyle}
+              type="number"
+              step="0.01"
+              min="0"
+              value={form.taxas}
+              onChange={(e) => handleChange('taxas', e.target.value)}
+              placeholder="0,00"
+            />
+          </div>
+        </div>
+        <div style={{ marginTop: 16 }}>
+          <label style={labelStyle}>Total</label>
+          <div className="compra-total">{formatCurrency(total)}</div>
         </div>
 
         {errors.length > 0 && (
@@ -279,7 +283,7 @@ function Compra() {
           </div>
         )}
 
-        <div className="compra-actions">
+        <div style={{ display: 'flex', gap: 8, marginTop: 16, justifyContent: 'flex-end' }}>
           <button type="button" className="compra-btn compra-btn-clear" onClick={handleClear}>
             Apagar
           </button>

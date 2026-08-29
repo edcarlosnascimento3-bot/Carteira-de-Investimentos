@@ -5,6 +5,7 @@ import { useAuth } from './context/AuthContext';
 import LoginPage from './pages/LoginPage';
 import { loadAtivosRegistry } from './services/tickerRegistry';
 import Sidebar from './components/Layout/Sidebar';
+import ErrorBoundary from './components/ErrorBoundary';
 import Principal from './pages/Principal';
 
 const Ordens = lazy(() => import('./pages/Ordens'));
@@ -25,6 +26,8 @@ const Analitico = lazy(() => import('./pages/Analitico'));
 const AnalisarAcoes = lazy(() => import('./pages/AnalisarAcoes'));
 const AnalisarFIIs = lazy(() => import('./pages/AnalisarFIIs'));
 const Conferencia = lazy(() => import('./pages/Conferencia'));
+const IRRF2 = lazy(() => import('./pages/IRRF2'));
+const RendaFixaManual = lazy(() => import('./pages/RendaFixaManual'));
 
 function PageLoader() {
   return (
@@ -105,7 +108,7 @@ function App() {
 
         {avatar ? (
           <label htmlFor="avatar-upload" title="Clique para trocar a foto">
-            <img src={avatar} alt="Avatar" className="user-avatar" />
+            <img src={avatar} alt="Avatar" className="user-avatar" loading="lazy" decoding="async" />
           </label>
         ) : (
           <label htmlFor="avatar-upload" className="user-avatar-placeholder" title="Clique para adicionar foto">
@@ -135,31 +138,35 @@ function App() {
       </div>
 
       <main className="main-content">
-        <Suspense fallback={<PageLoader />}>
-          <Routes>
-            <Route path="/" element={<Navigate to="/principal" replace />} />
-            <Route path="/principal" element={<Principal />} />
-            <Route path="/compra" element={<Compra />} />
-            <Route path="/venda" element={<Venda />} />
-            <Route path="/bonificacao" element={<Bonificacao />} />
-            <Route path="/lancamentos" element={<Lancamentos />} />
-            <Route path="/carteira" element={<Carteira />} />
-            <Route path="/recebiveis" element={<Recebiveis />} />
-            <Route path="/rendimentos" element={<Rendimentos />} />
-            <Route path="/ranking" element={<Ranking />} />
-            <Route path="/graficos" element={<Graficos />} />
-            <Route path="/irrf" element={<IRRF />} />
-            <Route path="/relatorios" element={<Relatorios />} />
-            <Route path="/midi" element={<MIDI />} />
-            <Route path="/meta" element={<Meta />} />
-            <Route path="/analitico" element={<Analitico />} />
-            <Route path="/analisar-acoes" element={<AnalisarAcoes />} />
-            <Route path="/analisar-fiis" element={<AnalisarFIIs />} />
-            <Route path="/conferencia" element={<Conferencia />} />
-            <Route path="/ordens" element={<Ordens />} />
-            <Route path="*" element={<Navigate to="/principal" replace />} />
-          </Routes>
-        </Suspense>
+        <ErrorBoundary>
+          <Suspense fallback={<PageLoader />}>
+            <Routes>
+              <Route path="/" element={<Navigate to="/principal" replace />} />
+              <Route path="/principal" element={<Principal />} />
+              <Route path="/compra" element={<Compra />} />
+              <Route path="/venda" element={<Venda />} />
+              <Route path="/bonificacao" element={<Bonificacao />} />
+              <Route path="/lancamentos" element={<Lancamentos />} />
+              <Route path="/carteira" element={<Carteira />} />
+              <Route path="/recebiveis" element={<Recebiveis />} />
+              <Route path="/rendimentos" element={<Rendimentos />} />
+              <Route path="/ranking" element={<Ranking />} />
+              <Route path="/graficos" element={<Graficos />} />
+              <Route path="/irrf" element={<IRRF />} />
+              <Route path="/irrf2" element={<IRRF2 />} />
+              <Route path="/renda-fixa" element={<RendaFixaManual />} />
+              <Route path="/relatorios" element={<Relatorios />} />
+              <Route path="/midi" element={<MIDI />} />
+              <Route path="/meta" element={<Meta />} />
+              <Route path="/analitico" element={<Analitico />} />
+              <Route path="/analisar-acoes" element={<AnalisarAcoes />} />
+              <Route path="/analisar-fiis" element={<AnalisarFIIs />} />
+              <Route path="/conferencia" element={<Conferencia />} />
+              <Route path="/ordens" element={<Ordens />} />
+              <Route path="*" element={<Navigate to="/principal" replace />} />
+            </Routes>
+          </Suspense>
+        </ErrorBoundary>
       </main>
     </div>
   );

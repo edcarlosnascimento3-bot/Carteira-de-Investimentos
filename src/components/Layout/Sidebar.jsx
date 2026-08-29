@@ -17,10 +17,12 @@ const menuItems = [
   { path: '/lancamentos', label: 'Lançamentos', icon: '📝' },
   { path: '/carteira', label: 'Carteira', icon: '💼' },
   { path: '/recebiveis', label: 'Proventos', icon: '💰' },
+  { path: '/renda-fixa', label: 'Renda Fixa', icon: '🔒' },
   { path: '/rendimentos', label: 'Calendário', icon: '📅' },
   { path: '/ranking', label: 'Ranking', icon: '🏆' },
   { path: '/graficos', label: 'Gráficos', icon: '📊' },
   { path: '/irrf', label: 'IRRF', icon: '🧾' },
+  { path: '/irrf2', label: 'IRPF (Centro)', icon: '📋' },
   {
     id: 'analitico',
     label: 'Analítico',

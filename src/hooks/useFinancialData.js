@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { optionsKey } from '../utils/equality';
 
 /**
  * Hook para buscar dados financeiros
@@ -49,7 +50,8 @@ export function useFinancialData(type = 'summary', options = {}) {
     return () => {
       cancelled = true;
     };
-  }, [type, JSON.stringify(options)]);
+  // Deps estáveis: chave primitiva dos campos relevantes, sem JSON.stringify
+  }, [type, optionsKey(options, ['tickers', 'range', 'interval'])]);
 
   return { data, loading, error };
 }

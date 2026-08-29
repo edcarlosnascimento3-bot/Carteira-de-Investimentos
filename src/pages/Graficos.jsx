@@ -1,4 +1,4 @@
-import { useMemo, useState, useCallback, useRef, useLayoutEffect, useEffect } from 'react';
+import { useMemo, useState, useCallback, useRef, useLayoutEffect, useEffect, memo } from 'react';
 import { useTransactions } from '../context/TransactionsContext';
 import { useProventos } from '../context/ProventosContext';
 import { useRfManual } from '../context/RfManualContext';
@@ -8,43 +8,15 @@ import * as CorretoraService from '../database/CorretoraService';
 import { ETFS_RENDA_FIXA } from '../data/etfRendaFixa';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LabelList, LineChart, Line, CartesianGrid, Sector } from 'recharts';
 import { normalizeTipo, monthNames } from '../utils/helpers';
+import SectionErrorBoundary from '../components/SectionErrorBoundary';
+import { mean, stdSample, cagr, hhi, trackingError, beta, jensenAlpha } from '../services/analytics';
+import {
+  C_ACAO, C_FII, C_RF, C_VERDE, C_VERDE_ESCURO, C_AZUL, C_VERMELHO_ESCURO,
+  typeColors, CHART_COLORS, INTL_COLORS, corretoraPorTicker, INDEX_HISTORY,
+} from '../data/constants';
+import { fetchCurrentYearReturns } from '../services/indexApi';
 
 const defaultTickers = ['PETR4', 'VALE3', 'ITUB4', 'ABEV3', 'BBAS3', 'WEGE3', 'HGLG11', 'KNRI11', 'BTC', 'ETH'];
-
-const typeColors = {
-  'Ação': '#FF3333',
-  'FII': '#00CC66',
-  'Renda Fixa': '#C8B800',
-  'Dólar': '#008844',
-  'Criptoativo': '#333333',
-  'Ouro': '#FFD700',
-  'Euro': '#9933FF',
-};
-
-const CHART_COLORS = ['#C8B800','#CC8800','#0099CC','#CC44CC','#00BB66','#FF5555','#3399FF','#FF8800','#66CC00','#9933FF','#FFD700','#00CCCC'];
-const INTL_COLORS = ['#3E1F00','#90EE90','#4A2800','#77DD77','#2D1B00','#A5D6A7','#5C3317','#81C784'];
-
-const corretoraPorTicker = {
-  BBAS3: 'C6', TRXF11: 'C6', GARE11: 'C6', LTBX11: 'C6', XPML11: 'C6',
-  SOFISA: 'SOFISA',
-  RBOP11: 'XP', FGAA11: 'XP',
-  MXRF11: 'XP', VSLH11: 'XP',
-  VGHF11: 'XP', VGIP11: 'XP',
-  KNCR11: 'XP',
-  TAEE3: 'RICO', ITSA4: 'RICO', PETR4: 'RICO', VALE3: 'RICO',
-  AMER3: 'RICO', BBDC3: 'RICO', BBDC4: 'RICO', BBSE3: 'RICO',
-  BEES3: 'RICO', BRAP3: 'RICO', CMIN3: 'RICO', COCA34: 'RICO',
-  ELET3: 'RICO', GOAU3: 'RICO', GOAU4: 'RICO', OIBR3: 'RICO',
-  SANB3: 'RICO', SAPR3: 'RICO', TAEE11: 'RICO',
-  DÓLAR: 'WISE', EURO: 'WISE',
-};
-
-const INDEX_HISTORY = {
-  IBOVESPA: { cor: '#3399FF', dados: { 2018: 15.0, 2019: 31.6, 2020: 2.9, 2021: -11.9, 2022: 4.7, 2023: 22.3, 2024: -10.4, 2025: 8.0 } },
-  IFIX: { cor: '#00CC66', dados: { 2018: 8.2, 2019: 15.7, 2020: 0.8, 2021: -4.9, 2022: 8.2, 2023: 18.5, 2024: 12.0, 2025: 5.0 } },
-  IPCA: { cor: '#C8B800', dados: { 2018: 3.75, 2019: 4.31, 2020: 4.52, 2021: 10.06, 2022: 5.79, 2023: 4.62, 2024: 4.83, 2025: 5.0 } },
-  CDI: { cor: '#9933FF', dados: { 2018: 6.42, 2019: 5.96, 2020: 2.76, 2021: 4.43, 2022: 12.38, 2023: 13.04, 2024: 10.80, 2025: 8.0 } },
-};
 
 const tooltipStyle = {
   background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8,
@@ -122,12 +94,142 @@ function renderTickerLabelWithValue(isLight) {
         <text x={x} y={y - 7} fill={fill} textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central" fontSize={fs}>
           {name} {(percent * 100).toFixed(1)}%
         </text>
-        <text x={x} y={y + 9} fill="#4CAF50" textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central" fontSize={11} fontWeight="bold">
+        <text x={x} y={y + 9} fill={C_VERDE} textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central" fontSize={11} fontWeight="bold">
           {formatCurrency(value)}
         </text>
       </g>
     );
   };
+}
+
+const fmtPct = (n) => `${(n * 100).toFixed(2)}%`;
+
+function hhiLabel(value) {
+  if (value == null) return 'sem dados';
+  if (value < 0.25) return 'Baixa concentração';
+  if (value < 0.5) return 'Concentração moderada';
+  if (value < 0.75) return 'Carteira concentrada';
+  return 'Alta concentração';
+}
+
+const MetricTile = memo(function MetricTile({ label, value, color, sub, description }) {
+  const [showDesc, setShowDesc] = useState(false);
+  return (
+    <div style={{
+      background: 'var(--surface-dark)', border: '1px solid var(--border)', borderRadius: 10,
+      padding: '10px 14px', display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0, position: 'relative',
+    }}>
+      <span style={{
+        fontSize: '0.72em', textTransform: 'uppercase', letterSpacing: '0.06em',
+        color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+        display: 'flex', alignItems: 'center', gap: 4,
+      }}>
+        {label}
+        {description && (
+          <span onClick={() => setShowDesc(!showDesc)} style={{ cursor: 'pointer', opacity: 0.6, display: 'inline-flex', alignItems: 'center', transition: 'opacity 0.15s' }} onMouseEnter={e => e.currentTarget.style.opacity = '1'} onMouseLeave={e => e.currentTarget.style.opacity = '0.6'}>
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+              <circle cx="6" cy="6" r="6" fill="var(--text-muted)" />
+              <text x="6" y="9" textAnchor="middle" fill="var(--surface)" fontSize="8" fontWeight="700">i</text>
+            </svg>
+          </span>
+        )}
+      </span>
+      {showDesc && description && (
+        <span style={{
+          fontSize: '0.65em', color: 'var(--text)', background: 'var(--surface)',
+          border: '1px solid var(--border)', borderRadius: 6, padding: '6px 8px',
+          position: 'absolute', top: '100%', left: 0, zIndex: 20, marginTop: 4,
+          whiteSpace: 'normal', maxWidth: '220px', pointerEvents: 'none',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.35)', lineHeight: 1.4,
+        }}>
+          {description}
+        </span>
+      )}
+      <span style={{ fontSize: '1.15em', fontWeight: 700, color: color || 'var(--text)' }}>
+        {value}
+      </span>
+      {sub && <span style={{ fontSize: '0.72em', color: 'var(--text-faint)' }}>{sub}</span>}
+    </div>
+  );
+});
+
+function RiscoRetornoCard({ metricsData, benchmark, onBenchmarkChange }) {
+  return (
+    <div className="chart-card" style={{ display: 'flex', flexDirection: 'column', position: 'relative', gridColumn: '1 / -1' }}>
+      <h2 style={{ textAlign: 'center' }}>Métricas de Risco & Retorno</h2>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 0', flexWrap: 'wrap' }}>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.9em', color: 'var(--text)', fontWeight: 600 }}>
+          Benchmark
+          <select
+            value={benchmark}
+            onChange={e => onBenchmarkChange(e.target.value)}
+            style={{
+              background: 'var(--surface-dark)', color: 'var(--text)', border: '1px solid var(--border)', borderRadius: 6,
+              padding: '6px 10px', fontSize: '0.9em', cursor: 'pointer', fontFamily: 'inherit',
+            }}
+          >
+            {Object.keys(INDEX_HISTORY).map(key => (
+              <option key={key} value={key}>{key}</option>
+            ))}
+          </select>
+        </label>
+        <span style={{ fontSize: '0.8em', color: 'var(--text-muted)' }}>
+          {metricsData.anos} anos alinhados com {metricsData.benchmark}
+        </span>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 10 }}>
+        <MetricTile
+          label="CAGR Carteira"
+          value={metricsData.cagrPf == null ? '—' : fmtPct(metricsData.cagrPf)}
+          color={C_VERDE_ESCURO}
+          sub="acumulado base 100"
+          description="Taxa de crescimento anual composta (CAGR) da carteira ao longo do período analisado."
+        />
+        <MetricTile
+          label={`CAGR ${metricsData.benchmark}`}
+          value={metricsData.cagrBench == null ? '—' : fmtPct(metricsData.cagrBench)}
+          color={INDEX_HISTORY[metricsData.benchmark]?.cor}
+          sub="acumulado base 100"
+          description={`Taxa de crescimento anual composta do índice ${metricsData.benchmark}.`}
+        />
+        <MetricTile
+          label="Beta"
+          value={metricsData.betaVal == null ? '—' : metricsData.betaVal.toFixed(2)}
+          color={C_AZUL}
+          sub={`vs ${metricsData.benchmark}`}
+          description="Sensibilidade da carteira às movimentações do benchmark. Beta > 1 indica mais volatilidade que o benchmark."
+        />
+        <MetricTile
+          label="Tracking Error"
+          value={metricsData.trackingErr == null ? '—' : fmtPct(metricsData.trackingErr)}
+          color={C_ACAO}
+          sub={`vs ${metricsData.benchmark}`}
+          description="Desvio padrão dos retornos diferenciais da carteira em relação ao benchmark."
+        />
+        <MetricTile
+          label="Alpha de Jensen"
+          value={metricsData.alpha == null ? '—' : fmtPct(metricsData.alpha)}
+          color={metricsData.alpha >= 0 ? C_FII : C_VERMELHO_ESCURO}
+          sub={`Rf ${fmtPct(metricsData.riskFreeAnnual)} (CDI médio)`}
+          description="Retorno excedente da carteira acima do esperado pelo modelo CAPM, ajustado pelo risco sistemático."
+        />
+        <MetricTile
+          label="Sharpe (anual)"
+          value={metricsData.sharpe == null ? '—' : metricsData.sharpe.toFixed(2)}
+          color={C_AZUL}
+          sub="excesso de retorno / volatilidade"
+          description="Indica quanto retorno extra se obtém por unidade de risco (volatilidade). Quanto maior, melhor."
+        />
+        <MetricTile
+          label="HHI (concentração)"
+          value={metricsData.hhi == null ? '—' : (metricsData.hhi * 10000).toFixed(0)}
+          color={C_RF}
+          sub={hhiLabel(metricsData.hhi)}
+          description="Índice de Herfindahl-Hirschman de concentração de ativos. Valor mais alto indica maior concentração."
+        />
+      </div>
+    </div>
+  );
 }
 
 function SelectionBadge({ data, selectedName, valueKey, formatFn }) {
@@ -141,7 +243,7 @@ function SelectionBadge({ data, selectedName, valueKey, formatFn }) {
       background: 'rgba(0,0,0,0.85)', borderRadius: 8, padding: '6px 14px',
       backdropFilter: 'blur(4px)', display: 'flex', gap: 8, alignItems: 'baseline',
     }}>
-      <span style={{ color: '#C8B800', fontWeight: 700, fontSize: '0.9em' }}>{selectedName}</span>
+      <span style={{ color: C_RF, fontWeight: 700, fontSize: '0.9em' }}>{selectedName}</span>
       <span style={{ color: '#FFF', fontSize: '0.85em' }}>
         {formatFn ? formatFn(val) : formatCurrency(val)}
       </span>
@@ -179,12 +281,14 @@ function Graficos() {
   const [selectedProventosAnoTipo, setSelectedProventosAnoTipo] = useState(null);
   const [selectedProventosTipos, setSelectedProventosTipos] = useState([]);
   const [selectedIndices, setSelectedIndices] = useState(['IBOVESPA', 'IFIX', 'IPCA', 'CDI']);
+  const [metricBenchmark, setMetricBenchmark] = useState('IBOVESPA');
   const [pieHover, setPieHover] = useState(null);
   const [tickerHover, setTickerHover] = useState(null);
   const [selectedCorretora, setSelectedCorretora] = useState(null);
   const [corretoras, setCorretoras] = useState([]);
   const [showLogoForm, setShowLogoForm] = useState(false);
   const [logoLinkInput, setLogoLinkInput] = useState('');
+  const [currentYearData, setCurrentYearData] = useState(null);
   const ativoRef = useRef(null);
   const mediaRef = useRef(null);
   const qtdRef = useRef(null);
@@ -240,21 +344,48 @@ function Graficos() {
 
   const uniqueAnos = useMemo(() => {
     const anos = [...new Set(transactions.map(t => t.ano))].sort((a, b) => b - a);
-    if (anos.length > 0 && selectedAno === null) setSelectedAno(anos[0]);
     return anos;
   }, [transactions]);
 
   const proventosAnos = useMemo(() => {
     const anos = [...new Set(proventos.map(p => p.ano))].sort((a, b) => b - a);
-    if (anos.length > 0 && selectedProventosAno === null) setSelectedProventosAno(anos[0]);
     return anos;
   }, [proventos]);
 
   const proventosTiposAnos = useMemo(() => {
     const anos = [...new Set(proventos.map(p => p.ano))].sort((a, b) => b - a);
-    if (anos.length > 0 && selectedProventosAnoTipo === null) setSelectedProventosAnoTipo(anos[0]);
     return anos;
   }, [proventos]);
+
+  useEffect(() => {
+    if (selectedAno === null && uniqueAnos.length > 0) setSelectedAno(uniqueAnos[0]);
+  }, [uniqueAnos, selectedAno]);
+
+  useEffect(() => {
+    if (selectedProventosAno === null && proventosAnos.length > 0) setSelectedProventosAno(proventosAnos[0]);
+  }, [proventosAnos, selectedProventosAno]);
+
+  useEffect(() => {
+    if (selectedProventosAnoTipo === null && proventosTiposAnos.length > 0) setSelectedProventosAnoTipo(proventosTiposAnos[0]);
+  }, [proventosTiposAnos, selectedProventosAnoTipo]);
+
+  useEffect(() => {
+    fetchCurrentYearReturns().then(setCurrentYearData).catch(() => {
+      setCurrentYearData({ currentYear: new Date().getFullYear(), data: {}, errors: { network: 'Falha na conexão' } });
+    });
+  }, []);
+
+  const mergedIndexHistory = useMemo(() => {
+    if (!currentYearData) return INDEX_HISTORY;
+    const merged = {};
+    Object.keys(INDEX_HISTORY).forEach(key => {
+      merged[key] = { ...INDEX_HISTORY[key] };
+      if (currentYearData.data[key] !== undefined) {
+        merged[key].dados = { ...INDEX_HISTORY[key].dados, [currentYearData.currentYear]: currentYearData.data[key] };
+      }
+    });
+    return merged;
+  }, [currentYearData]);
 
   const uniqueProventosTipos = useMemo(() => {
     return [...new Set(proventos.map(p => normalizeTipo(p.tipo)))].sort();
@@ -279,7 +410,7 @@ function Graficos() {
   }, [transactions, selectedAno]);
 
 
-  const selColor = '#C8B800';
+  const selColor = C_RF;
 
   const handleTypeClick = useCallback((type) => {
     setSelectedType(prev => prev === type ? null : type);
@@ -586,7 +717,7 @@ function Graficos() {
         <text x={x + width / 2} y={labelY} fill={isLight ? '#000000' : '#FFF'} fontWeight="bold" fontSize={11} textAnchor="middle">
           {`${pct}%`}
         </text>
-        <text x={x + width / 2} y={labelY + 16} fill="#4CAF50" fontSize={11} textAnchor="middle" fontWeight="bold">
+        <text x={x + width / 2} y={labelY + 16} fill={C_VERDE} fontSize={11} textAnchor="middle" fontWeight="bold">
           {`${formatCurrency(value)}`}
         </text>
       </g>
@@ -651,33 +782,59 @@ function Graficos() {
     return result;
   }, [transactions, proventos]);
 
+  const dyHistoryData = useMemo(() =>
+    Object.entries(portfolioYearlyReturn)
+      .map(([year, value]) => ({ year: String(year), dividends: value == null ? 0 : value }))
+      .sort((a, b) => Number(a.year) - Number(b.year)),
+    [portfolioYearlyReturn]
+  );
+
+  const fluxoCaixaMensal = useMemo(() => {
+    const fluxo = new Map();
+    transactions.forEach(t => {
+      if (!t.data) return;
+      const [dia, mes, ano] = String(t.data).split('/').map(Number);
+      if (!dia || !mes || !ano) return;
+      const key = `${ano}-${String(mes).padStart(2, '0')}`;
+      const valor = (t.operacao === 'Compra' ? 1 : -1) * (t.investido || 0);
+      fluxo.set(key, (fluxo.get(key) || 0) + valor);
+    });
+    return [...fluxo.entries()]
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([key, valor]) => ({
+        mes: key,
+        label: `${key.slice(5)}/${key.slice(2, 4)}`,
+        aporte: Math.round(valor * 100) / 100,
+      }));
+  }, [transactions]);
+
   const comparisonChartData = useMemo(() => {
     const portfolioYears = new Set();
     transactions.forEach(t => portfolioYears.add(t.ano));
     proventos.forEach(p => portfolioYears.add(p.ano));
     if (portfolioYears.size === 0) return [];
     const minPortfolioYear = Math.min(...portfolioYears);
-    const maxPortfolioYear = Math.max(...portfolioYears);
+    const maxPortfolioYear = Math.max(...portfolioYears, new Date().getFullYear());
     const allYears = new Set();
-    Object.values(INDEX_HISTORY).forEach(idx => Object.keys(idx.dados).forEach(y => allYears.add(Number(y))));
+    Object.values(mergedIndexHistory).forEach(idx => Object.keys(idx.dados).forEach(y => allYears.add(Number(y))));
     const sorted = [...allYears].sort((a, b) => a - b).filter(y => y >= minPortfolioYear && y <= maxPortfolioYear);
     return sorted.map(year => {
       const entry = { year: String(year) };
       const pfReturn = portfolioYearlyReturn[year];
       if (pfReturn !== undefined && pfReturn !== null) entry['Carteira'] = pfReturn;
-      Object.entries(INDEX_HISTORY).forEach(([key, idx]) => {
+      Object.entries(mergedIndexHistory).forEach(([key, idx]) => {
         if (idx.dados[year] !== undefined) entry[key] = idx.dados[year];
       });
       const hasData = entry['Carteira'] !== undefined || selectedIndices.some(idx => entry[idx] !== undefined);
       return hasData ? entry : null;
     }).filter(Boolean);
-  }, [portfolioYearlyReturn, selectedIndices, transactions, proventos]);
+  }, [portfolioYearlyReturn, selectedIndices, transactions, proventos, mergedIndexHistory]);
 
   const comparisonAccumulatedData = useMemo(() => {
     if (comparisonChartData.length === 0) return [];
     let portfolioAcc = 100;
     const indexAcc = {};
-    Object.keys(INDEX_HISTORY).forEach(key => { indexAcc[key] = 100; });
+    Object.keys(mergedIndexHistory).forEach(key => { indexAcc[key] = 100; });
     return comparisonChartData.map(entry => {
       const accEntry = { year: entry.year };
       if (entry.Carteira !== undefined) {
@@ -699,6 +856,58 @@ function Graficos() {
       prev.includes(index) ? prev.filter(i => i !== index) : [...prev, index]
     );
   }, []);
+
+  const metricsData = useMemo(() => {
+    const benchDados = mergedIndexHistory[metricBenchmark]?.dados;
+    if (!benchDados) return null;
+    const rows = [];
+    comparisonChartData.forEach(entry => {
+      const year = Number(entry.year);
+      const pf = entry['Carteira'];
+      const bench = benchDados[year];
+      if (pf == null || bench == null) return;
+      rows.push({ year, pf: pf / 100, bench: bench / 100 });
+    });
+    if (rows.length < 2) return null;
+
+    const pfReturns = rows.map(r => r.pf);
+    const benchReturns = rows.map(r => r.bench);
+
+    const cdiData = mergedIndexHistory.CDI?.dados || {};
+    const rfList = rows.map(r => cdiData[r.year]).filter(v => v != null);
+    const riskFreeAnnual = rfList.length ? rfList.reduce((s, v) => s + v, 0) / rfList.length / 100 : 0;
+
+    let accPf = 1;
+    let accBench = 1;
+    rows.forEach(r => { accPf *= 1 + r.pf; accBench *= 1 + r.bench; });
+    const spanYears = rows[rows.length - 1].year - rows[0].year;
+
+    const hhiValues = portfolioBase
+      .map(a => (a.atual != null && a.atual > 0 ? a.atual : a.investido))
+      .filter(v => v != null && v > 0);
+
+    const meanPf = mean(pfReturns);
+    const stdPf = stdSample(pfReturns);
+
+    return {
+      benchmark: metricBenchmark,
+      anos: rows.length,
+      spanYears,
+      cagrPf: spanYears > 0 ? cagr(100, accPf * 100, spanYears) : null,
+      cagrBench: spanYears > 0 ? cagr(100, accBench * 100, spanYears) : null,
+      trackingErr: trackingError(pfReturns, benchReturns, 1),
+      betaVal: beta(pfReturns, benchReturns),
+      alpha: jensenAlpha(pfReturns, benchReturns, riskFreeAnnual, 1),
+      riskFreeAnnual,
+      hhi: hhi(hhiValues),
+      meanPf,
+      stdPf,
+      sharpe:
+        meanPf != null && stdPf != null && stdPf > 0
+          ? (meanPf - riskFreeAnnual) / stdPf
+          : null,
+    };
+  }, [comparisonChartData, portfolioBase, metricBenchmark]);
 
   return (
     <div className="graficos-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 400px), 1fr))', gap: 16 }}>
@@ -1010,19 +1219,20 @@ function Graficos() {
               {(corretoras.find(c => c.nome.toLowerCase() === selectedCorretora.toLowerCase()) || {}).logo_url && (
                 <div style={{ textAlign: 'center', marginBottom: 6 }}>
                   <img src={(corretoras.find(c => c.nome.toLowerCase() === selectedCorretora.toLowerCase())).logo_url}
-                    alt={selectedCorretora} style={{ maxHeight: 32, objectFit: 'contain' }} />
+                    alt={`Logo da corretora ${selectedCorretora}`} loading="lazy" decoding="async"
+                    style={{ maxHeight: 32, objectFit: 'contain' }} />
                 </div>
               )}
-              <div style={{ color: '#C8B800', fontWeight: 700, fontSize: '0.9em', marginBottom: 6 }}>{selectedCorretora}</div>
+              <div style={{ color: C_RF, fontWeight: 700, fontSize: '0.9em', marginBottom: 6 }}>{selectedCorretora}</div>
               {(corretoraTickerMap[selectedCorretora] || []).map(t => (
                 <div key={t.ticker} style={{ display: 'flex', justifyContent: 'space-between', gap: 16, color: '#FFF', fontSize: '0.85em' }}>
                   <span>{t.ticker}</span>
-                  <span style={{ color: '#4CAF50', fontSize: '1.1em' }}>{formatCurrency(t.value)}</span>
+                  <span style={{ color: C_VERDE, fontSize: '1.1em' }}>{formatCurrency(t.value)}</span>
                 </div>
               ))}
               <div style={{ marginTop: 4, borderTop: '1px solid #444', paddingTop: 4, display: 'flex', justifyContent: 'space-between', gap: 16, color: '#FFF', fontSize: '0.85em', fontWeight: 700 }}>
                 <span>Total</span>
-                <span style={{ color: '#4CAF50', fontSize: '1.2em' }}>{formatCurrency(corretoraData.find(d => d.name === selectedCorretora)?.value || 0)}</span>
+                <span style={{ color: C_VERDE, fontSize: '1.2em' }}>{formatCurrency(corretoraData.find(d => d.name === selectedCorretora)?.value || 0)}</span>
               </div>
               {!showLogoForm && (
                 <button onClick={() => {
@@ -1048,7 +1258,7 @@ function Graficos() {
                       color: '#BBB', borderRadius: 4, padding: '2px 8px', cursor: 'pointer', fontSize: '0.75em',
                     }}>Cancelar</button>
                     <button onClick={handleSaveLogo} style={{
-                      flex: 1, background: '#4CAF50', border: 'none',
+                      flex: 1, background: C_VERDE, border: 'none',
                       color: '#FFF', borderRadius: 4, padding: '2px 8px', cursor: 'pointer', fontSize: '0.75em',
                     }}>Salvar</button>
                   </div>
@@ -1154,7 +1364,7 @@ function Graficos() {
                     <XAxis type="number" tick={{ fill: isLight ? '#000000' : 'var(--text-muted)', fontSize: 11 }} axisLine={{ stroke: 'var(--border)' }} tickLine={false} padding={{ right: 50 }} />
                     <YAxis type="category" dataKey="name" tick={{ fill: isLight ? '#000000' : 'var(--text)', fontSize: 12 }} axisLine={false} tickLine={false} width={30} />
                     <Tooltip cursor={false} contentStyle={tooltipStyle} formatter={(v) => formatCurrency(v)} />
-                    <Bar dataKey="value" radius={[0, 50, 50, 0]} fill="#2E7D32" activeBar={{ stroke: '#FFF', strokeWidth: 2, filter: 'brightness(1.15)' }}>
+                    <Bar dataKey="value" radius={[0, 50, 50, 0]} fill={C_VERDE_ESCURO} activeBar={{ stroke: '#FFF', strokeWidth: 2, filter: 'brightness(1.15)' }}>
                       <LabelList dataKey="value" content={renderEvolLabelRight} />
                     </Bar>
                   </BarChart>
@@ -1163,6 +1373,46 @@ function Graficos() {
             </div>
           )}
         </div>
+      </div>
+
+      <div style={{ display: 'flex', gap: 16, gridColumn: '1 / -1' }}>
+        {dyHistoryData.length > 0 && (
+          <div className="chart-card" style={{ display: 'flex', flexDirection: 'column', position: 'relative', flex: 1, minHeight: 320 }}>
+            <h2 style={{ textAlign: 'center' }}>Rentabilidade de Dividendos por Ano</h2>
+            <div style={{ flex: 1, minHeight: 0 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={dyHistoryData} margin={{ left: 30, right: 30, top: 30, bottom: 10 }} barSize={60}>
+                  <XAxis dataKey="year" stroke="var(--text-muted)" />
+                  <YAxis stroke="var(--text-muted)" tickFormatter={t => `${t}%`} />
+                  <Tooltip cursor={false} formatter={(v) => [`${Number(v).toFixed(2)}%`, 'Dividendos']} labelFormatter={(l) => `Ano ${l}`} contentStyle={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8 }} />
+                  <Bar dataKey="dividends" radius={[8, 8, 0, 0]} fill="#FFD700" activeBar={{ stroke: '#FFF', strokeWidth: 2, filter: 'brightness(1.15)' }}>
+                    <LabelList dataKey="dividends" position="top" formatter={(v) => `${Number(v).toFixed(1)}%`} fill="#FFFFFF" fontSize={14} fontWeight="bold" />
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        )}
+
+        {fluxoCaixaMensal.length > 0 && (
+          <div className="chart-card" style={{ display: 'flex', flexDirection: 'column', position: 'relative', flex: 1, minHeight: 320 }}>
+            <h2 style={{ textAlign: 'center' }}>Fluxo de Caixa por Mês</h2>
+            <div style={{ flex: 1, minHeight: 0 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={fluxoCaixaMensal}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                  <XAxis dataKey="label" stroke="var(--text-muted)" tick={{ fontSize: 10 }} />
+                  <YAxis stroke="var(--text-muted)" tickFormatter={t => formatCurrency(t)} />
+                  <Tooltip
+                    formatter={(v) => [formatCurrency(v), v >= 0 ? 'Aporte líquido' : 'Resgate líquido']}
+                    contentStyle={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8 }}
+                  />
+                  <Bar dataKey="aporte" name="Aporte líquido" fill={C_AZUL} radius={[3, 3, 0, 0]} maxBarSize={18} activeBar={{ stroke: '#FFF', strokeWidth: 2, filter: 'brightness(1.15)' }} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        )}
       </div>
 
       {proventosAnos.length > 0 && (
@@ -1195,7 +1445,7 @@ function Graficos() {
                 <Tooltip cursor={false} contentStyle={tooltipStyle} formatter={(v) => formatCurrency(v)} />
                 <Bar dataKey="value" radius={[8, 8, 0, 0]} activeBar={{ stroke: '#FFF', strokeWidth: 2, filter: 'brightness(1.15)' }} animationDuration={2000}>
                   {proventosMonthData.map((entry, idx) => (
-                    <Cell key={idx} fill={entry.isTotal ? '#FF0000' : '#4285F4'} />
+                    <Cell key={idx} fill={entry.isTotal ? '#FF0000' : C_AZUL} />
                   ))}
                   <LabelList dataKey="value" content={renderProventosLabel} />
                 </Bar>
@@ -1235,7 +1485,7 @@ function Graficos() {
                     type="checkbox"
                     checked={selectedProventosTipos.includes(tipo)}
                     onChange={() => handleTipoCheckbox(tipo)}
-                    style={{ accentColor: typeColors[tipo] || '#4285F4' }}
+                    style={{ accentColor: typeColors[tipo] || C_AZUL }}
                   />
                   {tipo}
                 </label>
@@ -1277,7 +1527,7 @@ function Graficos() {
             <span style={{ color: 'var(--text)', fontSize: '0.95em', fontWeight: 600 }}>
               Selecione o ano desejado
             </span>
-            <span style={{ color: '#FF3333', fontSize: '2em', lineHeight: 1 }}>➡</span>
+            <span style={{ color: C_ACAO, fontSize: '2em', lineHeight: 1 }}>➡</span>
             <select
               value={selectedAno || ''}
               onChange={e => setSelectedAno(Number(e.target.value))}
@@ -1299,7 +1549,7 @@ function Graficos() {
                 <XAxis dataKey="nome" tick={{ fill: isLight ? '#000000' : 'var(--text)', fontSize: 11 }} axisLine={{ stroke: 'var(--border)' }} tickLine={false} />
                 <YAxis tick={{ fill: isLight ? '#000000' : 'var(--text-muted)', fontSize: 11 }} axisLine={{ stroke: 'var(--border)' }} tickLine={false} />
                 <Tooltip cursor={false} contentStyle={tooltipStyle} formatter={(v) => formatCurrency(v)} />
-                <Line type="monotone" dataKey="value" stroke="#FF3333" strokeWidth={3} dot={{ r: 6, fill: '#FF3333', strokeWidth: 2, stroke: '#FF3333' }} activeDot={false}>
+                <Line type="monotone" dataKey="value" stroke={C_ACAO} strokeWidth={3} dot={{ r: 6, fill: C_ACAO, strokeWidth: 2, stroke: C_ACAO }} activeDot={false}>
                   <LabelList dataKey="value" content={renderMonthLabel} />
                 </Line>
               </LineChart>
@@ -1317,7 +1567,7 @@ function Graficos() {
                 <XAxis dataKey="name" tick={{ fill: isLight ? '#000000' : 'var(--gold-soft)', fontSize: 13, fontWeight: 700 }} axisLine={{ stroke: 'var(--border)' }} tickLine={false} />
                 <YAxis tick={{ fill: isLight ? '#000000' : 'var(--text-muted)', fontSize: 11 }} axisLine={{ stroke: 'var(--border)' }} tickLine={false} />
                 <Tooltip cursor={false} contentStyle={tooltipStyle} formatter={(v) => formatCurrency(v)} />
-                <Bar dataKey="value" radius={[8, 8, 0, 0]} fill="#990000" activeBar={{ stroke: '#FFF', strokeWidth: 2, filter: 'brightness(1.15)' }}>
+                <Bar dataKey="value" radius={[8, 8, 0, 0]} fill="#7B1FA2" activeBar={{ stroke: '#FFF', strokeWidth: 2, filter: 'brightness(1.15)' }}>
                   <LabelList dataKey="value" content={renderEvolLabel} />
                 </Bar>
               </BarChart>
@@ -1336,7 +1586,7 @@ function Graficos() {
                 <XAxis dataKey="name" tick={{ fill: 'var(--gold-soft)', fontSize: 13, fontWeight: 700 }} axisLine={{ stroke: 'var(--border)' }} tickLine={false} padding={{ right: 40 }} />
                 <YAxis tick={{ fill: 'var(--text-muted)', fontSize: 11 }} axisLine={{ stroke: 'var(--border)' }} tickLine={false} padding={{ top: 45 }} />
                 <Tooltip contentStyle={tooltipStyle} formatter={(v) => formatCurrency(v)} />
-                <Line type="monotone" dataKey="value" stroke="#2E7D32" strokeWidth={3} dot={{ r: 7, fill: '#2E7D32', stroke: '#2E7D32', strokeWidth: 0 }} animationDuration={2000}>
+                <Line type="monotone" dataKey="value" stroke={C_VERDE_ESCURO} strokeWidth={3} dot={{ r: 7, fill: C_VERDE_ESCURO, stroke: C_VERDE_ESCURO, strokeWidth: 0 }} animationDuration={2000}>
                   <LabelList dataKey="value" content={renderPatrimonioLabel} />
                 </Line>
               </LineChart>
@@ -1349,8 +1599,8 @@ function Graficos() {
         <div className="chart-card" style={{ display: 'flex', flexDirection: 'column', position: 'relative', gridColumn: '1 / -1' }}>
           <h2 style={{ textAlign: 'center' }}>Comparativo Carteira vs Índices (% anual)</h2>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '8px 0', flexWrap: 'wrap' }}>
-            <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.9em', color: '#FF3333', fontWeight: 700 }}>
-              <span style={{ width: 16, height: 3, background: '#FF3333', borderRadius: 2, display: 'inline-block' }} />
+            <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.9em', color: C_ACAO, fontWeight: 700 }}>
+              <span style={{ width: 16, height: 3, background: C_ACAO, borderRadius: 2, display: 'inline-block' }} />
               Carteira
             </span>
             {Object.entries(INDEX_HISTORY).map(([key, val]) => (
@@ -1378,7 +1628,7 @@ function Graficos() {
                 <XAxis dataKey="year" tick={{ fill: isLight ? '#000000' : 'var(--gold-soft)', fontSize: 13, fontWeight: 700 }} axisLine={{ stroke: 'var(--border)' }} tickLine={false} />
                 <YAxis tick={{ fill: isLight ? '#000000' : 'var(--text-muted)', fontSize: 11 }} axisLine={{ stroke: 'var(--border)' }} tickLine={false} tickFormatter={(v) => `${v}%`} />
                 <Tooltip cursor={false} contentStyle={tooltipStyle} formatter={(v) => [`${v.toFixed(2)}%`]} />
-                <Line type="monotone" dataKey="Carteira" stroke="#FF3333" strokeWidth={3} dot={{ r: 5, fill: '#FF3333', strokeWidth: 0 }} filter="url(#lineShadow)" animationDuration={2000} />
+                <Line type="monotone" dataKey="Carteira" stroke={C_ACAO} strokeWidth={3} dot={{ r: 5, fill: C_ACAO, strokeWidth: 0 }} filter="url(#lineShadow)" animationDuration={2000} />
                 {selectedIndices.map(idx => (
                   <Line key={idx} type="monotone" dataKey={idx} stroke={INDEX_HISTORY[idx]?.cor || 'var(--text-muted)'} strokeWidth={2} dot={{ r: 4, fill: INDEX_HISTORY[idx]?.cor || 'var(--text-muted)', strokeWidth: 0 }} filter="url(#lineShadow)" animationDuration={2000} />
                 ))}
@@ -1392,8 +1642,8 @@ function Graficos() {
         <div className="chart-card" style={{ display: 'flex', flexDirection: 'column', position: 'relative', gridColumn: '1 / -1' }}>
           <h2 style={{ textAlign: 'center' }}>Rentabilidade Acumulada (base 100)</h2>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '8px 0', flexWrap: 'wrap' }}>
-            <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.9em', color: '#FF3333', fontWeight: 700 }}>
-              <span style={{ width: 16, height: 3, background: '#FF3333', borderRadius: 2, display: 'inline-block' }} />
+            <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.9em', color: C_ACAO, fontWeight: 700 }}>
+              <span style={{ width: 16, height: 3, background: C_ACAO, borderRadius: 2, display: 'inline-block' }} />
               Carteira
             </span>
             {Object.entries(INDEX_HISTORY).map(([key, val]) => (
@@ -1421,7 +1671,7 @@ function Graficos() {
                 <XAxis dataKey="year" tick={{ fill: isLight ? '#000000' : 'var(--gold-soft)', fontSize: 13, fontWeight: 700 }} axisLine={{ stroke: 'var(--border)' }} tickLine={false} />
                 <YAxis tick={{ fill: isLight ? '#000000' : 'var(--text-muted)', fontSize: 11 }} axisLine={{ stroke: 'var(--border)' }} tickLine={false} domain={['auto', 'auto']} />
                 <Tooltip cursor={false} contentStyle={tooltipStyle} formatter={(v) => [v.toFixed(2), 'Valor']} />
-                <Line type="monotone" dataKey="Carteira" stroke="#FF3333" strokeWidth={3} dot={{ r: 5, fill: '#FF3333', strokeWidth: 0 }} filter="url(#accShadow)" animationDuration={2000} />
+                <Line type="monotone" dataKey="Carteira" stroke={C_ACAO} strokeWidth={3} dot={{ r: 5, fill: C_ACAO, strokeWidth: 0 }} filter="url(#accShadow)" animationDuration={2000} />
                 {selectedIndices.map(idx => (
                   <Line key={idx} type="monotone" dataKey={idx} stroke={INDEX_HISTORY[idx]?.cor || 'var(--text-muted)'} strokeWidth={2} dot={{ r: 4, fill: INDEX_HISTORY[idx]?.cor || 'var(--text-muted)', strokeWidth: 0 }} filter="url(#accShadow)" animationDuration={2000} />
                 ))}
@@ -1430,6 +1680,17 @@ function Graficos() {
           </div>
         </div>
       )}
+
+      {metricsData && (
+        <SectionErrorBoundary name="Métricas" gridColumn="1 / -1">
+          <RiscoRetornoCard
+            metricsData={metricsData}
+            benchmark={metricBenchmark}
+            onBenchmarkChange={setMetricBenchmark}
+          />
+        </SectionErrorBoundary>
+      )}
+
     </div>
   );
 }

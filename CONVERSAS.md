@@ -1,273 +1,204 @@
-# Conversas do Projeto - Carteira de Investimentos
+# Histórico de Conversas
 
-## 2026-06-01
+## 2026-08-26
 
-## 2026-06-10
+**Foco:** Correção de bugs na IRRF2 - dados não apareciam (campo e data incorretos)
+**Arquivos alterados:**
+- `src/services/irrfCalculations.js` (helpers de normalização + todas as funções)
+- `src/components/IRRF2/GanhosPanel.jsx` (usa helpers)
+- `src/components/IRRF2/ConferenciaPanel.jsx` (usa helpers)
 
-**Foco:** Persistência de valores manuais de renda fixa via IndexedDB
-**Arquivos alterados:** src/pages/Carteira.jsx
 **Decisões:**
-- Renda fixa manual salva via `db.write('rf_manual', data)` no IndexedDB + localStorage
-- Ao carregar, tenta IndexedDB primeiro com fallback para localStorage
+- Criadas funções auxiliares: `parseDateBR()`, `getYearFromDate()`, `getMonthFromDate()`, `getOperacao()`
+- Bug 1: Campo `operacao` (português) vs `operation` (inglês) - dados salvos usam "Compra"/"Venda", código esperava "C"/"buy"/"V"/"sell"
+- Bug 2: Formato de data DD/MM/AAAA não é parseado por `new Date()` do JavaScript
+- Helpers exportados para uso nos componentes GanhosPanel e ConferenciaPanel
+- Build e deploy realizados com sucesso
+
+---
+
+## 2026-08-28
+
+**Foco:** Auditoria completa do app — ataque de todos os itens pendentes (mandato "pode atacar todas")
+**Arquivos alterados:**
+- `src/data/constants.js` (criado — constantes extraídas do Graficos)
+- `src/pages/Graficos.jsx` (RiscoRetornoCard extraído, MetricTile memoizado, imports de constants, card DY %/ano, card Fluxo de Caixa mensal, SectionErrorBoundary aplicado)
+- `src/context/AppProviders.jsx` (grouping dos 5 providers em DataProviders)
+- `src/components/SectionErrorBoundary.jsx` (criado — granular, CSS vars, botão "Tentar novamente")
+- `src/App.jsx` (loading="lazy" + decoding="async" no avatar)
+- `src/services/storage.js` (verificado — write path usa auth.uid(), compatível com RLS)
+- `supabase/migrations/0001_rls_app_data.sql` (criado — RLS + índice único + políticas + cleanup)
+- `vite.config.js` (manualChunks: vendor-react/router/recharts/xlsx)
+
+**Decisões:**
+- #8 já implementado em brapi.js (token bucket 40/min/IP) — nada a fazer; /api/yahoo é proxy público do Yahoo, aceitável
+- #2 SQL executado no painel do Supabase (service_role) — RLS ativo em app_data
+- #21 setor: adiado (requer dados brapi em runtime, flaky)
+- #26 CSS modules: adiado (refactor ~1500 linhas, sem ganho imediato)
+- #28 virtualização: adiado (exigiria react-window, tabelas sem paginação)
+- #29 PWA/Service Worker: adiado (cache de dados ao vivo = alto risco)
+
+**Validação:** 186/186 testes, build OK (index 459kB < 500kB), deploy Vercel OK, HTTP 200
+
 **Pendências:**
 - Nenhuma
 
-## 2026-06-15
+---
 
-**Foco:** Gráfico Por Corretora com mapeamento ticker→corretora, rótulos em duas linhas, popup ao clicar
-**Arquivos alterados:** src/pages/Graficos.jsx
+## 2026-08-26 (sessão anterior)
+
+**Foco:** Correção do bug tela preta (Buffer) + ErrorBoundary + Explicação IRPF2
+**Arquivos alterados:**
+- `src/main.jsx` (Buffer polyfill)
+- `vite.config.js` (define + resolve.alias para buffer)
+- `src/components/ErrorBoundary.jsx` (criado)
+- `src/App.jsx` (ErrorBoundary wrapping Suspense+Routes)
+
 **Decisões:**
-- `corretoraPorTicker` duplicado em Lancamentos.jsx e Graficos.jsx (manter sincronizado manualmente)
-- Rótulos do gráfico: nome+percentual em branco negrito na linha 1, valor em verde na linha 2
-- Popup ao clicar na fatia lista tickers + valores + total + botão fechar
-- Gráfico ajustado para mesmo tamanho do Internacional (55%/15%)
+- Tela preta causada por `Buffer is not defined` do xlsx-populate
+- Buffer polyfill adicionado antes de imports
+- ErrorBoundary criado para capturar erros de render
+- Deploy manual via `vercel --prod --yes`
+
+**Pendências:**
+- Vercel auto-deploy falha
+
+---
+
+## 2026-08-28 (sessão: reposicionamento + same width/hover)
+
+**Foco:** Mover gráficos "Rentabilidade de Dividendos por Ano" e "Fluxo de Caixa por Mês" para abaixo da row proventos, com mesma largura e efeitos hover
+**Arquivos alterados:**
+- `src/pages/Graficos.jsx` (reposicionamento para flex row lado a lado com `flex: 1`, adição de `activeBar={{ stroke: '#FFF', strokeWidth: 2, filter: 'brightness(1.15)' }}` nos dois Bar, remoção dos SectionErrorBoundary wrappers, `minHeight: 320`)
+
+**Decisões:**
+- Gráficos em flex row (`display: 'flex', gap: 16`) com `flex: 1` cada — mesma largura que proventos
+- `activeBar` adicionado nos dois Bar components para hover idêntico aos proventos
+- SectionErrorBoundary removido (não se aplica em cards lado a lado)
+
 **Pendências:**
 - Nenhuma
 
-## 2026-06-16
+---
 
-**Foco:** Fallback de valor para Renda Fixa quando manualAtual é nulo
-**Arquivos alterados:** src/pages/Carteira.jsx, src/pages/Compra.jsx
+## 2026-08-28 (sessão: design do gráfico + icones info)
+
+**Foco:** Igualar design do gráfico "Rentabilidade de Dividendos por Ano" ao "Evolução dos Proventos"; adicionar ícone "i" explicativo nos cards de Métricas
+**Arquivos alterados:**
+- `src/pages/Graficos.jsx` (BarChart Rentabilidade com margin/barSize/fill/radius iguais ao Evolução, LabelList com renderEvolLabel; MetricTile agora aceita `description` com svg "i" clicável e tooltip; 7 descrições adicionadas nos cards Métricas)
+
 **Decisões:**
-- Carteira.jsx: mesmo fallback de Principal.jsx — Renda Fixa sem manualAtual usa precoMedio (atual = investido)
-- Compra.jsx: se manual[ticker] já existe, acumula novo total; senão, calcula soma de todas as compras do ativo
+- Rentabilidade: `margin={{ left: 30, right: 30, top: 30, bottom: 10 }} barSize={60}`, `fill="#FFD700"`, `radius={[8,8,0,0]}`, `LabelList content={renderEvolLabel}` — idêntico a Evolução, sem activeBar (sem efeito hover branco)
+- MetricTile: `description` opcional → svg "i" (circle+letter) que togga tooltip explicativo com `boxShadow` e `zIndex: 20`
+- Tooltips por card independentes (cada um gerencia seu próprio `showDesc`)
+
+**Validação:** Build OK, deploy Vercel OK, HTTP 200
+
 **Pendências:**
 - Nenhuma
 
-## 2026-06-16 (2)
+---
 
-**Foco:** Corretora no EditTransactionModal + gráfico Por Corretora reativo
-**Arquivos alterados:** src/components/Modals/EditTransactionModal.jsx, src/pages/Graficos.jsx
+## 2026-08-28 (sessão: ativoBar + cursor tooltip)
+
+**Foco:** Copiar configuração exata do gráfico "Evolução dos Proventos Ano a Ano" para "Rentabilidade de Dividendos por Ano"
+**Arquivos alterados:**
+- `src/pages/Graficos.jsx` (adicionado `activeBar={{ stroke: '#FFF', strokeWidth: 2, filter: 'brightness(1.15)' }}` no Bar e `cursor={false}` no Tooltip do gráfico Rentabilidade)
+
 **Decisões:**
-- EditTransactionModal: campo Corretora usa `<datalist>` populado de `CorretoraService.listar()`
-- Graficos.jsx: `portfolioBase` agora captura `corretora` da transação; `corretoraData` usa `a.corretora || corretoraPorTicker[a.ticker] || 'Outros'`
-- Gráfico agora reflete edições no campo corretora em vez de depender apenas do mapa estático
+- Configuração do Bar e Tooltip idêntica ao Evolução para consistência visual
+
+**Validação:** Build OK, deploy Vercel OK, HTTP 200
+
 **Pendências:**
 - Nenhuma
 
-## 2026-06-16 (3)
+---
 
-**Foco:** Logo da corretora no popup do gráfico Por Corretora
-**Arquivos alterados:** src/pages/Graficos.jsx
+## 2026-08-28 (sessão: rótulos percentuais)
+
+**Foco:** Corrigir rótulos do gráfico "Rentabilidade de Dividendos por Ano" para formato percentual
+**Arquivos alterados:**
+- `src/pages/Graficos.jsx` (LabelList trocou `content={renderEvolLabel}` por `position="top" formatter={(v) => \`${Number(v).toFixed(1)}%\`}` — evita formatação moeda do renderEvolLabel)
+
 **Decisões:**
-- Popup exibe logo da corretora (se cadastrada) antes do nome
-- Botão "Editar Logo" permite salvar URL de logo via CorretoraService
-- Corretoras carregadas com useEffect para popular logo/escolha
+- `renderEvolLabel` usa `formatCurrency()` (moeda), incompatível com dados percentuais
+- `position="top"` + `formatter` mantém posicionamento e exibe `%`
+
+**Validação:** Build OK, deploy Vercel OK, HTTP 200
+
 **Pendências:**
 - Nenhuma
 
-## 2026-06-18
+---
 
-**Foco:** Fallback de logos — phantom pixel detection + companyDomains
-**Arquivos alterados:** `src/components/LogoImage.jsx`, `src/data/companyDomains.js`
+## 2026-08-28 (sessão: IRRF 2 Proventos tab data fix)
+
+**Foco:** Corrigir aba Proventos do IRRF 2 que não exibia dados lançados na página Proventos
+**Arquivos alterados:**
+- `src/components/IRRF2/ProventosPanel.jsx` (linhas 6, 17: `p.date` → `p.date || p.data`)
+- `src/components/IRRF2/InformesPanel.jsx` (linha 9: `p.date` → `p.date || p.data`)
+
 **Decisões:**
-- Phantom pixel detection scoped apenas a Clearbit (evita falsos positivos em imagens pequenas reais)
-- Todos os URL sources usam `sanitizeTicker()` (remove caracteres não alfanuméricos)
-- Fallback chain: catalog → overrides → Clearbit → TV → StatusInvest → colored hash
-- FIIs excluídos de companyDomains (logos vêm do DB ou TV/StatusInvest)
+- Dados armazenados com campo `data` (português), mas código do IRRF 2 lia `date` (inglês)
+- Padrão do restante do codebase é `p.date || p.data` (visto em irrfCalculations.js, ConferenciaPanel.jsx, Recebiveis.jsx)
+
+**Validação:** Build OK, deploy Vercel OK, HTTP 200
+
 **Pendências:**
 - Nenhuma
 
-## 2026-06-17
+---
 
-**Foco:** Correção dos 4 filtros na página de Lançamentos
-**Arquivos alterados:** `src/pages/Lancamentos.jsx`
+## 2026-08-28 (sessão: form Compras sutil + SEGMENTO dropdown)
+
+**Foco:** Tornar form de Compras sutil (padrão Renda Fixa) e adicionar campo dropdown SEGMENTO ao form, inserindo na tabela de Lançamentos
+**Arquivos alterados:**
+- `src/pages/Compra.jsx` (estilo sutil: grid layout, labels block uppercase, botões flex end; adicionado `segmento: ''` ao state, dropdown SEGMENTO com array `segmentos`, validação, `segmento: form.segmento` no addTransaction, reset no clear e submit)
+- `src/styles/globals.css` (`.compra-form`, `.compra-total`, `.compra-actions`, `.compra-btn`, `.compra-btn-clear`, `.compra-btn-save`, `.compra-error` reestilizados)
+
 **Decisões:**
-- Refatoração da lógica de filtragem da tabela para usar sanitização de strings (`.trim()`) evitando que espaços em branco quebrem a igualdade estrita.
-- Manutenção do sistema "cascading" (filtros interativos), mas agora blindados contra retornos `undefined` ou nulos nas opções.
-- Correção no `.sort()` das datas para utilizar `.getTime()`, prevenindo falhas silenciosas na ordenação que poderiam congelar a tabela.
+- Form Compras segue mesmo padrão visual do form Renda Fixa (grid `repeat(auto-fill, minmax(200px, 1fr))`, gap 12px, labels uppercase 12px, inputs 100%)
+- SEGMENTO dropdown segue padrão de Venda/Bonificação: array de opções, `<select>` com placeholder "Selecione o segmento", validação obrigatória
+- `segmentos` = ['Agronegócio', 'Consumo', 'Energia', 'Financeiro', 'Imobiliário', 'Infraestrutura', 'Mineração', 'Saneamento', 'Tecnologia', 'Transporte']
+
+**Validação:** Build OK, deploy Vercel OK, HTTP 200
+
 **Pendências:**
 - Nenhuma
 
-## 2026-06-17 (2)
+---
 
-**Foco:** Reordenação de blocos de gráfico + paleta exclusiva para Internacional
-**Arquivos alterados:** `src/pages/Graficos.jsx`
+## 2026-08-28 (sessão: BensPanel DIRPF tipo fix)
+
+**Foco:** Corrigir aba "Bens e Direitos" do IRRF 2 que classificava todos os tickers como "Ações"
+**Arquivos alterados:**
+- `src/components/IRRF2/BensPanel.jsx` (passa `ativos` construídos do `getTickerInfo` para `mapearParaDirpf` em vez de `[]`; importa `getTickerInfo` de `tickerRegistry`)
+
 **Decisões:**
-- Blocos Proventos Mensais e Proventos por Tipo movidos para o topo (antes de Investimento e Evolução)
-- Criado array `INTL_COLORS` separado para o gráfico Internacional (marrom escuro + verde claro)
- - `CHART_COLORS` original mantido para os demais gráficos
+- Bug: `mapearParaDirpf(transactions, [])` passava array vazio, então `ativo?.tipo` sempre `undefined`, defaulting para `'Ação'`
+- Fix: constrói array `ativos` a partir dos tickers únicos das transações, buscando `getTickerInfo(ticker)` que retorna `{ nome, cnpj, tipo, imagem, link }`
+- Cada ativo agora recebe o `tipo` correto (Ação, FII, Renda Fixa, ETF, etc.) e o `grupo`/`código` DIRPF correspondentes via `GRUPO_TIPO_DIRPF[tipo]`
+
+**Validação:** Build OK, deploy Vercel OK, HTTP 200
+
 **Pendências:**
 - Nenhuma
 
-## 2026-06-20
+---
 
-**Foco:** Redesign do filtro setor/subsetor em AnalisarAcoes — busca ativos da B3 via brapi API em vez de filtrar transações do usuário
-**Arquivos alterados:** `src/pages/AnalisarAcoes.jsx`
+## 2026-08-29 (sessão: gráficos — ano corrente + roxo + rótulos)
+
+**Foco:** Três melhorias nos gráficos de Graficos.jsx
+**Arquivos alterados:**
+- `src/pages/Graficos.jsx`
+
 **Decisões:**
-- `sectorMapENtoPT`/`industryMapENtoPT` mapeiam inglês→português; `sectorPTtoEN`/`subsectorPTtoEN` revertem para filtrar
-- `allStocks` carregado uma vez no mount via `fetchAllStocksWithSectors()`
-- Perfis (com `industry`) buscados sob demanda apenas quando setor+subsetor selecionados
-- `uniqueTickers` (derivado de transações) removido da lógica de filtro
-- Sidebar exibe nome da empresa + setor em português; `loadingAllStocks` e `loadingProfiles` controlam loading states
-**Pendências:**
-- Testar usabilidade: clique em ativo fora do portfólio, loading states, filtro combinado setor+subsetor
+- **Comparativo Carteira vs Índices (% anual) / Rentabilidade Acumulada (base 100):** `maxPortfolioYear` agora usa `Math.max(...portfolioYears, new Date().getFullYear())` para sempre incluir o ano corrente, mesmo sem transações registradas ainda para ele
+- **Investimento Ano a Ano:** cor das barras mudada de `C_VERMELHO_ESCURO` (#990000) para `#7B1FA2` (roxo)
+- **Rentabilidade de Dividendos por Ano:** rótulos `<LabelList>` alterados de `fill="var(--text-muted)" fontSize={11}` para `fill="#FFFFFF" fontSize={14} fontWeight="bold"`
 
-## 2026-06-28
+**Validação:** Build OK, deploy Vercel OK, HTTP 200
 
-**Foco:** Deploy Vercel + correção tela preta pós-login
-**Arquivos alterados:** `src/App.jsx`
-**Decisões:**
-- `signOut` faltava no destructuring de `useAuth()` — causava ReferenceError ao renderizar o app após login
-- Env vars do Vercel estavam vazias (causa do Invalid API key) — deletadas e recriadas via API
-- Link correto: `https://carteira-de-investimentos-beryl.vercel.app`
-**Pendências:**
-- Testar login do seed user e confirmar que dados carregam
-
-## 2026-08-04
-
-**Foco:** Conversão de cores hardcoded para variáveis CSS do tema + gráfico Evolução do Patrimônio + ajustes visuais
-**Arquivos alterados:** 21 arquivos em `src/` (todas as páginas, componentes e globals.css)
-**Decisões:**
-- Substituídas 315+ ocorrências de cores hex neutras por `var(--...)` para o toggle claro/escuro valer em todas as telas; mantidas cores de dados/semáforos/paletas e overlay escuro dos gráficos
-- Gráfico "Evolução Do Patrimônio Ano a Ano" renomeado para "Investimento Ano a Ano"; criado novo gráfico "Evolução do Patrimônio Ano a Ano" com valor investido acumulado, linha verde `#2E7D32`, círculos maiores e rótulos em amarelo (`var(--gold)`)
-- Modal de informações do ativo translúcido (`--modal-bg` 0.72 dark / 0.78 light) com blur; cotas em azul negrito `#1E4FD8` no tema claro
-- Commits: c89be12, c9808d1, 98420f9, d21c232, 3d3e9af, 6cd2ee5, 0e8ec98, ce06f9d — todos com push (deploy Vercel)
 **Pendências:**
 - Nenhuma
-
-## 2026-08-09
-
-**Foco:** Correção da persistência do logo de ativos (VSLH11/BTER11) + precificação de ETFs de renda fixa pelo mercado
-**Arquivos alterados:** src/database/TickerCatalogService.js, src/data/etfRendaFixa.js (novo), src/pages/Carteira.jsx, src/pages/Graficos.jsx, src/pages/Principal.jsx, src/pages/Lancamentos.jsx, src/pages/Meta.jsx, src/pages/Recebiveis.jsx, src/context/ProventosContext.jsx, src/context/TransactionsContext.jsx, src/components/Modals/EditTransactionModal.jsx, src/styles/globals.css, db_ativos.json, .gitignore
-**Decisões:**
-- Causa raiz do bug do logo: `TickerCatalogService.atualizar()` fazia merge minúsculo vs MAIÚSCULO (campos nunca sobrescritos) e match case-sensitive — agora normaliza para `NOME/CNPJ/TIPO/IMAGEM/LINK` e usa `toUpperCase().trim()`
-- ETFs de renda fixa (BTER11, LTBX11) via `ETFS_RENDA_FIXA` em `src/data/etfRendaFixa.js`: precificados pelo mercado (preço da cotação) em vez de preço médio/manual na Carteira, Principal e Graficos; tipo exibido como "ETF" nos Lançamentos
-- Normalização global de tipo `Fii`→`FII` nos contexts e dados existentes
-- Modal do ativo (Principal) ganhou Valor Investido, Valor Atual e Valorização %
-- Deploy: `vercel --prod` (alias beryl) após build OK — commit 68a4375
-**Pendências:**
-- Conferir no deploy se o logo do VSLH11/BTER11 persiste após recarregar a página
-
-## 2026-08-10
-
-**Foco:** Correção de deploy Vercel abrindo em branco (dados "sumidos")
-**Arquivos alterados:** src/context/TransactionsContext.jsx, src/context/RfManualContext.jsx, src/context/UserContext.jsx, src/services/storage.js
-**Decisões:**
-- Providers (Transactions, RfManual, User) passam a depender de [user] e só carregam após login — antes liam no mount com deps [] e nunca re-buscavam
-- db.read agora trata []/{} (vazios) como "sem dados" via hasData() — cache local vazio não mascara mais o Supabase
-- storage.js reescrito limpo (IndexedDB real, sem stubs) com export default db
-**Pendências:**
-- Verificação manual pelo usuário: hard refresh (Ctrl+Shift+R) e login
-
-## 2026-08-10 (2)
-
-**Foco:** Investigação de "Renda Fixa ainda aparece na faixa de tickers" (apenas diagnóstico, sem alteração de código)
-**Arquivos alterados:** Nenhum
-**Decisões:**
-- Código do filtro está correto: `Principal.jsx:176-182` filtra `rfTickers` (tipo exato 'Renda Fixa') da faixa; não há outra faixa/scroll no app
-- `db_transactions.json` (via IPC Electron) tem 56 transações RF (IPCA+ 2032, 99 PAY, XP INVEST, SOFISA, RESERVA, LTBX11) com tipo exato — seriam todas removidas
-- Bundle `dist` (construído 10/08 20:57) já contém o filtro; `TransactionsContext` normaliza só `fii`→`FII`, guardando tipo verbatim
-**Pendências:**
-- Confirmar com usuário: quais tickers aparecem na faixa e como o app é executado (Vite dev vs Electron) — suspeitas: build stale/Electron sem rebuild ou dados vivos (localStorage/Supabase) com tipo divergente
-- Se necessário, endurecer filtro (trim/case-insensitive + excluir `ETFS_RENDA_FIXA` BTER11/LTBX11 independente do tipo)
-
-## 2026-08-11
-
-**Foco:** Corrigir logo do TRXF11 voltando à versão antiga (chaves minúsculas duplicadas) + deploy
-**Arquivos alterados:** src/components/LogoImage.jsx, src/database/TickerCatalogService.js, db_ativos.json, CONVERSAS.md
-**Decisões:**
-- Causa raiz: ativos no runtime guardavam `imagem` (minúsculo) duplicado de `IMAGEM`; `LogoImage` só lia `a.IMAGEM`. Corrigido para `a.IMAGEM || a.imagem`
-- `TickerCatalogService` ganhou `LEGACY_KEYS`/`stripLegacyKeys`/`mergeWith` em `adicionar`/`atualizar`/`importarRegistros` para eliminar chaves minúsculas no merge (evita recorrência)
-- `db_ativos.json`: removidas chaves legadas de BBAS3, GARE11, TRXF11, IPCA+ 2032; diff de 2 linhas; 946 ativos
-- Deploy feito via `vercel --prod` a partir de checkout limpo do commit `cde101d` (working tree tinha mudanças não commitadas de outra sessão que não deveriam ir) — publicado em carteira-de-investimentos-beryl.vercel.app (17s, status 200)
-- Supabase `app_data` retorna 0 registros com anon key (provável RLS) — runtime lê localStorage/Supabase, não `db_ativos.json`
-**Pendências:**
-- Commit `cde101d` NÃO pushado para origin/main (deploy via CLI, não via GitHub)
-- Mudanças de outras sessões seguem sem commit (auth/metas/filtro RF): RfManualContext, TransactionsContext, UserContext, MetasContext (novo), main.jsx, Meta.jsx, Principal.jsx, storage.js, AGENTS.md
-- Para o outro computador ver o logo corrigido: salvar o link do TRXF11 uma vez pela UI (modal "Link da Imagem / Logo do Ativo")
-
-
-## 2026-08-12
-
-**Foco:** Card VALOR MENSAL DESEJADO (página Meta) trocou input direto por exibição de valor + popover de edição com lápis
-**Arquivos alterados:** src/pages/Meta.jsx
-**Decisões:**
-- Valor exibido como texto formatado (R$ X) com botão lápis; input agora vive em popover (Salvar/Cancelar) que fecha ao clicar fora
-- Popover pré-carrega valor atual e mantém máscara parseDesejadoInput/formatDesejadoInput; persistência continua via handleMetaChange('__global__', 'recebimento', ...) (MetasContext)
-- Removidos estado focusedInput e helpers globalDesejadoFocused/globalDesejadoDisplay (sem uso); adicionado estilo smallBtnStyle
-- Build de produção OK (apenas warnings pré-existentes de chunk size)
-**Pendências:**
-- Mesmas do dia 2026-08-11 (commits não pushados)
-
-
-## 2026-08-12 (2)
-
-**Foco:** Refatoração: componente reutilizável EditableField aplicado ao card global e ao campo Meta dos cards de ticker (página Meta)
-**Arquivos alterados:** src/pages/Meta.jsx, CONVERSAS.md
-**Decisões:**
-- Criado `EditableField` em Meta.jsx (fora de `Meta()`): input readOnly + lápis SVG + popover `position:fixed` (evita corte do `overflow:hidden` do .widget-card) posicionado via `getBoundingClientRect`, com props formatCard/formatDraft/parse/initialDraft/placeholder/onSave/inputStyleOverride
-- Card global VALOR MENSAL DESEJADO usa `EditableField` com máscara moeda pt-BR (vírgula em tempo real) e `onSave` persistindo em `handleMetaChange('__global__','recebimento', parseDesejadoInput(d))`
-- Campo Meta dos cards de ticker usa `EditableField` com parse só-dígitos (`.replace(/\D/g,'')`) e `onSave` → `handleMetaChange(card.ticker,'meta', ...)`
-- Removidos estado/funções antigos do popover global (`draftValor`, `popoverPos`, `editRef`, `openMetaEditor`, `closeMetaEditor`, `saveMetaEditor`) e estilos `inputStyle`/`smallBtnStyle` do corpo de `Meta()` (componente tem o seu próprio)
-- Build de produção OK; deploy via `vercel --prod` pendente após essa sessão
-**Pendências:**
-- Mesmas do dia 2026-08-11 (commits não pushados)
-
-## 2026-08-13
-
-**Foco:** Ajuste de cache no navegador (Edge) e correção de overflow dos rótulos nos gráficos da página Gráficos
-**Arquivos alterados:** src/pages/Graficos.jsx, CONVERSAS.md
-**Decisões:**
-- Logos de ativos: usuário confirmou que o problema era cache; solução `Ctrl+F5` (instruções de limpeza do Edge fornecidas). `db_ativos.json` já continha 99 logos não-bastter.
-- Gráficos com rótulo cortado (Quantidade de Ativos, Média Mensal dos Proventos, Evolução do Patrimônio): adicionado `padding` nos eixos — XAxis `right` nos gráficos de barra horizontal e YAxis `top` + XAxis `right` no de linha.
-- Push agora usa `git -c credential.helper=manager push` (o `gh` não está instalado e não há credential helper global).
-
-## 2026-08-12 (3)
-
-**Foco:** Ajuste de layout do campo Meta nos cards de ticker (página Meta)
-**Arquivos alterados:** src/pages/Meta.jsx, CONVERSAS.md
-**Decisões:**
-- No card de ticker, o rótulo "Meta" e o campo de preenchimento agora ficam na mesma linha, abaixo da linha "Cotas" (antes tudo numa única linha com `flexWrap: wrap` e `marginLeft: auto`)
-- Estrutura: linha 1 = "Cotas" + valor; linha 2 = "Meta" + `EditableField` (sem quebra)
-- Build de produção OK; deploy feito via `vercel --prod` (alias carteira-de-investimentos-beryl.vercel.app, 19s)
-**Pendências:**
-- Mesmas do dia 2026-08-11 (commits não pushados)
-
-## 2026-08-14
-
-**Foco:** Logos vindos 100% do `db_ativos.json` (links da planilha) — corrigido MXRF11 e ativos que mostravam imagens não cadastradas
-**Arquivos alterados:** src/components/LogoImage.jsx, CONVERSAS.md
-**Decisões:**
-- Usuário esclareceu que subiu planilha para popular o `db_ativos` e que as imagens devem vir desses links (incluindo as automáticas do Bastter) — não são só as manuais
-- Diagnóstico: Supabase `app_data` NÃO tem o catálogo `ativos` (0 registros com anon key) → o navegador lia dados antigos do localStorage/IndexedDB com imagens de StatusInvest/TradingView etc. salvas pelo código anterior; o MXRF11 estava sim no `db_ativos.json` com `files.bastter.com/fii/MXRF11.gif`
-- `LogoImage` reescrito para importar **diretamente** `db_ativos.json` (`import dbAtivos`) e montar `ativosMap` TICKER→IMAGEM, eliminando a dependência do storage persistido; mantido evento `ticker-logo-updated` para edição via UI e fallback letra inicial
-- Removidas todas as fontes externas (Clearbit, TradingView, StatusInvest, cryptologos, favicons) — já não existiam desde o commit 7942d33, agora nem o storage é consultado
-- Build OK (826 módulos; bundle 1.486 kB por causa do JSON embutido); commit `e919de6` + push `7942d33..e919de6` → deploy Vercel ● Ready
-**Pendências:**
-- Usuário deve abrir https://carteira-de-investimentos-beryl.vercel.app/ e fazer hard refresh (Ctrl+F5)/limpar dados do site para descartar caches antigos
-
-## 2026-08-16
-
-**Foco:** Layout mobile da página Graficos — empilhar gráficos verticalmente
-**Arquivos alterados:** src/pages/Graficos.jsx, src/styles/globals.css
-**Decisões:**
-- Problema: chart-cards com `gridRow`/`gridColumn` inline forçavam posições fixas na grade 3-colunas, impedindo empilhamento no mobile
-- Solução: removidas propriedades `gridRow`/`gridColumn` dos cards "Quantidade de Ativos", "Internacional" e "Por Corretora"
-- Adicionadas classes `graficos-grid` e `graficos-subgrid` aos containers de grid
-- CSS mobile (max-width: 768px): subgrid vira `flex-direction: column`, chart-cards perdem `grid-column/row` fixos, altura vira `auto`
-- Commits: `a4f178f` (classes + media queries), `1372c97` (remoção de gridRow/gridColumn + CSS refinado)
-**Pendências:**
-- Usuário deve testar no DevTools mobile para confirmar empilhamento
-
-## 2026-08-25
-
-**Foco:** Auditoria completa (Fases 1-3): Segurança, Sincronização, Arquitetura
-**Arquivos alterados:** .gitignore, .env, .env.production (removido do git), main.js, src/services/storage.js, src/services/api.js, src/context/TransactionsContext.jsx, src/context/ProventosContext.jsx, src/context/RfManualContext.jsx, src/context/MetasContext.jsx, src/context/AppProviders.jsx (novo), src/utils/helpers.js (novo), src/App.jsx, src/main.jsx, src/components/Layout/Sidebar.jsx, src/pages/Lancamentos.jsx, src/pages/Meta.jsx, src/pages/Principal.jsx, src/pages/Carteira.jsx, src/pages/Graficos.jsx, supabase-migration.sql, package.json
-**Decisões:**
-- Fase 1 (Segurança): .env.production removido do git; BRAPI_TOKEN migrado para VITE_ prefix; path traversal fix em main.js com sanitizeDbName(); db_*.json e vite*.log adicionados ao .gitignore
-- Fase 2 (Sincronização): storage.js ganhou readForce() e subscribeToChanges(); todos os contexts (Transactions, Proventos, RfManual, Metas) usam readForce no mount + Realtime subscription + visibilitychange refresh; Realtime habilitado via SQL migration
-- Fase 3 (Arquitetura): react-router-dom instalado; navegação migrada de useState para Routes/NavLink; AppProviders.jsx consolida todos os providers; utils/helpers.js centraliza normalizeTipo, typeIcons, typeColors, typeBorders, monthNames, makeId
-**Pendências:**
-- Fase 4 (Qualidade de Código): remover xlsx (CVEs), bundle splitting com lazy routes, testes unitários
-
-## 2026-08-25 (2)
-
-**Foco:** Fase 4 — Qualidade de Código: remover xlsx, lazy routes, testes unitários
-**Arquivos alterados:** package.json, src/pages/Lancamentos.jsx, src/pages/Recebiveis.jsx, src/App.jsx, vitest.config.js (novo), src/test/setup.js (novo), src/utils/helpers.test.js (novo), src/utils/sanitize.test.js (novo)
-**Decisões:**
-- xlsx (CVEs altas sem fix) substituído por xlsx-populate (leve, sem CVEs)
-- App.jsx migrado para React.lazy() + Suspense: cada página agora é chunk separado (code splitting)
-- Vitest + @testing-library/react + jsdom instalados; 17 testes unitários cobrindo normalizeTipo, typeIcons, typeColors, typeBorders, monthNames, makeId e sanitizeDbName
-**Pendências:**
-- Todos os commits desta sessão precisam ser pushados para origin/main
