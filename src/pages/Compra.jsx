@@ -158,7 +158,7 @@ function Compra() {
   const formGridStyle = {
     display: 'grid',
     gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
-    gap: '12px',
+    gap: '16px',
   };
 
   return (

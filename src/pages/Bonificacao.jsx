@@ -157,15 +157,15 @@ function Bonificacao() {
 
   const formGridStyle = {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
-    gap: '12px',
+    gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
+    gap: '16px',
   };
 
   return (
     <div className="compra-page">
       <h2 style={{ fontSize: '1.2em', fontWeight: 700, color: 'var(--text)', marginBottom: 16 }}>Bonificação</h2>
 
-      <form className="compra-form" onSubmit={handleSubmit}>
+      <form className="compra-form" style={{ maxWidth: 660, width: '100%' }} onSubmit={handleSubmit}>
         <div style={formGridStyle}>
           <div>
             <label style={labelStyle}>Ticker</label>
