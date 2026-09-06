@@ -1098,6 +1098,32 @@ table:not(.data-table) tr {
   background: #C8B800;
 }
 
+.venda-form {
+  border-color: #1E7A34;
+}
+
+.venda-form .compra-btn-save {
+  background: #1E7A34;
+  color: #fff;
+}
+
+.venda-form .compra-btn-save:hover {
+  background: #155C27;
+}
+
+.bonificacao-form {
+  border-color: #D32F2F;
+}
+
+.bonificacao-form .compra-btn-save {
+  background: #D32F2F;
+  color: #fff;
+}
+
+.bonificacao-form .compra-btn-save:hover {
+  background: #A62424;
+}
+
 .compra-error {
   margin-top: 16px;
   padding: 14px 18px;

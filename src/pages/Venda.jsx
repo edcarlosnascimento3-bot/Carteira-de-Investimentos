@@ -165,7 +165,7 @@ function Venda() {
     <div className="compra-page">
       <h2 style={{ fontSize: '1.2em', fontWeight: 700, color: 'var(--text)', marginBottom: 16 }}>Venda</h2>
 
-      <form className="compra-form" style={{ maxWidth: 660, width: '100%' }} onSubmit={handleSubmit}>
+      <form className="compra-form venda-form" style={{ maxWidth: 660, width: '100%' }} onSubmit={handleSubmit}>
         <div style={formGridStyle}>
           <div>
             <label style={labelStyle}>Ticker</label>
