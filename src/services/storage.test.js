@@ -8,6 +8,7 @@ const { supabase, state } = vi.hoisted(() => {
     readCalls: 0,
     removedChannels: [],
     channels: [],
+    failUpsert: false,
   };
 
   const makeQuery = () => {
@@ -27,6 +28,9 @@ const { supabase, state } = vi.hoisted(() => {
       },
       upsert: async (row) => {
         state.upsertCalls.push(row);
+        if (state.failUpsert) {
+          return { error: { message: 'upsert simulada com falha' } };
+        }
         state.data.set(`${row.user_id}:${row.key}`, row.value);
         return { error: null };
       },
@@ -155,6 +159,7 @@ beforeEach(() => {
   state.readCalls = 0;
   state.removedChannels.length = 0;
   state.channels.length = 0;
+  state.failUpsert = false;
 });
 
 afterEach(async () => {
@@ -264,6 +269,24 @@ describe('storage — escrita', () => {
     expect(state.upsertCalls).toHaveLength(0);
     expect(JSON.parse(localStorage.getItem(`investimento_transacoes`))).toEqual(dados);
     expect(globalThis.__fakeIdbStores.get('transacoes')).toEqual(dados);
+  });
+
+  it('re-tenta o upsert em caso de falha e remove da fila após sucesso', async () => {
+    state.user = { id: UID };
+    const dados = [{ id: 8 }];
+
+    await db.write('transacoes', dados);
+    state.failUpsert = true;
+    await db.flush();
+
+    expect(state.upsertCalls).toHaveLength(1);
+    expect(state.data.get(`${UID}:transacoes`)).toBeUndefined();
+
+    state.failUpsert = false;
+    await db.flush();
+
+    expect(state.upsertCalls).toHaveLength(2);
+    expect(state.data.get(`${UID}:transacoes`)).toEqual(dados);
   });
 });
 

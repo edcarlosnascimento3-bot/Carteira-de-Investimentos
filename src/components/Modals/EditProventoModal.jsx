@@ -123,7 +123,6 @@ function EditProventoModal({ data, onSave, onClose, tickerList, tickerNomeMap, t
   const handleConfirmNao = () => {
     setShowConfirm(false);
     onClose();
-    window.location.reload();
   };
 
   const inputStyle = {

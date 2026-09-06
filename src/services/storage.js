@@ -137,20 +137,33 @@ function scheduleFlush(name, data) {
 
 async function flushPendingWrites() {
   const entries = Array.from(pendingWrites.entries());
-  pendingWrites.clear();
   try {
     const userId = await getCurrentUserId();
     for (const [name, data] of entries) {
-      writeLocalStorage(name, data, userId);
-      await writeSupabase(name, data);
       try {
-        await idbWrite(name, data);
+        writeLocalStorage(name, data, userId);
+        const ok = await writeSupabase(name, data);
+        // Só remove da fila após sucesso no Supabase. Em falha, o dado
+        // permanece pendente e é reenviado no próximo flush (retry).
+        if (ok) pendingWrites.delete(name);
+        try {
+          await idbWrite(name, data);
+        } catch (e) {
+          console.warn('[storage] IndexedDB write falhou:', name, e);
+        }
       } catch (e) {
-        console.warn('[storage] IndexedDB write falhou:', name, e);
+        console.warn('[storage] write falhou, mantém pendente para retry:', name, e);
       }
     }
   } catch (e) {
     console.warn('[storage] flush de writes falhou:', e);
+  }
+  // Se ainda há pendências (falha de rede), reagenda o flush para tentar de novo
+  if (pendingWrites.size > 0 && !flushTimer) {
+    flushTimer = setTimeout(() => {
+      flushTimer = null;
+      void flushPendingWrites();
+    }, WRITE_DEBOUNCE_MS * 4);
   }
 }
 
