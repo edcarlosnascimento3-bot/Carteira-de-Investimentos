@@ -33,10 +33,7 @@ function Compra() {
   const tx = Number(form.taxas) || 0;
   const total = qtd * vlr + tx;
 
-  const segmentos = ['Agronegócio', 'Consumo', 'Energia', 'Financeiro', 'Imobiliário', 'Infraestrutura', 'Mineração', 'Saneamento', 'Tecnologia', 'Transporte'];
-
   const segmentosCadastrados = [...new Set(transactions.map((t) => t.segmento).filter(Boolean))].sort();
-  const segmentosUnicos = [...new Set([...segmentos, ...segmentosCadastrados])].sort();
 
   const tickers = [...new Set(transactions.map((t) => t.ticker))].sort();
 
@@ -226,7 +223,7 @@ function Compra() {
               placeholder="Selecione ou digite o segmento"
             />
             <datalist id="segmentos-list-compra">
-              {segmentosUnicos.map((s) => (
+              {segmentosCadastrados.map((s) => (
                 <option key={s} value={s} />
               ))}
             </datalist>
