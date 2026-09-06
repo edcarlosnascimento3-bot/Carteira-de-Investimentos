@@ -14,7 +14,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
 async function seed() {
   const email = 'edcarlos.nascimento3@gmail.com';
-  const password = 'Suspeito10*';
+  const password = 'Edcarlos1975*';
 
   // 1. Criar ou verificar usuario seed
   console.log('1. Verificando se usuario ja existe...');

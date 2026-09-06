@@ -187,18 +187,50 @@
 
 ---
 
-## 2026-08-29 (sessão: gráficos — ano corrente + roxo + rótulos)
+## 2026-08-30 (sessão: fetch automático de retornos YTD 2026)
 
-**Foco:** Três melhorias nos gráficos de Graficos.jsx
+**Foco:** Implementar busca automática dos retornos YTD de 2026 dos índices (IBOVESPA, IFIX, IPCA, CDI) para estender os gráficos até o ano corrente
 **Arquivos alterados:**
-- `src/pages/Graficos.jsx`
+- `src/services/indexApi.js` (criado — `fetchCurrentYearReturns()` com fetch de Yahoo ^BVSP, brapi IFIX, BCB SGS IPCA/CDI)
+- `api/bcb.js` (criado — proxy serverless para BCB SGS)
+- `src/pages/Graficos.jsx` (import `fetchCurrentYearReturns`, estado `currentYearData`, `useEffect` fetch, `mergedIndexHistory` useMemo estendendo `INDEX_HISTORY` com ano corrente, `useEffect` com catch para fallback)
+- `vercel.json` (já possui rewrites para `/api/yahoo/:path*` e `/api/bcb/:path*`)
+- `api/brapi.js` (já existente — proxy para brapi.dev)
 
 **Decisões:**
-- **Comparativo Carteira vs Índices (% anual) / Rentabilidade Acumulada (base 100):** `maxPortfolioYear` agora usa `Math.max(...portfolioYears, new Date().getFullYear())` para sempre incluir o ano corrente, mesmo sem transações registradas ainda para ele
-- **Investimento Ano a Ano:** cor das barras mudada de `C_VERMELHO_ESCURO` (#990000) para `#7B1FA2` (roxo)
-- **Rentabilidade de Dividendos por Ano:** rótulos `<LabelList>` alterados de `fill="var(--text-muted)" fontSize={11}` para `fill="#FFFFFF" fontSize={14} fontWeight="bold"`
+- BCB SGS como fonte primária para IPCA (série 433) e CDI (série 4391) — funciona sem autenticação, retorna dados mensais
+- Yahoo `^BVSP` para IBOVESPA — funciona mas está em rate limit (429)
+- brapi.dev para IFIX — funciona mas plano gratuito atingiu limite mensal de 15.000 requisições (resume 02/09/2026)
+- `fetchCurrentYearReturns()` chama brapi via POST com JSON body (`{path, params}`), não GET com query string (brapi.js só aceita POST)
+- Todos os erros são catchados internamente e retornados no campo `errors` — o gráfico funciona com os dados disponíveis mesmo se alguma fonte falhar
+- `mergedIndexHistory` estende `INDEX_HISTORY` dinamicamente — se `currentYearData.data[key]` for undefined, o índice não recebe o ano corrente (fallback silencioso)
+- `useEffect` com `.catch()` para garantir que `currentYearData` seja sempre setado (mesmo em falha de rede total)
 
-**Validação:** Build OK, deploy Vercel OK, HTTP 200
+**Validação:** Build OK, deploy Vercel OK, HTTP 200. BCB SGS proxy retorna IPCA 2026 (7 pontos). Yahoo e brapi retornam 429 (rate limit).
 
 **Pendências:**
-- Nenhuma
+- IBOVESPA e IFIX não têm dados YTD 2026 devido ao rate limit das APIs externas (Yahoo 429, brapi limite mensal esgotado). Auto-resolve quando as cotas resetam.
+- Não há indicador visual de "dados sendo carregados" para o fetch do ano corrente
+
+---
+
+## 2026-09-06
+
+**Foco:** Seguranca e rotacao de credenciais — correcao RLS, troca de senha, novas chaves Supabase (publishable/secret) e atualizacao de producao (Vercel).
+
+**Arquivos alterados:**
+- supabase/migrations/0002_fix_rls_recursion.sql (funcao SECURITY DEFINER + politicas sem recursao)
+- scripts/seed-user.mjs (senha atualizada, usa SUPABASE_SERVICE_KEY via env)
+- .env / .env.production (VITE_SUPABASE_ANON_KEY = nova publishable key)
+- public/API Carteira de investimentos.txt (removidos credenciais/segredos)
+- CONVERSAS.md (resumo atual)
+
+**Decisoes:**
+- Projeto Vercel correto identificado: prj_kCeknBh2aLUUydMJ2EhaNqSteg4N (alias carteira-de-investimentos-beryl.vercel.app).
+- Producao confirmada usando nova publishable key no bundle (verificado via fetch do JS).
+- Nova env var VITE_SUPABASE_ANON_KEY publicada na Vercel (production+preview) e redeploy realizado.
+
+**Pendencias:**
+- Revogar chaves legadas (anon + service_role JWT) no painel Supabase (Settings > API keys > revoke legacy) — aguardar confirmacao de que tudo funciona na producao.
+- Rotacionar token Vercel cp_ se nao usado mais (exposto em historico git).
+- O segredo nao deve ser commitado; manter apenas em .env/.env.production (gitignored) e painel Vercel.

@@ -1,3 +1,17 @@
-Senha Supabase - Suspeito10*
+ATENCAO: Este arquivo NAO deve conter segredos. Credenciais sensiveis ficam apenas em variaveis de ambiente (.env local e painel Vercel) e fora do git.
 
-anon public - eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlrdmhtcmJkeXd1enB3dXltdGFxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI2NDU3MDcsImV4cCI6MjA5ODIyMTcwN30.NMlyGy2liiOEzy-nGeD0rSVO0JhLqcFkB3Y-BdrVBsE
+Chaves Supabase (rotacionadas - versao atual):
+- Publishable (ex-ANON, usada no frontend): definir como VITE_SUPABASE_ANON_KEY
+- Secret (ex-SERVICE_ROLE, usada em scripts server-side): definir como SUPABASE_SERVICE_KEY
+- STR: segredos NAO devem ser commitados. Veja .env.example.
+
+url - https://ikvhmrbdywuzpwuymtaq.supabase.co
+
+Link GitHub - https://github.com/edcarlosnascimento3-bot/Carteira-de-Investimentos
+
+Link Vercel (produção) - https://carteira-de-investimentos-beryl.vercel.app/
+
+Nome - VITE_SUPABASE_URL
+Valor - https://ikvhmrbdywuzpwuymtaq.supabase.co
+
+Nome - VITE_SUPABASE_ANON_KEY (valor no painel Vercel / .env)
