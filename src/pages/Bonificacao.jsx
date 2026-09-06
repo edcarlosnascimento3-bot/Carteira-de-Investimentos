@@ -37,6 +37,14 @@ function Bonificacao() {
 
   const tickers = [...new Set(transactions.map((t) => t.ticker))].sort();
 
+  const segmentoPorTicker = {};
+  transactions.forEach((t) => {
+    if (t.ticker && t.segmento) segmentoPorTicker[t.ticker] = t.segmento;
+  });
+
+  const segmentosCadastrados = [...new Set(transactions.map((t) => t.segmento).filter(Boolean))].sort();
+  const segmentosUnicos = [...new Set([...segmentos, ...segmentosCadastrados])].sort();
+
   const handleChange = useCallback((field, value) => {
     setForm((prev) => {
       const next = { ...prev, [field]: value };
@@ -47,6 +55,7 @@ function Bonificacao() {
           next.cnpj = info.cnpj;
           next.tipo = info.tipo;
         }
+        next.segmento = segmentoPorTicker[value] || '';
       }
       return next;
     });
@@ -215,16 +224,18 @@ function Bonificacao() {
           </div>
           <div>
             <label style={labelStyle}>Segmento</label>
-            <select
+            <input
               style={{ ...inputStyle, color: form.segmento ? 'var(--text)' : 'var(--text-faint)' }}
+              list="segmentos-list-bonificacao"
               value={form.segmento}
               onChange={(e) => handleChange('segmento', e.target.value)}
-            >
-              <option value="" disabled hidden>Selecione o segmento</option>
-              {segmentos.map((s) => (
-                <option key={s} value={s}>{s}</option>
+              placeholder="Selecione ou digite o segmento"
+            />
+            <datalist id="segmentos-list-bonificacao">
+              {segmentosUnicos.map((s) => (
+                <option key={s} value={s} />
               ))}
-            </select>
+            </datalist>
           </div>
           <div>
             <label style={labelStyle}>Data</label>

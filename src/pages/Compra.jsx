@@ -35,6 +35,9 @@ function Compra() {
 
   const segmentos = ['Agronegócio', 'Consumo', 'Energia', 'Financeiro', 'Imobiliário', 'Infraestrutura', 'Mineração', 'Saneamento', 'Tecnologia', 'Transporte'];
 
+  const segmentosCadastrados = [...new Set(transactions.map((t) => t.segmento).filter(Boolean))].sort();
+  const segmentosUnicos = [...new Set([...segmentos, ...segmentosCadastrados])].sort();
+
   const tickers = [...new Set(transactions.map((t) => t.ticker))].sort();
 
   const handleChange = useCallback((field, value) => {
@@ -215,16 +218,18 @@ function Compra() {
           </div>
           <div>
             <label style={labelStyle}>Segmento</label>
-            <select
+            <input
               style={{ ...inputStyle, color: form.segmento ? 'var(--text)' : 'var(--text-faint)' }}
+              list="segmentos-list-compra"
               value={form.segmento}
               onChange={(e) => handleChange('segmento', e.target.value)}
-            >
-              <option value="" disabled hidden>Selecione o segmento</option>
-              {segmentos.map((s) => (
-                <option key={s} value={s}>{s}</option>
+              placeholder="Selecione ou digite o segmento"
+            />
+            <datalist id="segmentos-list-compra">
+              {segmentosUnicos.map((s) => (
+                <option key={s} value={s} />
               ))}
-            </select>
+            </datalist>
           </div>
           <div>
             <label style={labelStyle}>Data</label>
