@@ -157,7 +157,7 @@ function Venda() {
 
   const formGridStyle = {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
+    gridTemplateColumns: 'repeat(2, 1fr)',
     gap: '16px',
   };
 
