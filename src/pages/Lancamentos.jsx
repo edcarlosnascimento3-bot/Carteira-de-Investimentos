@@ -541,7 +541,7 @@ function Lancamentos() {
                   <td className="td-ativo">{row.ativo}</td>
                   <td className="td-cnpj">{row.cnpj}</td>
                   <td className="td-tipo">{ETFS_RENDA_FIXA.includes(row.ticker) ? 'ETF' : normalizeTipo(row.tipo)}</td>
-                  <td className="td-segmento">{row.segmento}</td>
+                  <td className="td-segmento">{(row.segmento || '').toUpperCase()}</td>
                   <td>
                     <span className={`operacao-badge ${row.operacao === 'Compra' ? 'compra' : 'venda'}`}>
                       {row.operacao}
