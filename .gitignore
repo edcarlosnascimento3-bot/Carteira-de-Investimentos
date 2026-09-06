@@ -5,6 +5,7 @@ dist/
 .env.production
 .opencode/
 db_*.json
+!db_ativos.json
 vite*.log
 *.gs
 
