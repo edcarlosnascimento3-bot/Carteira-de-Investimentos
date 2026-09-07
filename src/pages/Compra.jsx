@@ -219,6 +219,7 @@ function Compra() {
               style={{ ...inputStyle, color: form.segmento ? 'var(--text)' : 'var(--text-faint)' }}
               list="segmentos-list-compra"
               value={form.segmento}
+              autoComplete="off"
               onChange={(e) => handleChange('segmento', e.target.value)}
               placeholder="Selecione ou digite o segmento"
             />
