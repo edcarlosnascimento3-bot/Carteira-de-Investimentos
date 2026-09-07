@@ -325,7 +325,7 @@ function Proventos() {
   };
 
   return (
-    <div style={{ marginTop: '-65px' }}>
+    <div style={{ height: '95vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', paddingTop: '10px', marginTop: '-65px' }}>
       <h1>Proventos</h1>
       <p className="subtitle">
         Registro de dividendos, JCP, rendimentos e reembolsos
@@ -491,7 +491,7 @@ function Proventos() {
         direction="right"
       />
 
-      <div className="table-wrapper">
+      <div className="table-wrapper" style={{ flex: 1, overflow: 'auto' }}>
         <table className="data-table">
           <thead>
             <tr>
