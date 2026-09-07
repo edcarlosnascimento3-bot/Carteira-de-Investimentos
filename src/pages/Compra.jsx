@@ -33,7 +33,7 @@ function Compra() {
   const tx = Number(form.taxas) || 0;
   const total = qtd * vlr + tx;
 
-  const segmentosCadastrados = [...new Set(transactions.map((t) => t.segmento).filter(Boolean))].sort();
+  const segmentosCadastrados = [...new Set(transactions.map((t) => (t.segmento || '').trim().toUpperCase()).filter(Boolean))].sort();
 
   const tickers = [...new Set(transactions.map((t) => t.ticker))].sort();
 
