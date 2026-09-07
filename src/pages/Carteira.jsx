@@ -198,7 +198,7 @@ function Carteira() {
   };
 
   return (
-    <div>
+    <div style={{ height: '95vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', paddingTop: '10px', marginTop: '-55px' }}>
       <h1>Carteira</h1>
       <div style={{ display: 'flex', alignItems: 'flex-end', marginBottom: 20 }}>
         <p className="subtitle" style={{ margin: 0, flex: 1 }}>
