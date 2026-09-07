@@ -237,7 +237,7 @@ function Principal() {
               {totals.diferenca >= 0 ? '+' : ''}{formatNumber(totals.rendimentoPct)}%
             </div>
           </div>
-          <div className="card-icon icon-float" style={{ fontSize: 36 }}>📊</div>
+          <div className="card-icon icon-float" style={{ fontSize: 36 }}>%</div>
         </div>
 
         <div className="widget-card">
@@ -259,7 +259,7 @@ function Principal() {
             </div>
             <div className="change positive">Ano atual</div>
           </div>
-          <div className="card-icon icon-float" style={{ fontSize: 36 }}>📈</div>
+          <div className="card-icon icon-float" style={{ fontSize: 36 }}>🪙</div>
         </div>
 
         <div className="widget-card">

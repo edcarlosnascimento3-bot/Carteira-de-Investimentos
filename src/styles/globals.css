@@ -554,7 +554,7 @@ body {
 }
 
 .widget-card .value {
-  font-size: 1.15em;
+  font-size: 1.05em;
   font-weight: 700;
   color: var(--text-soft);
   font-family: 'Outfit', sans-serif;
