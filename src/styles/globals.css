@@ -1473,6 +1473,7 @@ table:not(.data-table) tr {
 .calendario-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
+  grid-auto-rows: 1fr;
   gap: 8px;
   margin-bottom: 24px;
 }
@@ -1487,7 +1488,6 @@ table:not(.data-table) tr {
 }
 
 .calendario-celula {
-  aspect-ratio: 1;
   background: var(--surface-hover);
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -1498,6 +1498,8 @@ table:not(.data-table) tr {
   padding: 4px;
   position: relative;
   transition: all 0.3s ease;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .calendario-celula.dia-vazio {
