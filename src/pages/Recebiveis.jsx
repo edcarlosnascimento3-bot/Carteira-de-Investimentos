@@ -547,15 +547,6 @@ function Proventos() {
         </table>
       </div>
 
-      <div className="table-footer">
-        <span>Total de registros: {filtered.length}</span>
-        {filtered.length > 0 && (
-          <span style={{ marginLeft: '20px', color: 'var(--text-faint)' }}>
-            Total em Proventos: {formatCurrency(filtered.reduce((acc, p) => acc + (p.dividendos || 0) + (p.jcp || 0) + (p.rendimento || 0) + (p.reembolso || 0), 0))}
-          </span>
-        )}
-      </div>
-
       {addTarget && (
         <EditProventoModal
           data={addTarget}
