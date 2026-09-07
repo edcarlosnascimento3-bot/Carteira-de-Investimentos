@@ -259,7 +259,17 @@ function Principal() {
             </div>
             <div className="change positive">Ano atual</div>
           </div>
-          <div className="card-icon icon-float" style={{ fontSize: 36 }}>🪙</div>
+          <div className="card-icon icon-float" style={{ fontSize: 36 }}>
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="#C8B800" stroke="#C8B800" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round">
+              <ellipse cx="11" cy="5.5" rx="6" ry="3" fill="#F2E86D" stroke="#C8B800" />
+              <path d="M5 5.5v3c0 1.66 2.69 3 6 3s6-1.34 6-3v-3" fill="#F2E86D" stroke="#C8B800" />
+              <ellipse cx="11" cy="8.5" rx="6" ry="3" fill="#EFE36B" stroke="#C8B800" />
+              <path d="M5 8.5v3c0 1.66 2.69 3 6 3s6-1.34 6-3v-3" fill="#EFE36B" stroke="#C8B800" />
+              <ellipse cx="11" cy="11.5" rx="6" ry="3" fill="#EBDD63" stroke="#C8B800" />
+              <path d="M5 11.5v3c0 1.66 2.69 3 6 3s6-1.34 6-3v-3" fill="#EBDD63" stroke="#C8B800" />
+              <ellipse cx="11" cy="14.5" rx="6" ry="3" fill="#E6D556" stroke="#C8B800" />
+            </svg>
+          </div>
         </div>
 
         <div className="widget-card">
