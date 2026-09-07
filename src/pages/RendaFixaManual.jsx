@@ -37,6 +37,13 @@ function formatBRLInput(value) {
   return (cents / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
+function formatDateBR(value) {
+  if (!value) return '—';
+  const [ano, mes, dia] = String(value).split('-');
+  if (!ano || !mes || !dia) return value;
+  return `${dia}/${mes}/${ano}`;
+}
+
 export default function RendaFixaManual() {
   const { rfManual, updateRfManual } = useRfManual();
   const [editing, setEditing] = useState(null);
@@ -100,7 +107,7 @@ export default function RendaFixaManual() {
   const save = () => {
     const nome = normalize(form.nome);
     if (!nome) return;
-    const key = editing || nome.toUpperCase();
+    const key = editing || `rf_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 9)}`;
     const dados = {
       nome,
       tipo: form.tipo || 'CDB',
@@ -424,8 +431,8 @@ export default function RendaFixaManual() {
                         {formatCurrency(item.valor || 0)}
                       </td>
                       <td style={td}>{item.instituicao || '—'}</td>
-                      <td style={td}>{item.data || '—'}</td>
-                      <td style={td}>{item.vencimento || '—'}</td>
+                      <td style={td}>{formatDateBR(item.data)}</td>
+                      <td style={td}>{formatDateBR(item.vencimento)}</td>
                       <td style={td}>{item.rentabilidade || '—'}</td>
                       <td style={{ ...td, textAlign: 'center' }}>
                         <button
@@ -447,16 +454,6 @@ export default function RendaFixaManual() {
                   );
                 })}
             </tbody>
-            <tfoot>
-              <tr style={{ background: 'var(--card-header, #f5f5f5)', fontWeight: 700 }}>
-                <td style={{ ...td, fontWeight: 700 }}>Total</td>
-                <td style={td}></td>
-                <td style={{ ...td, textAlign: 'right', fontWeight: 700, color: '#C8B800', fontSize: 14 }}>
-                  {formatCurrency(totalPatrimonio)}
-                </td>
-                <td colSpan={5} style={td}></td>
-              </tr>
-            </tfoot>
           </table>
         </div>
       )}
