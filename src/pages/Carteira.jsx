@@ -250,7 +250,7 @@ function Carteira() {
         </div>
       </div>
 
-      <div className="table-wrapper">
+      <div className="table-wrapper carteira-scroll">
         <table className="data-table carteira-table">
           <thead>
             <tr>
