@@ -339,22 +339,6 @@ function Carteira() {
         </table>
       </div>
 
-      <div className="table-footer">
-        <span>Total de ativos: {portfolio.length}</span>
-        {portfolio.length > 0 && (
-          <>
-            <span style={{ marginLeft: '20px', color: 'var(--text-faint)' }}>
-              Total Investido:{' '}
-              {formatCurrency(portfolio.reduce((acc, r) => acc + r.investido, 0))}
-            </span>
-            <span style={{ marginLeft: '20px', color: 'var(--text-faint)' }}>
-              Total Atual:{' '}
-              {formatCurrency(portfolio.reduce((acc, r) => acc + r.atual, 0))}
-            </span>
-          </>
-        )}
-      </div>
-
       {restructureType && !showRestructureConfirm && (
         <div className="modal-overlay">
           <div className="modal-content modal-edit" style={{ maxWidth: 500 }}>
