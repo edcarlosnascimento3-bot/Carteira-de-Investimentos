@@ -773,17 +773,6 @@ body {
   padding: 10px 8px;
 }
 
-/* Carteira: container com rolagem vertical própria para manter o cabeçalho fixo */
-.carteira-scroll {
-  max-height: 60vh;
-  overflow-y: auto;
-}
-
-.carteira-scroll .carteira-table {
-  border-collapse: separate;
-  border-spacing: 0;
-}
-
 .data-table tbody tr:hover {
   background: var(--gold-hover);
 }

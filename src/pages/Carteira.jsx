@@ -250,7 +250,7 @@ function Carteira() {
         </div>
       </div>
 
-      <div className="table-wrapper carteira-scroll">
+      <div className="table-wrapper" style={{ flex: 1, overflow: 'auto' }}>
         <table className="data-table carteira-table">
           <thead>
             <tr>
