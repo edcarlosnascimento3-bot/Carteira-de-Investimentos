@@ -1,6 +1,21 @@
 import { useState, useMemo } from 'react';
 import { useRfManual } from '../context/RfManualContext';
+import { useTransactions } from '../context/TransactionsContext';
 import { formatCurrency } from '../services/format';
+
+const IPCA2032_TICKER = 'IPCA+2032';
+const IPCA2032_CONFIG = {
+  tipo: 'NTN-B',
+  instituicao: 'SOFISA',
+  vencimento: '2026-03-18',
+  rentabilidade: '8,3',
+};
+
+function brToIso(value) {
+  const m = String(value || '').match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (m) return `${m[3]}-${m[2]}-${m[1]}`;
+  return value || '';
+}
 
 const TIPOS_RF = [
   { value: 'CDB', label: 'CDB', cor: '#2979FF' },
@@ -46,10 +61,12 @@ function formatDateBR(value) {
 
 export default function RendaFixaManual() {
   const { rfManual, updateRfManual } = useRfManual();
+  const { transactions } = useTransactions();
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState({ ...EMPTY });
   const [showForm, setShowForm] = useState(false);
   const [busca, setBusca] = useState('');
+  const [importMsg, setImportMsg] = useState(null);
 
   const itens = useMemo(() => {
     if (!rfManual || typeof rfManual !== 'object') return [];
@@ -84,6 +101,62 @@ export default function RendaFixaManual() {
     return mapa;
   }, [itens]);
 
+  const importarIpca2032 = () => {
+    if (!transactions || !Array.isArray(transactions)) {
+      setImportMsg({ tipo: 'erro', msg: 'Nenhum lançamento encontrado na planilha.' });
+      return;
+    }
+
+    const compras = transactions.filter(t =>
+      t.operacao === 'Compra' &&
+      (t.ticker || '').toUpperCase().includes('IPCA') &&
+      (t.ticker || t.ativo || '').toUpperCase().includes('2032')
+    );
+
+    if (compras.length === 0) {
+      setImportMsg({ tipo: 'erro', msg: 'Nenhuma compra de IPCA+2032 encontrada na planilha.' });
+      return;
+    }
+
+    const jaImportados = new Set(
+      Object.values(rfManual)
+        .filter(v => v && typeof v === 'object' && v.origemId)
+        .map(v => v.origemId)
+    );
+
+    const novos = [];
+    for (const t of compras) {
+      if (jaImportados.has(t.id)) continue;
+      const valor = Number(t.investido ?? t.valor) || 0;
+      novos.push({
+        origemId: t.id,
+        nome: t.ticker || IPCA2032_TICKER,
+        tipo: IPCA2032_CONFIG.tipo,
+        valor,
+        instituicao: IPCA2032_CONFIG.instituicao,
+        data: brToIso(t.data),
+        vencimento: IPCA2032_CONFIG.vencimento,
+        rentabilidade: IPCA2032_CONFIG.rentabilidade,
+      });
+    }
+
+    if (novos.length === 0) {
+      setImportMsg({ tipo: 'info', msg: `Todas as ${compras.length} compra(s) de IPCA+2032 já estão na Renda Fixa.` });
+      return;
+    }
+
+    updateRfManual(prev => {
+      const next = { ...prev };
+      for (const n of novos) {
+        const key = `rf_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 9)}`;
+        next[key] = n;
+      }
+      return next;
+    });
+
+    setImportMsg({ tipo: 'sucesso', msg: `${novos.length} compra(s) de IPCA+2032 importada(s) para a Renda Fixa.` });
+  };
+
   const startAdd = () => {
     setForm({ ...EMPTY, data: new Date().toISOString().slice(0, 10) });
     setEditing(null);
@@ -99,6 +172,7 @@ export default function RendaFixaManual() {
       data: item.data || '',
       vencimento: item.vencimento || '',
       rentabilidade: item.rentabilidade || '',
+      origemId: item.origemId || '',
     });
     setEditing(item.key);
     setShowForm(true);
@@ -116,6 +190,7 @@ export default function RendaFixaManual() {
       data: form.data || '',
       vencimento: form.vencimento || '',
       rentabilidade: normalize(form.rentabilidade),
+      origemId: form.origemId || '',
     };
     updateRfManual(prev => ({
       ...prev,
@@ -231,6 +306,32 @@ export default function RendaFixaManual() {
           }}
         />
         <div style={{ flex: 1 }} />
+        {importMsg && (
+          <span style={{
+            fontSize: 12,
+            fontWeight: 600,
+            color: importMsg.tipo === 'sucesso' ? '#1E7A34' : importMsg.tipo === 'erro' ? '#E53935' : 'var(--text-secondary, #888)',
+          }}>
+            {importMsg.msg}
+          </span>
+        )}
+        <button
+          onClick={importarIpca2032}
+          style={{
+            background: 'transparent',
+            color: 'var(--text, #333)',
+            border: '1px solid var(--border, #ddd)',
+            borderRadius: 8,
+            padding: '8px 14px',
+            fontSize: 13,
+            fontWeight: 600,
+            cursor: 'pointer',
+            fontFamily: 'inherit',
+          }}
+          title="Importa as compras de IPCA+2032 da página Lançamentos para esta tabela"
+        >
+          📥 Importar IPCA+2032
+        </button>
         <button onClick={startAdd} style={{
           background: '#C8B800',
           color: '#121212',
