@@ -20,6 +20,10 @@ const thStyle = {
   textTransform: 'uppercase',
   letterSpacing: '1px',
   borderBottom: '1px solid var(--border)',
+  position: 'sticky',
+  top: 0,
+  zIndex: 1,
+  background: 'var(--surface-dark)',
 };
 
 const tdStyle = {
@@ -275,7 +279,7 @@ function IRRF() {
   const xxxLabel = selectedAno ? `31/12/${selectedAno - 1}` : 'XXX';
 
   return (
-    <div>
+    <div style={{ height: '95vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', paddingTop: '10px' }}>
       <h1>IRRF</h1>
       <p className="subtitle">
         Imposto de Renda Retido na Fonte - acompanhamento fiscal
@@ -313,7 +317,7 @@ function IRRF() {
       </div>
 
       {(activeTab === 'isentos' || activeTab === 'tributacao') && (
-        <div>
+        <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
             <span style={{ color: 'var(--text)', fontSize: '0.95em', fontWeight: 600 }}>
               Selecione o ano desejado
@@ -334,10 +338,12 @@ function IRRF() {
           </div>
 
           <div style={{
+            flex: 1,
+            minHeight: 0,
             background: 'var(--surface)',
             border: '1px solid var(--border)',
             borderRadius: 12,
-            overflow: 'hidden',
+            overflow: 'auto',
           }}>
             <table style={{
               width: '100%',
@@ -482,7 +488,7 @@ function IRRF() {
       )}
 
       {activeTab === 'bens' && (
-        <div>
+        <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
             <span style={{ color: 'var(--text)', fontSize: '0.95em', fontWeight: 600 }}>
               Selecione o ano desejado
@@ -503,6 +509,8 @@ function IRRF() {
           </div>
 
           <div style={{
+            flex: 1,
+            minHeight: 0,
             background: 'var(--surface)',
             border: '1px solid var(--border)',
             borderRadius: 12,
@@ -592,7 +600,7 @@ function IRRF() {
       )}
 
       {activeTab === 'ganhos' && (
-        <div>
+        <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
             <span style={{ color: 'var(--text)', fontSize: '0.95em', fontWeight: 600 }}>
               Selecione o ano desejado
@@ -613,6 +621,8 @@ function IRRF() {
           </div>
 
           <div style={{
+            flex: 1,
+            minHeight: 0,
             background: 'var(--surface)',
             border: '1px solid var(--border)',
             borderRadius: 12,
