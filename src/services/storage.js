@@ -145,7 +145,10 @@ async function flushPendingWrites() {
         const ok = await writeSupabase(name, data);
         // Só remove da fila após sucesso no Supabase. Em falha, o dado
         // permanece pendente e é reenviado no próximo flush (retry).
-        if (ok) pendingWrites.delete(name);
+        if (ok) {
+          pendingWrites.delete(name);
+          clearLocalDirty(name);
+        }
         try {
           await idbWrite(name, data);
         } catch (e) {
@@ -250,6 +253,7 @@ const db = {
   async write(name, data) {
     const userId = await getCurrentUserId();
     writeLocalStorage(name, data, userId);
+    markLocalDirty(name);
     scheduleFlush(name, data);
     return true;
   },
@@ -341,6 +345,25 @@ if (typeof document !== 'undefined') {
     if (document.visibilityState === 'hidden') pauseSubscriptions();
     else resumeSubscriptions();
   });
+}
+
+// Estado de escrita por storage name — usado pelo useStorageSync para não
+// sobrescrever dados locais mais novos com conteúdo remoto desatualizado.
+// dirty = houve write local deste name desde o último reconhecimento remoto.
+const localWriteState = new Map();
+
+export function markLocalDirty(name) {
+  localWriteState.set(name, { dirty: true });
+}
+
+export function clearLocalDirty(name) {
+  const state = localWriteState.get(name);
+  if (state) state.dirty = false;
+}
+
+export function hasLocalDirty(name) {
+  const state = localWriteState.get(name);
+  return !!(state && state.dirty);
 }
 
 export default db;

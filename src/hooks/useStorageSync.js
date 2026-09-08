@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
-import db, { subscribeToChanges } from '../services/storage';
+import db, { subscribeToChanges, hasLocalDirty } from '../services/storage';
 import { isEqualDeep } from '../utils/equality';
 
 function defaultIsEmpty(value) {
@@ -29,6 +29,17 @@ export function useStorageSync(STORAGE_NAME, options = {}) {
   const [data, setData] = useState(initialValue);
   const [loaded, setLoaded] = useState(false);
   const dataRef = useRef(data);
+  // true quando o estado local foi mutado via setData(função) — i.e. mudanças
+  // diretas do usuário/normalização — e ainda não reconhecido pelo remote.
+  // Usado para nunca sobrescrever dados locais mais novos com remote antigo.
+  const dirtyRef = useRef(false);
+
+  // setData(func) indica mutação local do usuário/conteúdo; setData(valor) indica
+  // aplicação de dados remotos (readForce/realtime/refresh), que não marca dirty.
+  const syncSetData = (updater) => {
+    if (typeof updater === 'function') dirtyRef.current = true;
+    setData(updater);
+  };
 
   const isEmptyData = isEmpty || defaultIsEmpty;
 
@@ -44,6 +55,11 @@ export function useStorageSync(STORAGE_NAME, options = {}) {
       if (!active) return;
       setLoaded(true);
       setData((prev) => {
+        // Se houve mutação local pendente (adição anexada antes do load), NÃO
+        // sobrescrever com remote possivelmente desatualizado — local é a fonte.
+        if (dirtyRef.current && !isEmptyData(prev) && !isEmptyData(remote)) {
+          return prev;
+        }
         if (isEmptyData(remote)) {
           if (fallbackLocalStorage && isEmptyData(prev)) {
             try {
@@ -62,6 +78,7 @@ export function useStorageSync(STORAGE_NAME, options = {}) {
         }
         if (keepLocalIfPresent && !isEmptyData(prev)) return prev;
         let next = normalize ? normalize(remote) : remote;
+        dirtyRef.current = false;
         if (next !== remote) db.write(STORAGE_NAME, next);
         return next;
       });
@@ -74,6 +91,11 @@ export function useStorageSync(STORAGE_NAME, options = {}) {
     if (!user || !loaded) return;
     const unsub = subscribeToChanges(STORAGE_NAME, (remote) => {
       if (isEmptyData(remote)) return;
+      // Se há escrita local ainda não persistida no remote, o dado local é mais
+      // novo — não sobrescrever. Sem escrita local pendente, o remote é fonte
+      // segura e o dirtyRef local pode ser rearmado (reconhecimento remoto).
+      if (hasLocalDirty(STORAGE_NAME)) return;
+      dirtyRef.current = false;
       const next = normalize ? normalize(remote) : remote;
       if (!isEqualDeep(dataRef.current, next)) setData(next);
     });
@@ -87,6 +109,10 @@ export function useStorageSync(STORAGE_NAME, options = {}) {
       if (document.visibilityState !== 'visible') return;
       db.readForce(STORAGE_NAME).then((remote) => {
         if (isEmptyData(remote)) return;
+        // Escrita local ainda não persistida é mais nova que o remote — preservar.
+        // Sem escrita local pendente, o remote é fonte segura e rearma dirtyRef.
+        if (hasLocalDirty(STORAGE_NAME)) return;
+        dirtyRef.current = false;
         const next = normalize ? normalize(remote) : remote;
         if (!isEqualDeep(dataRef.current, next)) setData(next);
       });
@@ -114,5 +140,5 @@ export function useStorageSync(STORAGE_NAME, options = {}) {
     };
   }, [STORAGE_NAME]);
 
-  return { data, setData, loaded, dataRef };
+  return { data, setData: syncSetData, loaded, dataRef };
 }
