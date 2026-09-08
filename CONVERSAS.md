@@ -234,3 +234,43 @@
 - Revogar chaves legadas (anon + service_role JWT) no painel Supabase (Settings > API keys > revoke legacy) — aguardar confirmacao de que tudo funciona na producao.
 - Rotacionar token Vercel cp_ se nao usado mais (exposto em historico git).
 - O segredo nao deve ser commitado; manter apenas em .env/.env.production (gitignored) e painel Vercel.
+
+---
+
+## 2026-09-06 (sessao: tema Venda/Bonificacao + campo SEGMENTO)
+
+**Foco:** Temas do form (Venda verde, Bonificacao vermelho), dois campos por linha, e dropdown SEGMENTO do form Compra mostrando somente valores da coluna Seguimento da pagina Lancamentos.
+**Arquivos alterados:**
+- `src/pages/Compra.jsx` (dois campos por linha; segmento como input+datalist `segmentos-list-compra` derivado somente de `segmentosCadastrados` = transacoes em maiusculas/dedupe; lista fixa removida; `autoComplete="off"`)
+- `src/pages/Venda.jsx` / `src/pages/Bonificacao.jsx` (dois campos por linha; segmento com autofill via `segmentoPorTicker` + datalist)
+- `src/pages/Lancamentos.jsx` (coluna SEGMENTO em maiusculas — l.544)
+- `src/styles/globals.css` (`.venda-form` verde `#1E7A34`, `.bonificacao-form` vermelho `#D32F2F`)
+
+**Decisoes:**
+- Deploys: f16e898, 83d31c6, 606b703, 06992f1, 3b44ead, 45c45ba, b0c0114 (todos READY)
+- Verificado no bundle de producao que a lista fixa antiga foi removida
+- Pagina Ordens (`/ordens`) so monta Venda+Bonificacao; Compra e rota `/compra`
+- Usuario usa producao; suspeita de autofill do navegador nas sugestoes do campo — recomendado testar em janela anonima
+
+**Pendencias:**
+- Confirmar com usuario se o menu do SEGMENTO em janela anonima mostra somente valores da coluna Lancamentos; se persistir, pedir print
+
+---
+
+## 2026-09-07
+
+**Foco:** Correcao do bug "lancamento salvo no Compra (toast ok) nao aparece em Lancamentos" em producao
+**Arquivos alterados:**
+- `src/hooks/useStorageSync.js` (dirtyRef + syncSetData; readForce inicial preserva local se mutacao pendente; realtime/visibilitychange nao sobrescrevem se `hasLocalDirty`)
+- `src/services/storage.js` (markLocalDirty/clearLocalDirty/hasLocalDirty por storage name; write() marca dirty; flush limpa ao confirmar no Supabase)
+
+**Decisoes:**
+- Causa raiz: race no useStorageSync — adicao feita enquanto `loaded=false` tinha persistencia pulada (`if (!loaded) return`), e o readForce inicial resolvia depois sobrescrevendo o estado local com remote antigo (keepLocalIfPresent=false)
+- Fix: dirty local rastreado por storage name; nada sobrescreve estado local enquanto houver escrita local nao reconhecida pelo remote
+- Retorno do hook agora expoem `setData: syncSetData` (marcacoes dirty por mutacao do usuario)
+- Build OK (vite 18.89s), commit 0d546af pushado (sem CONVERSAS.md)
+
+**Pendencias:**
+- Confirmar com usuario em producao (deploy Vercel automatico) se o lancamento agora persiste ao salvar no Compra
+
+---
