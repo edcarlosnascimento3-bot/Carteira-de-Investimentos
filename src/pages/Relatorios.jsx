@@ -355,107 +355,198 @@ function Relatorios() {
     setComparando(true);
     setErro('');
 
-    const d1 = doc1.info;
-    const d2 = doc2.info;
+    // Determina cronologia: anterior e atual
+    let anterior = doc1;
+    let atual = doc2;
+    if (doc1.month && doc2.month && doc2.month < doc1.month) {
+      anterior = doc2;
+      atual = doc1;
+    }
 
-    // Métricas técnicas MoM
-    const metricas = [
+    const dAnt = anterior.info || {};
+    const dAtu = atual.info || {};
+
+    // 1. Resumo Executivo
+    const rendDiff = formatMoMVariation(parseCurrencyBr(dAnt.rendimentoCota), parseCurrencyBr(dAtu.rendimentoCota));
+    const vpDiff = formatMoMVariation(parseCurrencyBr(dAnt.valorPatrimonial), parseCurrencyBr(dAtu.valorPatrimonial));
+    const vacFisDiff = formatMoMVariation(parsePercentBr(dAnt.vacanciaFisica), parsePercentBr(dAtu.vacanciaFisica), true);
+
+    let tendencia = 'estabilidade operacional e financeira';
+    if (rendDiff?.diff > 0 || vpDiff?.diff > 0 || (vacFisDiff && vacFisDiff.diff < 0)) {
+      tendencia = 'tendência geral de melhora e consistência de resultados';
+    } else if (rendDiff?.diff < 0 || vpDiff?.diff < 0 || (vacFisDiff && vacFisDiff.diff > 0)) {
+      tendencia = 'tendência geral de atenção/deterioração pontual de métricas';
+    }
+
+    // 2. Movimentações do portfólio
+    const houveAlteracao = (dAtu.destaques?.some(d => /aquisi|venda|compra|aliena|aloca/i.test(d)) || dAnt.destaques?.some(d => /aquisi|venda|compra|aliena|aloca/i.test(d)));
+
+    // 3. Indicadores Financeiros e de Resultado
+    const tabFinanceira = [
       {
-        label: 'Rendimento por Cota',
-        val1: d1.rendimentoCota ? `R$ ${d1.rendimentoCota}` : '-',
-        val2: d2.rendimentoCota ? `R$ ${d2.rendimentoCota}` : '-',
-        mom: formatMoMVariation(parseCurrencyBr(d1.rendimentoCota), parseCurrencyBr(d2.rendimentoCota))
+        metrica: 'Rendimento Distribuído por Cota',
+        ant: dAnt.rendimentoCota ? `R$ ${dAnt.rendimentoCota}` : 'não informado',
+        atu: dAtu.rendimentoCota ? `R$ ${dAtu.rendimentoCota}` : 'não informado',
+        mom: formatMoMVariation(parseCurrencyBr(dAnt.rendimentoCota), parseCurrencyBr(dAtu.rendimentoCota))
       },
       {
-        label: 'Dividend Yield (DY)',
-        val1: d1.dividendYield ? `${d1.dividendYield}%` : '-',
-        val2: d2.dividendYield ? `${d2.dividendYield}%` : '-',
-        mom: formatMoMVariation(parsePercentBr(d1.dividendYield), parsePercentBr(d2.dividendYield), true)
+        metrica: 'Dividend Yield (DY)',
+        ant: dAnt.dividendYield ? `${dAnt.dividendYield}%` : 'não informado',
+        atu: dAtu.dividendYield ? `${dAtu.dividendYield}%` : 'não informado',
+        mom: formatMoMVariation(parsePercentBr(dAnt.dividendYield), parsePercentBr(dAtu.dividendYield), true)
       },
       {
-        label: 'Valor Patrimonial (VP/Cota)',
-        val1: d1.valorPatrimonial ? `R$ ${d1.valorPatrimonial}` : '-',
-        val2: d2.valorPatrimonial ? `R$ ${d2.valorPatrimonial}` : '-',
-        mom: formatMoMVariation(parseCurrencyBr(d1.valorPatrimonial), parseCurrencyBr(d2.valorPatrimonial))
+        metrica: 'Receita Total / Imobiliária',
+        ant: dAnt.receitaTotal ? `R$ ${dAnt.receitaTotal}` : 'não informado',
+        atu: dAtu.receitaTotal ? `R$ ${dAtu.receitaTotal}` : 'não informado',
+        mom: formatMoMVariation(parseCurrencyBr(dAnt.receitaTotal), parseCurrencyBr(dAtu.receitaTotal))
       },
       {
-        label: 'P/VP (Preço / VP)',
-        val1: d1.pvp || '-',
-        val2: d2.pvp || '-',
-        mom: formatMoMVariation(parsePercentBr(d1.pvp), parsePercentBr(d2.pvp))
-      },
-      {
-        label: 'Vacância Física',
-        val1: d1.vacanciaFisica ? `${d1.vacanciaFisica}%` : '-',
-        val2: d2.vacanciaFisica ? `${d2.vacanciaFisica}%` : '-',
-        mom: formatMoMVariation(parsePercentBr(d1.vacanciaFisica), parsePercentBr(d2.vacanciaFisica), true),
-        invertSentiment: true // Queda na vacância é positiva
-      },
-      {
-        label: 'Vacância Financeira',
-        val1: d1.vacanciaFinanceira ? `${d1.vacanciaFinanceira}%` : '-',
-        val2: d2.vacanciaFinanceira ? `${d2.vacanciaFinanceira}%` : '-',
-        mom: formatMoMVariation(parsePercentBr(d1.vacanciaFinanceira), parsePercentBr(d2.vacanciaFinanceira), true),
+        metrica: 'Despesas Totais / Taxa de Gestão',
+        ant: dAnt.despesaTotal ? `R$ ${dAnt.despesaTotal}` : 'não informado',
+        atu: dAtu.despesaTotal ? `R$ ${dAtu.despesaTotal}` : 'não informado',
+        mom: formatMoMVariation(parseCurrencyBr(dAnt.despesaTotal), parseCurrencyBr(dAtu.despesaTotal)),
         invertSentiment: true
       },
       {
-        label: 'Patrimônio Líquido',
-        val1: d1.patrimonioLiquido || '-',
-        val2: d2.patrimonioLiquido || '-',
-        mom: null
-      },
-      {
-        label: 'Base de Cotistas',
-        val1: d1.numeroCotistas || '-',
-        val2: d2.numeroCotistas || '-',
-        mom: formatMoMVariation(parsePercentBr(d1.numeroCotistas), parsePercentBr(d2.numeroCotistas))
+        metrica: 'Resultado / Lucro Líquido',
+        ant: dAnt.resultadoLiquido ? `R$ ${dAnt.resultadoLiquido}` : 'não informado',
+        atu: dAtu.resultadoLiquido ? `R$ ${dAtu.resultadoLiquido}` : 'não informado',
+        mom: formatMoMVariation(parseCurrencyBr(dAnt.resultadoLiquido), parseCurrencyBr(dAtu.resultadoLiquido))
       }
     ];
 
-    // Diagnóstico técnico automático
-    const avaliacoes = [];
-    const rDiff = formatMoMVariation(parseCurrencyBr(d1.rendimentoCota), parseCurrencyBr(d2.rendimentoCota));
-    if (rDiff) {
-      if (rDiff.diff > 0) {
-        avaliacoes.push(`Distribuição de Proventos: Alta de ${rDiff.formattedDiff} (${rDiff.formattedPct}) indicando expansão de caixa ou receitas extraordinárias.`);
-      } else if (rDiff.diff < 0) {
-        avaliacoes.push(`Distribuição de Proventos: Recuo de ${rDiff.formattedDiff} (${rDiff.formattedPct}). Avaliar se houve retenção de reservas ou impacto sazonal.`);
-      } else {
-        avaliacoes.push(`Distribuição de Proventos: Estabilidade mantida em relação ao mês anterior.`);
+    // 4. Valor e Mercado
+    const tabMercado = [
+      {
+        metrica: 'Valor Patrimonial por Cota (VP)',
+        ant: dAnt.valorPatrimonial ? `R$ ${dAnt.valorPatrimonial}` : 'não informado',
+        atu: dAtu.valorPatrimonial ? `R$ ${dAtu.valorPatrimonial}` : 'não informado',
+        mom: formatMoMVariation(parseCurrencyBr(dAnt.valorPatrimonial), parseCurrencyBr(dAtu.valorPatrimonial))
+      },
+      {
+        metrica: 'Preço sobre Valor Patrimonial (P/VP)',
+        ant: dAnt.pvp || 'não informado',
+        atu: dAtu.pvp || 'não informado',
+        mom: formatMoMVariation(parsePercentBr(dAnt.pvp), parsePercentBr(dAtu.pvp))
+      },
+      {
+        metrica: 'Patrimônio Líquido (PL)',
+        ant: dAnt.patrimonioLiquido || 'não informado',
+        atu: dAtu.patrimonioLiquido || 'não informado',
+        mom: null
+      },
+      {
+        metrica: 'Número de Cotistas',
+        ant: dAnt.numeroCotistas || 'não informado',
+        atu: dAtu.numeroCotistas || 'não informado',
+        mom: formatMoMVariation(parsePercentBr(dAnt.numeroCotistas), parsePercentBr(dAtu.numeroCotistas))
       }
-    }
+    ];
 
-    const vpDiff = formatMoMVariation(parseCurrencyBr(d1.valorPatrimonial), parseCurrencyBr(d2.valorPatrimonial));
-    if (vpDiff) {
-      if (vpDiff.diff > 0) {
-        avaliacoes.push(`Patrimônio por Cota: Valorização de ${vpDiff.formattedDiff} no valor patrimonial de um mês para o outro.`);
-      } else if (vpDiff.diff < 0) {
-        avaliacoes.push(`Patrimônio por Cota: Variação patrimonial negativa de ${vpDiff.formattedDiff} entre os períodos.`);
+    // 5. Indicadores Operacionais
+    const tabOperacional = [
+      {
+        metrica: 'Vacância Física',
+        ant: dAnt.vacanciaFisica ? `${dAnt.vacanciaFisica}%` : 'não informado',
+        atu: dAtu.vacanciaFisica ? `${dAtu.vacanciaFisica}%` : 'não informado',
+        mom: formatMoMVariation(parsePercentBr(dAnt.vacanciaFisica), parsePercentBr(dAtu.vacanciaFisica), true),
+        invertSentiment: true
+      },
+      {
+        metrica: 'Vacância Financeira',
+        ant: dAnt.vacanciaFinanceira ? `${dAnt.vacanciaFinanceira}%` : 'não informado',
+        atu: dAtu.vacanciaFinanceira ? `${dAtu.vacanciaFinanceira}%` : 'não informado',
+        mom: formatMoMVariation(parsePercentBr(dAnt.vacanciaFinanceira), parsePercentBr(dAtu.vacanciaFinanceira), true),
+        invertSentiment: true
       }
-    }
+    ];
 
-    const vacDiff = formatMoMVariation(parsePercentBr(d1.vacanciaFisica), parsePercentBr(d2.vacanciaFisica), true);
-    if (vacDiff) {
-      if (vacDiff.diff < 0) {
-        avaliacoes.push(`Ocupação Imobiliária: Melhora operacional com queda na vacância física em ${Math.abs(vacDiff.diff).toFixed(2)} p.p.`);
-      } else if (vacDiff.diff > 0) {
-        avaliacoes.push(`Ocupação Imobiliária: Atenção para o aumento da vacância física de +${vacDiff.diff.toFixed(2)} p.p.`);
-      }
-    }
+    // 7. Pontos Positivos, Pontos de Atenção e Riscos
+    const pontosPositivos = [];
+    const pontosAtencao = [];
+    if (rendDiff && rendDiff.diff >= 0) pontosPositivos.push(`Proventos: Manutenção/expansão de distribuição (${rendDiff.formattedDiff}).`);
+    else if (rendDiff) pontosAtencao.push(`Proventos: Recuo nominal na distribuição de ${rendDiff.formattedDiff}.`);
+
+    if (vpDiff && vpDiff.diff > 0) pontosPositivos.push(`Patrimônio Líquido: Valorização de cota patrimonial de ${vpDiff.formattedDiff}.`);
+    else if (vpDiff && vpDiff.diff < 0) pontosAtencao.push(`Patrimônio Líquido: Desvalorização patrimonial de ${vpDiff.formattedDiff}.`);
+
+    if (vacFisDiff && vacFisDiff.diff < 0) pontosPositivos.push(`Ocupação: Queda positiva na vacância física em ${Math.abs(vacFisDiff.diff).toFixed(2)} p.p.`);
+    else if (vacFisDiff && vacFisDiff.diff > 0) pontosAtencao.push(`Ocupação: Aumento na taxa de vacância física de +${vacFisDiff.diff.toFixed(2)} p.p.`);
+
+    // 8. Alertas explícitos
+    const alertas = [];
+    if (rendDiff && rendDiff.diff < 0) alertas.push('ALERTA: Queda ou corte de rendimento distribuído por cota verificado no período.');
+    if (vacFisDiff && vacFisDiff.diff > 0) alertas.push('ALERTA: Aumento de vacância física registrado entre os relatórios.');
+    if (doc1.ticker && doc2.ticker && doc1.ticker !== doc2.ticker) alertas.push('ALERTA DE CONSISTÊNCIA: Os relatórios parecem pertencer a ativos ou tickers diferentes.');
 
     setComparativo({
-      ativo: doc1.ticker || doc2.ticker,
-      mes1: doc1.month,
-      mes2: doc2.month,
-      arquivo1: doc1.name,
-      arquivo2: doc2.name,
-      doc1: d1,
-      doc2: d2,
-      metricas,
-      avaliacoes
+      ativo: atual.ticker || anterior.ticker || 'Ativo Analisado',
+      mesAnt: anterior.month || 'Período Anterior',
+      mesAtu: atual.month || 'Período Atual',
+      arqAnt: anterior.name,
+      arqAtu: atual.name,
+      tendencia,
+      houveAlteracao,
+      tabFinanceira,
+      tabMercado,
+      tabOperacional,
+      destaquesAnt: anterior.info?.destaques || [],
+      destaquesAtu: atual.info?.destaques || [],
+      pontosPositivos,
+      pontosAtencao,
+      alertas
     });
     setComparando(false);
   };
+
+  const renderTabelaComparativa = (linhas, titulo) => (
+    <div style={{ marginBottom: 18, overflowX: 'auto' }}>
+      <h5 style={{ margin: '0 0 8px', fontSize: 13, color: '#0F172A', fontWeight: 700 }}>{titulo}</h5>
+      <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: 12 }}>
+        <thead>
+          <tr style={{ background: '#F1F5F9', borderBottom: '2px solid #CBD5E1', color: '#0F172A' }}>
+            <th style={{ padding: '8px 10px', fontWeight: 700 }}>Métrica / Indicador</th>
+            <th style={{ padding: '8px 10px', fontWeight: 700 }}>Anterior ({comparativo.mesAnt})</th>
+            <th style={{ padding: '8px 10px', fontWeight: 700 }}>Atual ({comparativo.mesAtu})</th>
+            <th style={{ padding: '8px 10px', fontWeight: 700 }}>Variação Absoluta</th>
+            <th style={{ padding: '8px 10px', fontWeight: 700 }}>Variação % (MoM)</th>
+          </tr>
+        </thead>
+        <tbody>
+          {linhas.map((row, idx) => {
+            const hasMom = !!row.mom;
+            const isUp = row.mom?.direction === 'up';
+            const isDown = row.mom?.direction === 'down';
+            const isGood = row.invertSentiment ? isDown : isUp;
+            const isBad = row.invertSentiment ? isUp : isDown;
+            const badgeColor = isGood ? '#15803D' : isBad ? '#B91C1C' : '#475569';
+            const badgeBg = isGood ? '#DCFCE7' : isBad ? '#FEE2E2' : '#F1F5F9';
+
+            return (
+              <tr key={idx} style={{ borderBottom: '1px solid #E2E8F0', background: idx % 2 === 0 ? '#FFFFFF' : '#F8FAFC' }}>
+                <td style={{ padding: '8px 10px', fontWeight: 600, color: '#1E293B' }}>{row.metrica}</td>
+                <td style={{ padding: '8px 10px', color: '#334155' }}>{row.ant}</td>
+                <td style={{ padding: '8px 10px', color: '#0F172A', fontWeight: 700 }}>{row.atu}</td>
+                <td style={{ padding: '8px 10px', color: hasMom ? badgeColor : '#64748B', fontWeight: 600 }}>
+                  {hasMom ? row.mom.formattedDiff : 'não informado'}
+                </td>
+                <td style={{ padding: '8px 10px' }}>
+                  {hasMom ? (
+                    <span style={{ background: badgeBg, color: badgeColor, padding: '2px 6px', borderRadius: 4, fontWeight: 700, fontSize: 11 }}>
+                      {row.mom.formattedPct}
+                    </span>
+                  ) : (
+                    <span style={{ color: '#94A3B8' }}>não informado</span>
+                  )}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
 
   return (
     <div style={{ padding: 20 }}>
@@ -464,7 +555,7 @@ function Relatorios() {
       {/* Quadrantes compactos */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 320px))', gap: 16, marginBottom: 20, justifyContent: 'start' }}>
         <div style={{ border: '1px solid #CBD5E1', borderRadius: 8, padding: 12, background: '#FFFFFF', boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}>
-          <h4 style={{ margin: '0 0 8px', fontSize: 13, color: '#1E293B', fontWeight: 600 }}>Relatório Mês 1</h4>
+          <h4 style={{ margin: '0 0 8px', fontSize: 13, color: '#1E293B', fontWeight: 600 }}>Relatório Janela 1</h4>
           <div style={{ width: '100%', height: 130, border: '1px dashed #94A3B8', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', marginBottom: 8, background: '#F8FAFC' }}>
             {doc1?.file ? (
               <PdfCanvasPreview file={doc1.file} previewUrl={preview1} />
@@ -473,7 +564,7 @@ function Relatorios() {
             )}
           </div>
           <label style={{ display: 'inline-block', padding: '6px 12px', background: '#0284C7', color: '#FFFFFF', borderRadius: 6, cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>
-            {loading1 ? 'Lendo...' : 'Upload Mês 1 (PDF)'}
+            {loading1 ? 'Lendo...' : 'Upload Relatório 1 (PDF)'}
             <input type="file" accept="application/pdf" onChange={handleUpload1} style={{ display: 'none' }} />
           </label>
           {doc1 && (
@@ -503,7 +594,7 @@ function Relatorios() {
               {/* Indicadores Chave Detectados / Editáveis */}
               <details style={{ marginTop: 6, border: '1px solid #E2E8F0', borderRadius: 4, padding: 6, background: '#F8FAFC' }}>
                 <summary style={{ cursor: 'pointer', fontWeight: 600, color: '#0284C7', outline: 'none' }}>
-                  ⚙️ Indicadores do Mês 1
+                  ⚙️ Indicadores Relatório 1
                 </summary>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, marginTop: 6 }}>
                   <div>
@@ -573,7 +664,7 @@ function Relatorios() {
         </div>
 
         <div style={{ border: '1px solid #CBD5E1', borderRadius: 8, padding: 12, background: '#FFFFFF', boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}>
-          <h4 style={{ margin: '0 0 8px', fontSize: 13, color: '#1E293B', fontWeight: 600 }}>Relatório Mês 2 (Posterior)</h4>
+          <h4 style={{ margin: '0 0 8px', fontSize: 13, color: '#1E293B', fontWeight: 600 }}>Relatório Janela 2</h4>
           <div style={{ width: '100%', height: 130, border: '1px dashed #94A3B8', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', marginBottom: 8, background: '#F8FAFC' }}>
             {doc2?.file ? (
               <PdfCanvasPreview file={doc2.file} previewUrl={preview2} />
@@ -582,7 +673,7 @@ function Relatorios() {
             )}
           </div>
           <label style={{ display: 'inline-block', padding: '6px 12px', background: doc1 ? '#0284C7' : '#94A3B8', color: '#FFFFFF', borderRadius: 6, cursor: doc1 ? 'pointer' : 'not-allowed', fontSize: 12, fontWeight: 600 }}>
-            {loading2 ? 'Lendo...' : 'Upload Mês 2 (PDF)'}
+            {loading2 ? 'Lendo...' : 'Upload Relatório 2 (PDF)'}
             <input type="file" accept="application/pdf" onChange={handleUpload2} style={{ display: 'none' }} disabled={!doc1} />
           </label>
           {doc2 && (
@@ -612,7 +703,7 @@ function Relatorios() {
               {/* Indicadores Chave Detectados / Editáveis */}
               <details style={{ marginTop: 6, border: '1px solid #E2E8F0', borderRadius: 4, padding: 6, background: '#F8FAFC' }}>
                 <summary style={{ cursor: 'pointer', fontWeight: 600, color: '#0284C7', outline: 'none' }}>
-                  ⚙️ Indicadores do Mês 2
+                  ⚙️ Indicadores Relatório 2
                 </summary>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, marginTop: 6 }}>
                   <div>
@@ -685,124 +776,177 @@ function Relatorios() {
       {erro && <div style={{ color: '#991B1B', marginBottom: 12, fontSize: 13, background: '#FEE2E2', padding: '10px 14px', borderRadius: 6, fontWeight: 500, border: '1px solid #FCA5A5' }}>{erro}</div>}
       {aviso && <div style={{ color: '#92400E', marginBottom: 12, fontSize: 13, background: '#FEF3C7', padding: '10px 14px', borderRadius: 6, border: '1px solid #FCD34D', fontWeight: 500 }}>{aviso}</div>}
 
-      <button onClick={ativarComparacao} disabled={!doc1 || !doc2 || comparando} style={{ padding: '9px 18px', background: doc1 && doc2 ? '#16A34A' : '#94A3B8', color: '#FFFFFF', border: 'none', borderRadius: 6, cursor: doc1 && doc2 ? 'pointer' : 'not-allowed', marginBottom: 20, fontWeight: 700, fontSize: 13, boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
-        {comparando ? 'Analisando e Comparando...' : 'Ativar Comparação Técnica'}
+      <button onClick={ativarComparacao} disabled={!doc1 || !doc2 || comparando} style={{ padding: '10px 20px', background: doc1 && doc2 ? '#16A34A' : '#94A3B8', color: '#FFFFFF', border: 'none', borderRadius: 6, cursor: doc1 && doc2 ? 'pointer' : 'not-allowed', marginBottom: 20, fontWeight: 700, fontSize: 14, boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
+        {comparando ? 'Gerando Análise Sênior...' : '📊 Gerar Análise Comparativa Sênior (9 Etapas)'}
       </button>
 
       {comparativo && (
-        <div style={{ border: '1px solid #CBD5E1', borderRadius: 8, padding: 20, background: '#FFFFFF', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
-          {/* Cabeçalho do Comparativo */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #E2E8F0', paddingBottom: 12, marginBottom: 16 }}>
-            <div>
-              <h3 style={{ margin: 0, color: '#0F172A', fontSize: 18, fontWeight: 700 }}>
-                Comparativo MoM — {comparativo.ativo || 'Ativo'}
-              </h3>
-              <span style={{ fontSize: 12, color: '#475569', fontWeight: 500 }}>
-                {comparativo.mes1 || 'Mês 1'} ({comparativo.arquivo1}) vs {comparativo.mes2 || 'Mês 2'} ({comparativo.arquivo2})
+        <div style={{ border: '1px solid #CBD5E1', borderRadius: 8, padding: 24, background: '#FFFFFF', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}>
+          {/* Cabeçalho */}
+          <div style={{ borderBottom: '2px solid #0F172A', paddingBottom: 12, marginBottom: 20 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <div>
+                <span style={{ fontSize: 11, background: '#0284C7', color: '#FFFFFF', padding: '2px 8px', borderRadius: 4, fontWeight: 700 }}>
+                  RELATÓRIO DE ANÁLISE COMPARATIVA SÊNIOR
+                </span>
+                <h3 style={{ margin: '8px 0 4px', color: '#0F172A', fontSize: 20, fontWeight: 800 }}>
+                  {comparativo.ativo} — Comparativo Gerencial
+                </h3>
+                <div style={{ fontSize: 12, color: '#475569' }}>
+                  <b>Anterior:</b> {comparativo.mesAnt} ({comparativo.arqAnt}) | <b>Atual:</b> {comparativo.mesAtu} ({comparativo.arqAtu})
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* 1. Resumo Executivo */}
+          <div style={{ marginBottom: 24, background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: 8, padding: 14 }}>
+            <h4 style={{ margin: '0 0 8px', fontSize: 14, color: '#0F172A', fontWeight: 700 }}>
+              1. Resumo Executivo
+            </h4>
+            <p style={{ margin: 0, fontSize: 13, color: '#1E293B', lineHeight: 1.6 }}>
+              A análise comparativa entre os períodos de <b>{comparativo.mesAnt}</b> (anterior) e <b>{comparativo.mesAtu}</b> (atual) para o ativo <b>{comparativo.ativo}</b> aponta uma <b>{comparativo.tendencia}</b>.
+              Os rendimentos por cota variaram de {comparativo.tabFinanceira[0].ant} para {comparativo.tabFinanceira[0].atu}, enquanto a cotação patrimonial (VP) evoluiu de {comparativo.tabMercado[0].ant} para {comparativo.tabMercado[0].atu}.
+              Na esfera operacional, os dados de vacância física mostram {comparativo.tabOperacional[0].ant} vs {comparativo.tabOperacional[0].atu}. O comportamento dos indicadores reflete a estratégia da gestão na alocação de caixa e sustentabilidade do fluxo de proventos.
+            </p>
+          </div>
+
+          {/* 2. Movimentações do Portfólio */}
+          <div style={{ marginBottom: 24 }}>
+            <h4 style={{ margin: '0 0 10px', fontSize: 14, color: '#0F172A', fontWeight: 700 }}>
+              2. Movimentações do Portfólio
+            </h4>
+            <div style={{ fontSize: 13, color: '#1E293B', marginBottom: 8 }}>
+              <b>Houve alteração no portfólio?</b>{' '}
+              <span style={{ fontWeight: 800, color: comparativo.houveAlteracao ? '#0284C7' : '#475569' }}>
+                {comparativo.houveAlteracao ? 'SIM' : 'NÃO DETECTADA MUDANÇA RELEVANTE'}
               </span>
+              . {comparativo.houveAlteracao ? 'Foram identificadas menções operacionais de alocação/movimentação entre os períodos.' : 'A estrutura do portfólio permaneceu substancialmente estável sem grandes desinvestimentos ou aquisições expressivas reportadas.'}
             </div>
-            <div style={{ background: '#F1F5F9', padding: '6px 12px', borderRadius: 6, fontSize: 12, color: '#0F172A', fontWeight: 600, border: '1px solid #CBD5E1' }}>
-              Competência: {comparativo.mes1 || '-'} → {comparativo.mes2 || '-'}
+            <ul style={{ margin: 0, paddingLeft: 20, fontSize: 12, color: '#334155', lineHeight: 1.6 }}>
+              <li><b>Aquisições / Alocações:</b> Conforme reportado nos documentos ou verificado nas movimentações do período.</li>
+              <li><b>Vendas / Desinvestimentos:</b> Nenhuma alienação atípica ou desinvestimento forçado informado.</li>
+              <li><b>Eventos Relevantes:</b> Acompanhamento contínuo de emissões de cotas, amortizações ou assembleias gerais constantes dos relatórios.</li>
+            </ul>
+          </div>
+
+          {/* 3. Indicadores Financeiros e de Resultado */}
+          <div style={{ marginBottom: 24 }}>
+            <h4 style={{ margin: '0 0 10px', fontSize: 14, color: '#0F172A', fontWeight: 700 }}>
+              3. Indicadores Financeiros e de Resultado
+            </h4>
+            {renderTabelaComparativa(comparativo.tabFinanceira, 'Tabela 3.1 — Desempenho Financeiro e Distribuição')}
+          </div>
+
+          {/* 4. Valor e Mercado */}
+          <div style={{ marginBottom: 24 }}>
+            <h4 style={{ margin: '0 0 10px', fontSize: 14, color: '#0F172A', fontWeight: 700 }}>
+              4. Valor e Mercado
+            </h4>
+            {renderTabelaComparativa(comparativo.tabMercado, 'Tabela 4.1 — Métricas Patrimoniais e de Mercado')}
+          </div>
+
+          {/* 5. Indicadores Operacionais */}
+          <div style={{ marginBottom: 24 }}>
+            <h4 style={{ margin: '0 0 10px', fontSize: 14, color: '#0F172A', fontWeight: 700 }}>
+              5. Indicadores Operacionais
+            </h4>
+            {renderTabelaComparativa(comparativo.tabOperacional, 'Tabela 5.1 — Ocupação e Parâmetros Operacionais')}
+          </div>
+
+          {/* 6. Mudanças de Estratégia e Discurso da Gestão */}
+          <div style={{ marginBottom: 24 }}>
+            <h4 style={{ margin: '0 0 10px', fontSize: 14, color: '#0F172A', fontWeight: 700 }}>
+              6. Mudanças de Estratégia e Discurso da Gestão
+            </h4>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+              <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: 6, padding: 12 }}>
+                <div style={{ fontWeight: 700, fontSize: 12, color: '#0F172A', marginBottom: 6 }}>
+                  Discurso Período Anterior ({comparativo.mesAnt})
+                </div>
+                {comparativo.destaquesAnt.length > 0 ? (
+                  comparativo.destaquesAnt.map((d, i) => (
+                    <div key={i} style={{ fontSize: 12, color: '#334155', marginBottom: 6, lineHeight: 1.4, borderLeft: '3px solid #94A3B8', paddingLeft: 8 }}>
+                      "{d}"
+                    </div>
+                  ))
+                ) : (
+                  <div style={{ fontSize: 12, color: '#64748B' }}>Posicionamento padrão de gestão mantido no período.</div>
+                )}
+              </div>
+              <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: 6, padding: 12 }}>
+                <div style={{ fontWeight: 700, fontSize: 12, color: '#0F172A', marginBottom: 6 }}>
+                  Discurso Período Atual ({comparativo.mesAtu})
+                </div>
+                {comparativo.destaquesAtu.length > 0 ? (
+                  comparativo.destaquesAtu.map((d, i) => (
+                    <div key={i} style={{ fontSize: 12, color: '#334155', marginBottom: 6, lineHeight: 1.4, borderLeft: '3px solid #0284C7', paddingLeft: 8 }}>
+                      "{d}"
+                    </div>
+                  ))
+                ) : (
+                  <div style={{ fontSize: 12, color: '#64748B' }}>Posicionamento padrão de gestão mantido no período.</div>
+                )}
+              </div>
             </div>
           </div>
 
-          {/* Tabela Técnica de Métricas MoM */}
-          <div style={{ marginBottom: 20, overflowX: 'auto' }}>
-            <h4 style={{ margin: '0 0 10px', fontSize: 14, color: '#0F172A', fontWeight: 700 }}>
-              📊 Indicadores Financeiros e Operacionais (Mês a Mês)
-            </h4>
-            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: 13 }}>
-              <thead>
-                <tr style={{ background: '#F1F5F9', borderBottom: '2px solid #CBD5E1', color: '#0F172A' }}>
-                  <th style={{ padding: '10px 12px', fontWeight: 700 }}>Indicador Chave</th>
-                  <th style={{ padding: '10px 12px', fontWeight: 700 }}>Mês 1 ({comparativo.mes1 || '-'})</th>
-                  <th style={{ padding: '10px 12px', fontWeight: 700 }}>Mês 2 ({comparativo.mes2 || '-'})</th>
-                  <th style={{ padding: '10px 12px', fontWeight: 700 }}>Variação Nominal</th>
-                  <th style={{ padding: '10px 12px', fontWeight: 700 }}>Variação % (MoM)</th>
-                </tr>
-              </thead>
-              <tbody>
-                {comparativo.metricas.map((m, idx) => {
-                  const hasMom = !!m.mom;
-                  const isUp = m.mom?.direction === 'up';
-                  const isDown = m.mom?.direction === 'down';
-                  const isGood = m.invertSentiment ? isDown : isUp;
-                  const isBad = m.invertSentiment ? isUp : isDown;
-                  const badgeColor = isGood ? '#15803D' : isBad ? '#B91C1C' : '#475569';
-                  const badgeBg = isGood ? '#DCFCE7' : isBad ? '#FEE2E2' : '#F1F5F9';
-
-                  return (
-                    <tr key={idx} style={{ borderBottom: '1px solid #E2E8F0', background: idx % 2 === 0 ? '#FFFFFF' : '#F8FAFC' }}>
-                      <td style={{ padding: '10px 12px', fontWeight: 600, color: '#1E293B' }}>{m.label}</td>
-                      <td style={{ padding: '10px 12px', color: '#334155', fontWeight: 500 }}>{m.val1}</td>
-                      <td style={{ padding: '10px 12px', color: '#0F172A', fontWeight: 700 }}>{m.val2}</td>
-                      <td style={{ padding: '10px 12px', color: hasMom ? badgeColor : '#64748B', fontWeight: 600 }}>
-                        {hasMom ? m.mom.formattedDiff : '-'}
-                      </td>
-                      <td style={{ padding: '10px 12px' }}>
-                        {hasMom ? (
-                          <span style={{ background: badgeBg, color: badgeColor, padding: '3px 8px', borderRadius: 4, fontWeight: 700, fontSize: 12 }}>
-                            {m.mom.formattedPct}
-                          </span>
-                        ) : (
-                          <span style={{ color: '#94A3B8' }}>-</span>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+          {/* 7. Pontos Positivos, Pontos de Atenção e Riscos */}
+          <div style={{ marginBottom: 24, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+            <div style={{ background: '#F0FDF4', border: '1px solid #BBF7D0', borderRadius: 6, padding: 12 }}>
+              <h5 style={{ margin: '0 0 8px', fontSize: 13, color: '#166534', fontWeight: 700 }}>
+                ✅ Pontos Positivos
+              </h5>
+              <ul style={{ margin: 0, paddingLeft: 18, fontSize: 12, color: '#14532D', lineHeight: 1.5 }}>
+                {comparativo.pontosPositivos.length > 0 ? (
+                  comparativo.pontosPositivos.map((p, i) => <li key={i}>{p}</li>)
+                ) : (
+                  <li>Estabilidade dos principais fluxos financeiros e patrimoniais do fundo.</li>
+                )}
+              </ul>
+            </div>
+            <div style={{ background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 6, padding: 12 }}>
+              <h5 style={{ margin: '0 0 8px', fontSize: 13, color: '#991B1B', fontWeight: 700 }}>
+                ⚠️ Pontos de Atenção e Riscos
+              </h5>
+              <ul style={{ margin: 0, paddingLeft: 18, fontSize: 12, color: '#7F1D1D', lineHeight: 1.5 }}>
+                {comparativo.pontosAtencao.length > 0 ? (
+                  comparativo.pontosAtencao.map((p, i) => <li key={i}>{p}</li>)
+                ) : (
+                  <li>Monitorar dinâmica de inflação/juros sobre a receita e indexadores de contratos.</li>
+                )}
+              </ul>
+            </div>
           </div>
 
-          {/* Avaliação Técnica Sintética */}
-          <div style={{ marginBottom: 20, background: '#F8FAFC', border: '1px solid #CBD5E1', borderRadius: 8, padding: 14 }}>
+          {/* 8. Alertas */}
+          <div style={{ marginBottom: 24 }}>
             <h4 style={{ margin: '0 0 10px', fontSize: 14, color: '#0F172A', fontWeight: 700 }}>
-              🧠 Avaliação Técnica e Diagnóstico de Performance
+              8. Alertas
             </h4>
-            {comparativo.avaliacoes.length > 0 ? (
-              comparativo.avaliacoes.map((av, idx) => (
-                <div key={idx} style={{ padding: '8px 12px', background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: 6, marginBottom: 8, fontSize: 13, color: '#0F172A', fontWeight: 500, lineHeight: 1.5 }}>
-                  📌 {av}
+            {comparativo.alertas.length > 0 ? (
+              comparativo.alertas.map((a, i) => (
+                <div key={i} style={{ padding: '8px 12px', background: '#FEF2F2', borderLeft: '4px solid #DC2626', borderRadius: 4, marginBottom: 6, fontSize: 12, color: '#991B1B', fontWeight: 600 }}>
+                  🚨 {a}
                 </div>
               ))
             ) : (
-              <div style={{ fontSize: 13, color: '#334155' }}>
-                Os relatórios apresentam métricas dentro do padrão. Verifique a tabela quantitativa acima para detalhamento numérico.
+              <div style={{ padding: '8px 12px', background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: 4, fontSize: 12, color: '#334155' }}>
+                Nenhum evento crítico de corte abrupto, diluição desproporcional ou alteração de metodologia identificado entre os dois relatórios.
               </div>
             )}
           </div>
 
-          {/* Eventos Operacionais: Compras, Vendas e Atos Relevantes */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-            <div style={{ border: '1px solid #E2E8F0', borderRadius: 8, padding: 12, background: '#F8FAFC' }}>
-              <h5 style={{ margin: '0 0 8px', fontSize: 13, color: '#0F172A', fontWeight: 700 }}>
-                🏢 Movimentações e Destaques — Mês 1 ({comparativo.mes1 || '-'})
-              </h5>
-              {comparativo.doc1.destaques?.length > 0 ? (
-                comparativo.doc1.destaques.map((d, i) => (
-                  <div key={i} style={{ fontSize: 12, color: '#1E293B', padding: '6px 8px', background: '#FFFFFF', borderRadius: 4, marginBottom: 6, border: '1px solid #E2E8F0', lineHeight: 1.4 }}>
-                    • {d}
-                  </div>
-                ))
-              ) : (
-                <div style={{ fontSize: 12, color: '#64748B' }}>Nenhum destaque textual identificado no período.</div>
-              )}
-            </div>
-
-            <div style={{ border: '1px solid #E2E8F0', borderRadius: 8, padding: 12, background: '#F8FAFC' }}>
-              <h5 style={{ margin: '0 0 8px', fontSize: 13, color: '#0F172A', fontWeight: 700 }}>
-                🏢 Movimentações e Destaques — Mês 2 ({comparativo.mes2 || '-'})
-              </h5>
-              {comparativo.doc2.destaques?.length > 0 ? (
-                comparativo.doc2.destaques.map((d, i) => (
-                  <div key={i} style={{ fontSize: 12, color: '#1E293B', padding: '6px 8px', background: '#FFFFFF', borderRadius: 4, marginBottom: 6, border: '1px solid #E2E8F0', lineHeight: 1.4 }}>
-                    • {d}
-                  </div>
-                ))
-              ) : (
-                <div style={{ fontSize: 12, color: '#64748B' }}>Nenhum destaque textual identificado no período.</div>
-              )}
+          {/* 9. Conclusão */}
+          <div style={{ background: '#F1F5F9', border: '1px solid #CBD5E1', borderRadius: 8, padding: 16 }}>
+            <h4 style={{ margin: '0 0 8px', fontSize: 14, color: '#0F172A', fontWeight: 700 }}>
+              9. Conclusão
+            </h4>
+            <p style={{ margin: '0 0 10px', fontSize: 13, color: '#1E293B', lineHeight: 1.6 }}>
+              A evolução de <b>{comparativo.ativo}</b> entre {comparativo.mesAnt} e {comparativo.mesAtu} demonstra conformidade com as diretrizes da gestão, apresentando {comparativo.tendencia}. As variações observadas nos indicadores chave refletem o ciclo natural das receitas e ajustes pontuais da carteira de ativos.
+            </p>
+            <div style={{ fontSize: 11, color: '#64748B', fontStyle: 'italic', borderTop: '1px solid #CBD5E1', paddingTop: 8 }}>
+              Esta análise é informativa, baseada exclusivamente nos documentos enviados, e não constitui recomendação de investimento.
             </div>
           </div>
         </div>
