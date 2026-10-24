@@ -153,12 +153,38 @@ function Principal() {
     const maxPreco = precos.length > 0 ? Math.max(...precos) : null;
     const minPreco = precos.length > 0 ? Math.min(...precos) : null;
 
+    const tipoAtivo = (asset?.tipo || transactions.find(t => t.ticker === selectedTicker)?.tipo || '').replace(/Fii/g, 'FII');
+    const isFiiOrRf = tipoAtivo === 'FII' || tipoAtivo === 'Renda Fixa';
+
+    const getQtyOnDate = (dateStr) => {
+      if (!dateStr || !dateStr.includes('/')) return qtdTotal;
+      const dataRef = dateStr.split('/').reverse().join('');
+      let compras = 0;
+      let vendas = 0;
+      transactions.forEach((t) => {
+        if (t.ticker !== selectedTicker || !t.data) return;
+        const td = t.data.split('/').reverse().join('');
+        if (td > dataRef) return;
+        if (t.operacao === 'Compra') compras += t.quantidade || 0;
+        if (t.operacao === 'Venda') vendas += t.quantidade || 0;
+      });
+      const qtd = compras - vendas;
+      return qtd > 0 ? qtd : qtdTotal;
+    };
+
     const provList = proventos.filter(p => p.ticker === selectedTicker);
     const divsPorCota = provList
       .map(p => {
+        const qtyOnDate = getQtyOnDate(p.data);
+        if (qtyOnDate <= 0) return null;
+        if (isFiiOrRf) {
+          const val = p.rendimento || 0;
+          if (val <= 0) return null;
+          return val / qtyOnDate;
+        }
         const total = (p.dividendos || 0) + (p.jcp || 0) + (p.rendimento || 0) + (p.reembolso || 0);
-        if (qtdTotal <= 0 || total <= 0) return null;
-        return total / qtdTotal;
+        if (total <= 0) return null;
+        return total / qtyOnDate;
       })
       .filter(v => typeof v === 'number' && v > 0);
     const maxDiv = divsPorCota.length > 0 ? Math.max(...divsPorCota) : null;
