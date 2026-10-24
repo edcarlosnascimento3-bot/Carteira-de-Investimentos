@@ -423,7 +423,8 @@ body {
 .info-row {
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: 10px;
+  width: 100%;
 }
 
 .info-label {
@@ -432,7 +433,7 @@ body {
   text-transform: uppercase;
   letter-spacing: 0.8px;
   flex-shrink: 0;
-  width: 52px;
+  width: 64px;
   white-space: nowrap;
   font-weight: 600;
 }
@@ -443,6 +444,7 @@ body {
   font-family: 'JetBrains Mono', monospace;
   text-align: left;
   white-space: nowrap;
+  margin-left: 0;
 }
 
 [data-theme='light'] .cotas-label,
