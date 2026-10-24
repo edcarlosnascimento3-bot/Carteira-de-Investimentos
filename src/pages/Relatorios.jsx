@@ -78,23 +78,33 @@ async function readPdf(file) {
   for (let i = 1; i <= pdf.numPages; i++) {
     const page = await pdf.getPage(i);
     const content = await page.getTextContent();
-    const strings = content.items.map(item => item.str).join(' ');
-    fullText += '\n' + strings;
+    // Agrupa itens preservando espaços e saltos
+    let lastY = null;
+    let pageStr = '';
+    for (const item of content.items) {
+      if (lastY !== null && Math.abs(item.transform[5] - lastY) > 5) {
+        pageStr += '\n';
+      } else if (pageStr.length > 0 && !pageStr.endsWith(' ') && !pageStr.endsWith('\n')) {
+        pageStr += ' ';
+      }
+      pageStr += item.str;
+      lastY = item.transform[5];
+    }
+    fullText += '\n\n' + pageStr;
   }
   return fullText;
 }
 
 function parseCurrencyBr(str) {
   if (!str) return null;
-  // Remove "R$", espaços e pontos de milhar, troca vírgula por ponto
-  const clean = str.replace(/[R$\s]/g, '').replace(/\./g, '').replace(',', '.');
+  const clean = String(str).replace(/[R$\s]/g, '').replace(/\./g, '').replace(',', '.');
   const num = parseFloat(clean);
   return isNaN(num) ? null : num;
 }
 
 function parsePercentBr(str) {
   if (!str) return null;
-  const clean = str.replace(/[%\s]/g, '').replace(',', '.');
+  const clean = String(str).replace(/[%\s]/g, '').replace(',', '.');
   const num = parseFloat(clean);
   return isNaN(num) ? null : num;
 }
@@ -114,54 +124,70 @@ function formatMoMVariation(val1, val2, isPercent = false) {
 
 function extractComparativeInfo(text) {
   const t = text || '';
+  // Versão plana (tudo na mesma linha com espaços únicos) para buscas cross-line
+  const flat = t.replace(/\r?\n+/g, ' ').replace(/\s+/g, ' ');
 
-  // Extrações financeiras chave de relatórios gerenciais (FIIs e Ações)
-  const rendimentoMatch = t.match(/(?:dividendo(?:s)?|rendimento(?:s)?|provento(?:s)?|distribui[çc][ãa]o por cota)[^\d\n\r]*R?\$?\s*([0-9]+[.,][0-9]{2,4})/i);
-  const dyMatch = t.match(/(?:dividend yield|dy(?: anualizado)?)[^\d\n\r]*([0-9]+[.,][0-9]{1,2})\s*%/i);
-  const vpMatch = t.match(/(?:valor patrimonial(?: da cota|\/cota)?|vpc)[^\d\n\r]*R?\$?\s*([0-9]+[.,][0-9]{2})/i);
-  const pvpMatch = t.match(/(?:p\/vp|pre[çc]o \/ valor patrimonial)[^\d\n\r]*([0-9]+[.,][0-9]{2})/i);
-  const cotasMatch = t.match(/(?:número de cotas|total de cotas|cotas emitidas)[^\d\n\r]*([0-9]{1,3}(?:\.[0-9]{3})*)/i);
-  const plMatch = t.match(/(?:patrimônio líquido|pl total)[^\d\n\r]*R?\$?\s*([0-9.,]+(?:\s*(?:milh[õo]es|bilh[õo]es|m|bi))?)/i);
-  const cotistasMatch = t.match(/(?:número de cotistas|cotistas)[^\d\n\r]*([0-9]{1,3}(?:\.[0-9]{3})*)/i);
-  const vacanciaFisicaMatch = t.match(/(?:vacância física|vac\. física)[^\d\n\r]*([0-9]+[.,][0-9]{1,2})\s*%/i);
-  const vacanciaFinanMatch = t.match(/(?:vacância financeira|vac\. financeira)[^\d\n\r]*([0-9]+[.,][0-9]{1,2})\s*%/i);
-  const receitaMatch = t.match(/(?:receita total|receitas do mês|receita imobiliária)[^\d\n\r]*R?\$?\s*([0-9.,]+(?:\s*(?:milh[õo]es|m))?)/i);
-  const despesaMatch = t.match(/(?:despesas totais|despesas do mês|despesa operacional)[^\d\n\r]*R?\$?\s*([0-9.,]+(?:\s*(?:milh[õo]es|m))?)/i);
-  const resultadoMatch = t.match(/(?:resultado do mês|resultado líquido|lucro líquido)[^\d\n\r]*R?\$?\s*([0-9.,]+(?:\s*(?:milh[õo]es|m))?)/i);
+  // 1. Rendimento por cota (ex: "R$ 0,85", "0,085 por cota", "Rendimento: 0,90")
+  const rendMatch = flat.match(/(?:dividendo(?:s)?|rendimento(?:s)?|provento(?:s)?|distribui[çc][ãa]o(?: por cota)?|rendimento declarado|distribui[çc][ãa]o de rendimentos)[\s:=-]{1,25}(?:R\$\s*)?([0-9]+[.,][0-9]{2,4})/i)
+    || flat.match(/(?:R\$\s*)([0-9]+[.,][0-9]{2,4})\s*(?:\/|\s*por\s*)\s*cota/i);
 
-  const info = {
-    rendimentoCota: rendimentoMatch ? rendimentoMatch[1] : null,
+  // 2. Dividend Yield (DY) (ex: "Dividend Yield: 9,5%", "DY 12M: 10,2%", "DY Anualizado: 11,4%", "DY: 0,85%")
+  const dyMatch = flat.match(/(?:dividend yield|yield|dy(?:\s*(?:anualizado|mensal|12m|ano))?)[\s:=-]{1,25}([0-9]+[.,][0-9]{1,2})\s*%/i)
+    || flat.match(/([0-9]+[.,][0-9]{1,2})\s*%\s*(?:ao ano|a\.a\.|a\.m\.)/i);
+
+  // 3. Valor Patrimonial da Cota (VP/Cota) (ex: "Valor Patrimonial: R$ 98,50", "VP da cota: 102,30", "VP/cota: R$ 10,20")
+  const vpMatch = flat.match(/(?:valor patrimonial(?:\s*da\s*cota|\s*\/cota|\s*por\s*cota)?|vp\s*da\s*cota|vp\/cota|vpc)[\s:=-]{1,25}(?:R\$\s*)?([0-9]+[.,][0-9]{2})/i)
+    || flat.match(/(?:cota patrimonial)[\s:=-]{1,25}(?:R\$\s*)?([0-9]+[.,][0-9]{2})/i);
+
+  // 4. P/VP (Preço / Valor Patrimonial) (ex: "P/VP: 0,95", "P/VP 0.98", "P/VPA: 1,02")
+  const pvpMatch = flat.match(/(?:p\/vp|p\/vpa|pre[çc]o\s*\/\s*valor\s*patrimonial)[\s:=-]{1,25}([0-9]+[.,][0-9]{2})/i);
+
+  // 5. Vacância Física (ex: "Vacância Física: 5,4%", "Vacância Física de 3%", "Vac. Física: 0%")
+  const vacFisMatch = flat.match(/(?:vac[âa]ncia f[íi]sica|vac\.\s*f[íi]sica|taxa de vac[âa]ncia f[íi]sica)[\s:=-]{1,25}([0-9]+[.,][0-9]{1,2})\s*%/i)
+    || flat.match(/([0-9]+[.,][0-9]{1,2})\s*%\s*(?:de vac[âa]ncia f[íi]sica)/i);
+
+  // 6. Vacância Financeira (ex: "Vacância Financeira: 2,1%", "Vac. Financeira: 4%")
+  const vacFinMatch = flat.match(/(?:vac[âa]ncia financeira|vac\.\s*financeira|taxa de vac[âa]ncia financeira)[\s:=-]{1,25}([0-9]+[.,][0-9]{1,2})\s*%/i)
+    || flat.match(/([0-9]+[.,][0-9]{1,2})\s*%\s*(?:de vac[âa]ncia financeira)/i);
+
+  // 7. Patrimônio Líquido (PL)
+  const plMatch = flat.match(/(?:patrim[ôo]nio l[íi]quido|pl total)[\s:=-]{1,25}(?:R\$\s*)?([0-9.,]+(?:\s*(?:milh[õo]es|bilh[õo]es|mi|bi|m))?)/i);
+
+  // 8. Base de Cotistas
+  const cotistasMatch = flat.match(/(?:n[úu]mero de cotistas|cotistas|investidores)[\s:=-]{1,25}([0-9]{1,3}(?:\.[0-9]{3})+|[0-9]{4,7})/i);
+
+  // 9. Comentários do Gestor / Destaques
+  const destaques = [];
+  // Procura seções típicas de comentários
+  const gestorRegex = /(?:coment[áa]rio(?:s)? do gestor|vis[ãa]o da gest[ãa]o|mensagem do gestor|destaques do m[êe]s|panorama operacional)([\s\S]{30,600}?)(?=(?:coment[áa]rio|vis[ãa]o|destaque|portf[óo]lio|rentabilidade|demonstra|informa[çc]|contato|$))/gi;
+  let gMatch;
+  while ((gMatch = gestorRegex.exec(t)) !== null && destaques.length < 3) {
+    const trecho = gMatch[1].replace(/\s+/g, ' ').trim();
+    if (trecho.length > 40) {
+      destaques.push(trecho.slice(0, 300) + '...');
+    }
+  }
+
+  // Fallback caso não encontre seção explícita
+  if (destaques.length === 0) {
+    const frasesInteressantes = t.match(/(?:[A-Z][^\.\n\r]{25,200}(?:loca[çc][ãa]o|inadimpl[êe]ncia|aquisi[çc][ãa]o|gestor|pipeline|alavancagem|reajuste)[^\.\n\r]{20,200}\.)/gi);
+    if (frasesInteressantes) {
+      frasesInteressantes.slice(0, 3).forEach(f => destaques.push(f.replace(/\s+/g, ' ').trim()));
+    }
+  }
+
+  return {
+    rendimentoCota: rendMatch ? rendMatch[1] : null,
     dividendYield: dyMatch ? dyMatch[1] : null,
     valorPatrimonial: vpMatch ? vpMatch[1] : null,
     pvp: pvpMatch ? pvpMatch[1] : null,
-    totalCotas: cotasMatch ? cotasMatch[1] : null,
+    totalCotas: null,
     patrimonioLiquido: plMatch ? plMatch[1] : null,
     numeroCotistas: cotistasMatch ? cotistasMatch[1] : null,
-    vacanciaFisica: vacanciaFisicaMatch ? vacanciaFisicaMatch[1] : null,
-    vacanciaFinanceira: vacanciaFinanMatch ? vacanciaFinanMatch[1] : null,
-    receitaTotal: receitaMatch ? receitaMatch[1] : null,
-    despesaTotal: despesaMatch ? despesaMatch[1] : null,
-    resultadoLiquido: resultadoMatch ? resultadoMatch[1] : null,
-    compras: [],
-    vendas: [],
-    proventos: [],
-    destaques: []
+    vacanciaFisica: vacFisMatch ? vacFisMatch[1] : null,
+    vacanciaFinanceira: vacFinMatch ? vacFinMatch[1] : null,
+    destaques
   };
-
-  // Movimentações e operações
-  const compraMatches = t.match(/(?:aquisição|compra|investimento)[^\.\n\r]{10,90}/gi);
-  if (compraMatches) info.compras = compraMatches.slice(0, 4).map(m => m.trim());
-
-  const vendaMatches = t.match(/(?:alienação|venda|desinvestimento)[^\.\n\r]{10,90}/gi);
-  if (vendaMatches) info.vendas = vendaMatches.slice(0, 4).map(m => m.trim());
-
-  const provMatches = t.match(/(?:rendimento|dividend[oa]|jcp|distribuição)[^\.\n\r]{10,80}/gi);
-  if (provMatches) info.proventos = provMatches.slice(0, 6).map(m => m.trim());
-
-  const destaquesMatches = t.match(/(?:destaque(?:s)?|comentário do gestor|cenário macro|locação)[^\.\n\r]{20,130}/gi);
-  if (destaquesMatches) info.destaques = destaquesMatches.slice(0, 4).map(m => m.trim());
-
-  return info;
 }
 
 function PdfCanvasPreview({ file, previewUrl }) {
@@ -473,6 +499,75 @@ function Relatorios() {
                   style={{ width: 85, padding: '2px 6px', fontSize: 11, border: '1px solid #94A3B8', borderRadius: 4, color: '#0F172A', background: '#FFFFFF', fontWeight: 600 }}
                 />
               </div>
+
+              {/* Indicadores Chave Detectados / Editáveis */}
+              <details style={{ marginTop: 6, border: '1px solid #E2E8F0', borderRadius: 4, padding: 6, background: '#F8FAFC' }}>
+                <summary style={{ cursor: 'pointer', fontWeight: 600, color: '#0284C7', outline: 'none' }}>
+                  ⚙️ Indicadores do Mês 1
+                </summary>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, marginTop: 6 }}>
+                  <div>
+                    <label style={{ fontSize: 10, color: '#64748B', display: 'block' }}>Rend. Cota (R$)</label>
+                    <input
+                      type="text"
+                      value={doc1.info?.rendimentoCota || ''}
+                      onChange={(e) => setDoc1(prev => ({ ...prev, info: { ...prev.info, rendimentoCota: e.target.value } }))}
+                      placeholder="Ex: 0,85"
+                      style={{ width: '100%', padding: '2px 4px', fontSize: 11, border: '1px solid #CBD5E1', borderRadius: 4 }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 10, color: '#64748B', display: 'block' }}>DY (% ao ano)</label>
+                    <input
+                      type="text"
+                      value={doc1.info?.dividendYield || ''}
+                      onChange={(e) => setDoc1(prev => ({ ...prev, info: { ...prev.info, dividendYield: e.target.value } }))}
+                      placeholder="Ex: 10,5"
+                      style={{ width: '100%', padding: '2px 4px', fontSize: 11, border: '1px solid #CBD5E1', borderRadius: 4 }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 10, color: '#64748B', display: 'block' }}>VP / Cota (R$)</label>
+                    <input
+                      type="text"
+                      value={doc1.info?.valorPatrimonial || ''}
+                      onChange={(e) => setDoc1(prev => ({ ...prev, info: { ...prev.info, valorPatrimonial: e.target.value } }))}
+                      placeholder="Ex: 98,50"
+                      style={{ width: '100%', padding: '2px 4px', fontSize: 11, border: '1px solid #CBD5E1', borderRadius: 4 }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 10, color: '#64748B', display: 'block' }}>P / VP</label>
+                    <input
+                      type="text"
+                      value={doc1.info?.pvp || ''}
+                      onChange={(e) => setDoc1(prev => ({ ...prev, info: { ...prev.info, pvp: e.target.value } }))}
+                      placeholder="Ex: 0,98"
+                      style={{ width: '100%', padding: '2px 4px', fontSize: 11, border: '1px solid #CBD5E1', borderRadius: 4 }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 10, color: '#64748B', display: 'block' }}>Vac. Física (%)</label>
+                    <input
+                      type="text"
+                      value={doc1.info?.vacanciaFisica || ''}
+                      onChange={(e) => setDoc1(prev => ({ ...prev, info: { ...prev.info, vacanciaFisica: e.target.value } }))}
+                      placeholder="Ex: 4,5"
+                      style={{ width: '100%', padding: '2px 4px', fontSize: 11, border: '1px solid #CBD5E1', borderRadius: 4 }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 10, color: '#64748B', display: 'block' }}>Vac. Financeira (%)</label>
+                    <input
+                      type="text"
+                      value={doc1.info?.vacanciaFinanceira || ''}
+                      onChange={(e) => setDoc1(prev => ({ ...prev, info: { ...prev.info, vacanciaFinanceira: e.target.value } }))}
+                      placeholder="Ex: 3,2"
+                      style={{ width: '100%', padding: '2px 4px', fontSize: 11, border: '1px solid #CBD5E1', borderRadius: 4 }}
+                    />
+                  </div>
+                </div>
+              </details>
             </div>
           )}
         </div>
@@ -513,6 +608,75 @@ function Relatorios() {
                   style={{ width: 85, padding: '2px 6px', fontSize: 11, border: '1px solid #94A3B8', borderRadius: 4, color: '#0F172A', background: '#FFFFFF', fontWeight: 600 }}
                 />
               </div>
+
+              {/* Indicadores Chave Detectados / Editáveis */}
+              <details style={{ marginTop: 6, border: '1px solid #E2E8F0', borderRadius: 4, padding: 6, background: '#F8FAFC' }}>
+                <summary style={{ cursor: 'pointer', fontWeight: 600, color: '#0284C7', outline: 'none' }}>
+                  ⚙️ Indicadores do Mês 2
+                </summary>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, marginTop: 6 }}>
+                  <div>
+                    <label style={{ fontSize: 10, color: '#64748B', display: 'block' }}>Rend. Cota (R$)</label>
+                    <input
+                      type="text"
+                      value={doc2.info?.rendimentoCota || ''}
+                      onChange={(e) => setDoc2(prev => ({ ...prev, info: { ...prev.info, rendimentoCota: e.target.value } }))}
+                      placeholder="Ex: 0,85"
+                      style={{ width: '100%', padding: '2px 4px', fontSize: 11, border: '1px solid #CBD5E1', borderRadius: 4 }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 10, color: '#64748B', display: 'block' }}>DY (% ao ano)</label>
+                    <input
+                      type="text"
+                      value={doc2.info?.dividendYield || ''}
+                      onChange={(e) => setDoc2(prev => ({ ...prev, info: { ...prev.info, dividendYield: e.target.value } }))}
+                      placeholder="Ex: 10,5"
+                      style={{ width: '100%', padding: '2px 4px', fontSize: 11, border: '1px solid #CBD5E1', borderRadius: 4 }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 10, color: '#64748B', display: 'block' }}>VP / Cota (R$)</label>
+                    <input
+                      type="text"
+                      value={doc2.info?.valorPatrimonial || ''}
+                      onChange={(e) => setDoc2(prev => ({ ...prev, info: { ...prev.info, valorPatrimonial: e.target.value } }))}
+                      placeholder="Ex: 98,50"
+                      style={{ width: '100%', padding: '2px 4px', fontSize: 11, border: '1px solid #CBD5E1', borderRadius: 4 }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 10, color: '#64748B', display: 'block' }}>P / VP</label>
+                    <input
+                      type="text"
+                      value={doc2.info?.pvp || ''}
+                      onChange={(e) => setDoc2(prev => ({ ...prev, info: { ...prev.info, pvp: e.target.value } }))}
+                      placeholder="Ex: 0,98"
+                      style={{ width: '100%', padding: '2px 4px', fontSize: 11, border: '1px solid #CBD5E1', borderRadius: 4 }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 10, color: '#64748B', display: 'block' }}>Vac. Física (%)</label>
+                    <input
+                      type="text"
+                      value={doc2.info?.vacanciaFisica || ''}
+                      onChange={(e) => setDoc2(prev => ({ ...prev, info: { ...prev.info, vacanciaFisica: e.target.value } }))}
+                      placeholder="Ex: 4,5"
+                      style={{ width: '100%', padding: '2px 4px', fontSize: 11, border: '1px solid #CBD5E1', borderRadius: 4 }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 10, color: '#64748B', display: 'block' }}>Vac. Financeira (%)</label>
+                    <input
+                      type="text"
+                      value={doc2.info?.vacanciaFinanceira || ''}
+                      onChange={(e) => setDoc2(prev => ({ ...prev, info: { ...prev.info, vacanciaFinanceira: e.target.value } }))}
+                      placeholder="Ex: 3,2"
+                      style={{ width: '100%', padding: '2px 4px', fontSize: 11, border: '1px solid #CBD5E1', borderRadius: 4 }}
+                    />
+                  </div>
+                </div>
+              </details>
             </div>
           )}
         </div>
