@@ -104,22 +104,30 @@ export async function saveTickerInfo(ticker, info) {
 
 async function syncToServerJson(ticker, info) {
   try {
+    const key = (ticker || '').toUpperCase().trim();
     const res = await fetch('/api/db/ativos');
     const data = await res.json();
-    data.push({
-      TICKER: ticker,
+    const arr = Array.isArray(data) ? data : [];
+    const idx = arr.findIndex((a) => (a.TICKER || '').toUpperCase().trim() === key);
+    const payload = {
+      TICKER: key,
       NOME: info.nome || '',
       CNPJ: info.cnpj || '',
       TIPO: info.tipo || '',
       IMAGEM: info.imagem || '',
       LINK: info.link || ''
-    });
+    };
+    if (idx >= 0) {
+      arr[idx] = { ...arr[idx], ...payload };
+    } else {
+      arr.push(payload);
+    }
     await fetch('/api/db/ativos', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
+      body: JSON.stringify(arr)
     });
-    console.log(`[tickerRegistry] synced ${ticker} to db_ativos.json`);
+    console.log(`[tickerRegistry] synced ${key} to db_ativos.json`);
   } catch (e) {
     console.warn('[tickerRegistry] syncToServerJson error:', e);
   }

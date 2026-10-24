@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import * as pdfjsLib from 'pdfjs-dist';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL('pdfjs-dist/build/pdf.worker.mjs', import.meta.url).toString();
@@ -12,18 +12,54 @@ function formatMonthKey(date) {
 
 function extractMonthFromText(text) {
   const t = (text || '').toLowerCase();
-  const months = ['janeiro','fevereiro','março','marco','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
-  for (let i = 0; i < months.length; i++) {
-    if (t.includes(months[i])) {
-      const m = String(i+1).padStart(2,'0');
-      const yearMatch = t.match(/(20\d{2})/);
-      if (yearMatch) return yearMatch[1] + '-' + m;
-      return m;
+  const months = [
+    { name: 'janeiro', num: '01' },
+    { name: 'fevereiro', num: '02' },
+    { name: 'março', num: '03' },
+    { name: 'marco', num: '03' },
+    { name: 'abril', num: '04' },
+    { name: 'maio', num: '05' },
+    { name: 'junho', num: '06' },
+    { name: 'julho', num: '07' },
+    { name: 'agosto', num: '08' },
+    { name: 'setembro', num: '09' },
+    { name: 'outubro', num: '10' },
+    { name: 'novembro', num: '11' },
+    { name: 'dezembro', num: '12' }
+  ];
+
+  // Procura padrão de mês por extenso com ano (ex: "Janeiro de 2024", "janeiro/2024", "Jan 2024")
+  for (const m of months) {
+    const regex = new RegExp(`${m.name}[\\s/de]+(20\\d{2})`, 'i');
+    const match = t.match(regex);
+    if (match) {
+      return `${match[1]}-${m.num}`;
     }
   }
-  const dateMatch = t.match(/(\d{2})\/(\d{2})\/(20\d{2})/);
-  if (dateMatch) return dateMatch[3] + '-' + dateMatch[2];
-  return null;
+
+  // Procura padrão numérico mm/yyyy ou dd/mm/yyyy
+  const dateMatch = t.match(/(\d{2})\/(20\d{2})/);
+  if (dateMatch) {
+    const monthVal = parseInt(dateMatch[1], 10);
+    if (monthVal >= 1 && monthVal <= 12) {
+      return `${dateMatch[2]}-${String(monthVal).padStart(2, '0')}`;
+    }
+  }
+
+  const fullDateMatch = t.match(/(\d{2})\/(\d{2})\/(20\d{2})/);
+  if (fullDateMatch) {
+    return `${fullDateMatch[3]}-${fullDateMatch[2]}`;
+  }
+
+  // Fallback para primeiro mês encontrado
+  for (const m of months) {
+    if (t.includes(m.name)) {
+      const yearMatch = t.match(/(20\d{2})/);
+      return yearMatch ? `${yearMatch[1]}-${m.num}` : `2024-${m.num}`;
+    }
+  }
+
+  return '';
 }
 
 function extractTicker(text) {
@@ -72,6 +108,99 @@ function extractComparativeInfo(text) {
   return info;
 }
 
+function PdfCanvasPreview({ file, previewUrl }) {
+  const canvasRef = useRef(null);
+  const [loading, setLoading] = useState(true);
+  const [renderError, setRenderError] = useState(false);
+
+  useEffect(() => {
+    let isCancelled = false;
+    if (!file) return;
+
+    setLoading(true);
+    setRenderError(false);
+
+    file.arrayBuffer().then(buffer => {
+      if (isCancelled) return;
+      return pdfjsLib.getDocument({ data: buffer }).promise;
+    }).then(pdf => {
+      if (isCancelled || !pdf) return;
+      return pdf.getPage(1);
+    }).then(page => {
+      if (isCancelled || !page) return;
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+
+      const viewport = page.getViewport({ scale: 0.6 });
+      const context = canvas.getContext('2d');
+      canvas.height = viewport.height;
+      canvas.width = viewport.width;
+
+      const renderContext = {
+        canvasContext: context,
+        viewport: viewport
+      };
+
+      return page.render(renderContext).promise;
+    }).then(() => {
+      if (!isCancelled) setLoading(false);
+    }).catch(err => {
+      console.warn('Erro ao renderizar canvas do PDF:', err);
+      if (!isCancelled) {
+        setRenderError(true);
+        setLoading(false);
+      }
+    });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [file]);
+
+  return (
+    <div style={{ position: 'relative', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+      {loading && <span style={{ fontSize: 11, color: '#888' }}>Carregando visualização...</span>}
+      <canvas
+        ref={canvasRef}
+        style={{
+          maxWidth: '100%',
+          maxHeight: '100%',
+          objectFit: 'contain',
+          display: loading || renderError ? 'none' : 'block',
+          boxShadow: '0 2px 5px rgba(0,0,0,0.1)'
+        }}
+      />
+      {renderError && (
+        <div style={{ textAlign: 'center', padding: 8 }}>
+          <div style={{ fontSize: 24, marginBottom: 4 }}>📄</div>
+          <div style={{ fontSize: 11, color: '#666' }}>PDF Carregado</div>
+        </div>
+      )}
+      {previewUrl && (
+        <a
+          href={previewUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            position: 'absolute',
+            bottom: 4,
+            right: 4,
+            background: 'rgba(0,0,0,0.65)',
+            color: '#fff',
+            fontSize: 10,
+            padding: '2px 6px',
+            borderRadius: 4,
+            textDecoration: 'none'
+          }}
+          title="Abrir PDF em nova aba"
+        >
+          ↗ Abrir
+        </a>
+      )}
+    </div>
+  );
+}
+
 function Relatorios() {
   const [doc1, setDoc1] = useState(null);
   const [doc2, setDoc2] = useState(null);
@@ -82,12 +211,14 @@ function Relatorios() {
   const [comparando, setComparando] = useState(false);
   const [comparativo, setComparativo] = useState(null);
   const [erro, setErro] = useState('');
+  const [aviso, setAviso] = useState('');
 
   const handleUpload1 = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setLoading1(true);
     setErro('');
+    setAviso('');
     try {
       const text = await readPdf(file);
       const ticker = extractTicker(text);
@@ -105,6 +236,7 @@ function Relatorios() {
     const file = e.target.files?.[0];
     if (!file) return;
     setErro('');
+    setAviso('');
     if (!doc1) {
       setErro('Faça o upload do relatório do primeiro quadrante primeiro.');
       return;
@@ -115,16 +247,15 @@ function Relatorios() {
       const ticker = extractTicker(text);
       const month = extractMonthFromText(text);
       const info = extractComparativeInfo(text);
+
       if (doc1.ticker && ticker && doc1.ticker !== ticker) {
-        setErro(`Ativo diferente. Relatório 1: ${doc1.ticker}, Relatório 2: ${ticker}`);
-        setLoading2(false);
-        return;
+        setAviso(`Atenção: Os ativos parecem ser diferentes (Mês 1: ${doc1.ticker}, Mês 2: ${ticker}). Você ainda pode comparar.`);
       }
+
       if (doc1.month && month && month <= doc1.month) {
-        setErro('O segundo relatório precisa ser do mês posterior ao primeiro.');
-        setLoading2(false);
-        return;
+        setAviso(`Aviso de competência: O Mês 2 (${month}) não parece posterior ao Mês 1 (${doc1.month}). Você pode ajustar o mês manualmente abaixo se desejar.`);
       }
+
       setDoc2({ file, text, ticker, month, info, name: file.name });
       setPreview2(URL.createObjectURL(file));
     } catch (err) {
@@ -163,61 +294,100 @@ function Relatorios() {
       result.observacoes.push(`Proventos/Rendimentos: Mês 1: ${doc1.info.proventos.length || 0} | Mês 2: ${doc2.info.proventos.length || 0}`);
     }
     setComparativo(result);
+    setComparando(false);
   };
 
   return (
     <div style={{ padding: 20 }}>
       <h2 style={{ marginBottom: 16 }}>Comparativo de Relatórios Gerenciais</h2>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 20 }}>
-        <div style={{ border: '1px solid var(--border, #ddd)', borderRadius: 8, padding: 16, background: 'var(--card-bg, #fff)' }}>
-          <h4 style={{ margin: '0 0 10px' }}>Relatório Mês 1</h4>
-          <div style={{ width: '100%', height: 220, border: '1px dashed var(--border, #ccc)', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', marginBottom: 10, background: '#f9f9f9' }}>
-            {preview1 ? (
-              <iframe src={preview1} title="preview1" style={{ width: '100%', height: '100%', border: 'none' }} />
+      {/* Quadrantes compactos: largura reduzida e altura proporcional */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 320px))', gap: 16, marginBottom: 20, justifyContent: 'start' }}>
+        <div style={{ border: '1px solid var(--border, #ddd)', borderRadius: 8, padding: 12, background: 'var(--card-bg, #fff)' }}>
+          <h4 style={{ margin: '0 0 8px', fontSize: 13 }}>Relatório Mês 1</h4>
+          <div style={{ width: '100%', height: 130, border: '1px dashed var(--border, #ccc)', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', marginBottom: 8, background: '#f9f9f9' }}>
+            {doc1?.file ? (
+              <PdfCanvasPreview file={doc1.file} previewUrl={preview1} />
             ) : (
-              <span style={{ color: '#888' }}>Preview do PDF</span>
+              <span style={{ color: '#888', fontSize: 11 }}>Preview do PDF</span>
             )}
           </div>
-          <label style={{ display: 'inline-block', padding: '8px 14px', background: 'var(--accent, #007bff)', color: '#fff', borderRadius: 6, cursor: 'pointer', fontSize: 13 }}>
-            {loading1 ? 'Lendo...' : 'Upload Relatório Gerencial (PDF)'}
+          <label style={{ display: 'inline-block', padding: '6px 12px', background: 'var(--accent, #007bff)', color: '#fff', borderRadius: 6, cursor: 'pointer', fontSize: 12 }}>
+            {loading1 ? 'Lendo...' : 'Upload Mês 1 (PDF)'}
             <input type="file" accept="application/pdf" onChange={handleUpload1} style={{ display: 'none' }} />
           </label>
           {doc1 && (
-            <div style={{ marginTop: 10, fontSize: 12, color: '#666' }}>
+            <div style={{ marginTop: 8, fontSize: 11, color: '#666', display: 'flex', flexDirection: 'column', gap: 3 }}>
               <div><b>Arquivo:</b> {doc1.name}</div>
-              <div><b>Ativo:</b> {doc1.ticker || 'Não identificado'}</div>
-              <div><b>Mês/Referência:</b> {doc1.month || 'Não identificado'}</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <b>Ativo:</b>
+                <input
+                  type="text"
+                  value={doc1.ticker || ''}
+                  onChange={(e) => setDoc1(prev => ({ ...prev, ticker: e.target.value.toUpperCase() }))}
+                  placeholder="Ex: HGLG11"
+                  style={{ width: 80, padding: '2px 4px', fontSize: 11, border: '1px solid #ccc', borderRadius: 4 }}
+                />
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <b>Mês:</b>
+                <input
+                  type="text"
+                  value={doc1.month || ''}
+                  onChange={(e) => setDoc1(prev => ({ ...prev, month: e.target.value }))}
+                  placeholder="AAAA-MM"
+                  style={{ width: 80, padding: '2px 4px', fontSize: 11, border: '1px solid #ccc', borderRadius: 4 }}
+                />
+              </div>
             </div>
           )}
         </div>
 
-        <div style={{ border: '1px solid var(--border, #ddd)', borderRadius: 8, padding: 16, background: 'var(--card-bg, #fff)' }}>
-          <h4 style={{ margin: '0 0 10px' }}>Relatório Mês 2 (Posterior)</h4>
-          <div style={{ width: '100%', height: 220, border: '1px dashed var(--border, #ccc)', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', marginBottom: 10, background: '#f9f9f9' }}>
-            {preview2 ? (
-              <iframe src={preview2} title="preview2" style={{ width: '100%', height: '100%', border: 'none' }} />
+        <div style={{ border: '1px solid var(--border, #ddd)', borderRadius: 8, padding: 12, background: 'var(--card-bg, #fff)' }}>
+          <h4 style={{ margin: '0 0 8px', fontSize: 13 }}>Relatório Mês 2 (Posterior)</h4>
+          <div style={{ width: '100%', height: 130, border: '1px dashed var(--border, #ccc)', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', marginBottom: 8, background: '#f9f9f9' }}>
+            {doc2?.file ? (
+              <PdfCanvasPreview file={doc2.file} previewUrl={preview2} />
             ) : (
-              <span style={{ color: '#888' }}>Preview do PDF</span>
+              <span style={{ color: '#888', fontSize: 11 }}>Preview do PDF</span>
             )}
           </div>
-          <label style={{ display: 'inline-block', padding: '8px 14px', background: doc1 ? 'var(--accent, #007bff)' : '#999', color: '#fff', borderRadius: 6, cursor: doc1 ? 'pointer' : 'not-allowed', fontSize: 13 }}>
-            {loading2 ? 'Lendo...' : 'Upload Relatório Gerencial (PDF)'}
+          <label style={{ display: 'inline-block', padding: '6px 12px', background: doc1 ? 'var(--accent, #007bff)' : '#999', color: '#fff', borderRadius: 6, cursor: doc1 ? 'pointer' : 'not-allowed', fontSize: 12 }}>
+            {loading2 ? 'Lendo...' : 'Upload Mês 2 (PDF)'}
             <input type="file" accept="application/pdf" onChange={handleUpload2} style={{ display: 'none' }} disabled={!doc1} />
           </label>
           {doc2 && (
-            <div style={{ marginTop: 10, fontSize: 12, color: '#666' }}>
+            <div style={{ marginTop: 8, fontSize: 11, color: '#666', display: 'flex', flexDirection: 'column', gap: 3 }}>
               <div><b>Arquivo:</b> {doc2.name}</div>
-              <div><b>Ativo:</b> {doc2.ticker || 'Não identificado'}</div>
-              <div><b>Mês/Referência:</b> {doc2.month || 'Não identificado'}</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <b>Ativo:</b>
+                <input
+                  type="text"
+                  value={doc2.ticker || ''}
+                  onChange={(e) => setDoc2(prev => ({ ...prev, ticker: e.target.value.toUpperCase() }))}
+                  placeholder="Ex: HGLG11"
+                  style={{ width: 80, padding: '2px 4px', fontSize: 11, border: '1px solid #ccc', borderRadius: 4 }}
+                />
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <b>Mês:</b>
+                <input
+                  type="text"
+                  value={doc2.month || ''}
+                  onChange={(e) => setDoc2(prev => ({ ...prev, month: e.target.value }))}
+                  placeholder="AAAA-MM"
+                  style={{ width: 80, padding: '2px 4px', fontSize: 11, border: '1px solid #ccc', borderRadius: 4 }}
+                />
+              </div>
             </div>
           )}
         </div>
       </div>
 
-      {erro && <div style={{ color: '#d33', marginBottom: 12, fontSize: 13 }}>{erro}</div>}
+      {erro && <div style={{ color: '#d33', marginBottom: 12, fontSize: 13, background: '#ffebee', padding: '8px 12px', borderRadius: 6 }}>{erro}</div>}
+      {aviso && <div style={{ color: '#856404', marginBottom: 12, fontSize: 13, background: '#fff3cd', padding: '8px 12px', borderRadius: 6, border: '1px solid #ffeeba' }}>{aviso}</div>}
 
-      <button onClick={ativarComparacao} disabled={!doc1 || !doc2 || comparando} style={{ padding: '10px 18px', background: doc1 && doc2 ? '#28a745' : '#999', color: '#fff', border: 'none', borderRadius: 6, cursor: doc1 && doc2 ? 'pointer' : 'not-allowed', marginBottom: 18, fontWeight: 600 }}>
+      <button onClick={ativarComparacao} disabled={!doc1 || !doc2 || comparando} style={{ padding: '8px 16px', background: doc1 && doc2 ? '#28a745' : '#999', color: '#fff', border: 'none', borderRadius: 6, cursor: doc1 && doc2 ? 'pointer' : 'not-allowed', marginBottom: 18, fontWeight: 600, fontSize: 13 }}>
         {comparando ? 'Comparando...' : 'Ativar Comparação'}
       </button>
 
