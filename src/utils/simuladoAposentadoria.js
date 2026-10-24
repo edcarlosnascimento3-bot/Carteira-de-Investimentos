@@ -5,9 +5,10 @@
  * - "Aportes (sem rendimentos)": poupador que apenas acumula os aportes, sem rentabilidade.
  * - "Com rendimentos": patrimônio que cresce com a rentabilidade escolhida e continua
  *   recebendo aportes até o fim do horizonte (cenário hipotético).
- * - "Plano de aposentadoria": até atingir a meta, cresce igual à linha anterior; a partir do
- *   mês da meta os aportes param e TODO o rendimento do mês é sacado, de modo que o patrimônio
- *   do plano permanece constante e sustenta a renda desejada (corrigida pela inflação).
+ * - "Plano de aposentadoria": até atingir a meta, cresce igual à linha anterior. 
+ *   Se aporteMensal < salarioAtual (ou regra definida), continua aportando mesmo após a meta.
+ *   Caso contrário, a partir do mês da meta os aportes param e TODO o rendimento do mês é sacado,
+ *   de modo que o patrimônio do plano permanece constante e sustenta a renda desejada (corrigida pela inflação).
  */
 
 function toNumber(valor, padrao = 0) {
@@ -16,14 +17,10 @@ function toNumber(valor, padrao = 0) {
 }
 
 /**
- * Taxa mensal usada pelo simulado.
- * - Renda Fixa: taxa efetiva mensal equivalente à taxa anual contratada (12ª parte composta).
- * - FII: rendimento mensal informado (% a.m.).
+ * Taxa mensal usada pelo simulado (apenas Renda Fixa).
+ * Taxa efetiva mensal equivalente à taxa anual contratada (12ª parte composta).
  */
-export function calcularTaxaMensal(modalidade, taxaJurosAnual = 0, rendimentoMensalPct = 0) {
-  if (modalidade === 'fii') {
-    return toNumber(rendimentoMensalPct) / 100;
-  }
+export function calcularTaxaMensal(_modalidade, taxaJurosAnual = 0, _rendimentoMensalPct = 0) {
   const anual = Math.max(-99, toNumber(taxaJurosAnual)) / 100; // evita NaN com base negativa
   return Math.pow(1 + anual, 1 / 12) - 1;
 }
@@ -46,35 +43,35 @@ export function formatarTempoMeses(totalMeses) {
  * @param {number} params.inflacaoAnual     Inflação anual conservadora (% a.a.).
  * @param {number} params.aporteMensal      Aporte mensal (R$).
  * @param {number} [params.aporteInicial=0] Aporte inicial (R$).
- * @param {'rf'|'fii'} [params.modalidade='rf']
  * @param {number} params.taxaJurosAnual    Taxa de juros anual da Renda Fixa (% a.a.).
- * @param {number} params.rendimentoMensalPct Rendimento mensal do FII (% a.m.).
  * @param {number} [params.horizonteAnos=40] Horizonte máximo do simulado (anos).
  * @returns {{ meses: Array<{mes:number, semRendimento:number, patrimonio:number, plano:number, rendaMeta:number, ano:number}>, metaMes: number|null, resumo: object }}
  */
 export function simularAposentadoria(params = {}) {
   const {
-    salarioAtual = 0, // eslint-disable-line no-unused-vars
+    salarioAtual = 0,
     salarioPretendido = 0,
     inflacaoAnual = 0,
     aporteMensal = 0,
     aporteInicial = 0,
-    modalidade = 'rf',
     taxaJurosAnual = 0,
-    rendimentoMensalPct = 0,
     horizonteAnos = 40,
   } = params;
 
   const salPret = Math.max(0, toNumber(salarioPretendido));
+  const salAtual = Math.max(0, toNumber(salarioAtual));
   const aporteM = Math.max(0, toNumber(aporteMensal));
   const aporteI = Math.max(0, toNumber(aporteInicial));
-  const taxaMensal = calcularTaxaMensal(modalidade, taxaJurosAnual, rendimentoMensalPct);
+  const taxaMensal = calcularTaxaMensal('rf', taxaJurosAnual, 0);
   const inflacaoMensal = Math.pow(1 + Math.max(-99, toNumber(inflacaoAnual)) / 100, 1 / 12) - 1;
   const totalMeses = Math.max(0, Math.round(toNumber(horizonteAnos, 40) * 12));
 
+  // Regra: continuar aportando mesmo após atingir a meta se aporteMensal < salarioAtual
+  const deveContinuarAportandoAposentadoria = salAtual > 0 && aporteM > 0 && aporteM < salAtual;
+
   const meses = [];
   let patrimonio = aporteI; // linha "com rendimentos" (hipótese: continua aportando)
-  let plano = aporteI; // linha do plano (deixa de aportar ao atingir a meta)
+  let plano = aporteI; // linha do plano
   let metaMes = null;
   let patrimonioNaMeta = null;
   let rendaNaMeta = null;
@@ -100,10 +97,16 @@ export function simularAposentadoria(params = {}) {
         rendaNaMeta = rendaMeta;
       }
     } else {
-      // Aposentadoria: aportes param e todo o rendimento é sacado → patrimônio constante.
-      plano = patrimonioNaMeta;
-      // Linha B continua acumulando até o fim do horizonte (cenário hipotético).
-      patrimonio = patrimonio * (1 + taxaMensal) + aporteM;
+      if (deveContinuarAportandoAposentadoria) {
+        // Continua aportando mesmo após atingir a meta (aporteMensal < salarioAtual)
+        plano = plano * (1 + taxaMensal) + aporteM;
+        patrimonio = patrimonio * (1 + taxaMensal) + aporteM;
+      } else {
+        // Aposentadoria: aportes param e todo o rendimento é sacado → patrimônio constante.
+        plano = patrimonioNaMeta;
+        // Linha B continua acumulando até o fim do horizonte (cenário hipotético).
+        patrimonio = patrimonio * (1 + taxaMensal) + aporteM;
+      }
     }
 
     meses.push({
@@ -129,18 +132,95 @@ export function simularAposentadoria(params = {}) {
       rendaMensalSacada: null,
     };
   } else {
-    const totalAportado = aporteI + aporteM * metaMes;
+    const totalAportado = deveContinuarAportandoAposentadoria
+      ? aporteI + aporteM * totalMeses
+      : aporteI + aporteM * metaMes;
     resumo = {
       tempoMeses: metaMes,
       tempoFormatado: formatarTempoMeses(metaMes),
       patrimonioNecessario: patrimonioNaMeta,
       rendaNaMeta,
       totalAportado,
-      totalRendimento: patrimonioNaMeta - totalAportado,
-      patrimonioFinalPlano: patrimonioNaMeta,
-      rendaMensalSacada: patrimonioNaMeta * taxaMensal,
+      totalRendimento: (deveContinuarAportandoAposentadoria ? meses[meses.length - 1].plano : patrimonioNaMeta) - totalAportado,
+      patrimonioFinalPlano: deveContinuarAportandoAposentadoria ? meses[meses.length - 1].plano : patrimonioNaMeta,
+      rendaMensalSacada: (deveContinuarAportandoAposentadoria ? meses[meses.length - 1].plano : patrimonioNaMeta) * taxaMensal,
     };
   }
 
   return { meses, metaMes, resumo };
+}
+
+/**
+ * Calcula o aporte mensal necessário para atingir a meta de aposentadoria em um tempo desejado.
+ */
+export function calcularAporteNecessario(params = {}) {
+  const {
+    salarioAtual = 0,
+    salarioPretendido = 0,
+    inflacaoAnual = 0,
+    aporteInicial = 0,
+    taxaJurosAnual = 0,
+    tempoDesejadoAnos = 0,
+  } = params;
+
+  const salPret = Math.max(0, toNumber(salarioPretendido));
+  const salAtual = Math.max(0, toNumber(salarioAtual));
+  const aporteI = Math.max(0, toNumber(aporteInicial));
+  const taxaMensal = calcularTaxaMensal('rf', taxaJurosAnual, 0);
+  const inflacaoMensal = Math.pow(1 + Math.max(-99, toNumber(inflacaoAnual)) / 100, 1 / 12) - 1;
+  const tempoDesejadoMeses = Math.max(0, Math.round(toNumber(tempoDesejadoAnos, 0) * 12));
+
+  if (tempoDesejadoMeses <= 0 || salPret <= 0 || taxaMensal <= 0) {
+    return {
+      aporteMensalNecessario: null,
+      atingivel: false,
+      mensagem: 'Parâmetros insuficientes para calcular.',
+    };
+  }
+
+  // Renda meta no mês final (corrigida pela inflação)
+  const rendaMetaFinal = salPret * Math.pow(1 + inflacaoMensal, tempoDesejadoMeses);
+  const patrimonioNecessario = rendaMetaFinal / taxaMensal;
+
+  // Busca binária para encontrar aporte mensal necessário
+  let esquerda = 0;
+  let direita = Math.max(salPret * 2, salAtual * 2, 100000);
+  let melhor = null;
+
+  for (let iter = 0; iter < 80; iter += 1) {
+    if (direita - esquerda < 0.01) break;
+    const meio = (esquerda + direita) / 2;
+    const sim = simularAposentadoria({
+      salarioAtual: salAtual,
+      salarioPretendido: salPret,
+      inflacaoAnual,
+      aporteMensal: meio,
+      aporteInicial: aporteI,
+      taxaJurosAnual,
+      horizonteAnos: tempoDesejadoAnos,
+    });
+    if (sim.metaMes != null && sim.metaMes <= tempoDesejadoMeses) {
+      melhor = meio;
+      direita = meio;
+    } else {
+      esquerda = meio;
+    }
+  }
+
+  if (melhor === null || melhor > direita * 1.5) {
+    return {
+      aporteMensalNecessario: null,
+      atingivel: false,
+      mensagem: 'Não é possível atingir nesse prazo. Aumente o prazo ou reduza a renda pretendida.',
+    };
+  }
+
+  // Arredonda para cima com precisão razoável
+  const aporteArredondado = Math.ceil(melhor * 100) / 100;
+  return {
+    aporteMensalNecessario: aporteArredondado,
+    atingivel: true,
+    patrimonioNecessario,
+    rendaMetaFinal,
+  };
 }

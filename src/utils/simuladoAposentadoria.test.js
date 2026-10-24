@@ -7,9 +7,7 @@ const base = {
   inflacaoAnual: 0,
   aporteMensal: 200,
   aporteInicial: 0,
-  modalidade: 'rf',
   taxaJurosAnual: 10,
-  rendimentoMensalPct: 0.8,
   horizonteAnos: 40,
 };
 
@@ -31,20 +29,6 @@ describe('calcularTaxaMensal', () => {
     expect(meses[0].patrimonio).toBe(1000);
     expect(meses[12].patrimonio).toBeCloseTo(1000 * 1.12, 8);
     expect(meses[24].patrimonio).toBeCloseTo(1000 * 1.12 * 1.12, 8);
-  });
-
-  it('usa o rendimento mensal informado como taxa no modo FII', () => {
-    expect(calcularTaxaMensal('fii', 0, 0.8)).toBeCloseTo(0.008, 12);
-
-    const { meses } = simularAposentadoria({
-      ...base,
-      modalidade: 'fii',
-      rendimentoMensalPct: 1,
-      aporteMensal: 0,
-      aporteInicial: 1000,
-      salarioPretendido: 1e9,
-    });
-    expect(meses[12].patrimonio).toBeCloseTo(1000 * Math.pow(1.01, 12), 8);
   });
 });
 
@@ -97,18 +81,17 @@ describe('meta de aposentadoria', () => {
 
   it('monta o resumo com o tempo, a renda corrigida e os totais', () => {
     const { metaMes, resumo, meses } = simularAposentadoria({ ...base });
-    const taxaMensal = calcularTaxaMensal('rf', 10, 0.8);
+    const taxaMensal = calcularTaxaMensal('rf', 10, 0);
 
     expect(resumo.tempoMeses).toBe(metaMes);
     expect(resumo.tempoFormatado).toBe('18 anos e 10 meses');
     expect(resumo.rendaNaMeta).toBeCloseTo(1000, 8); // inflação zerada
-    expect(resumo.totalAportado).toBeCloseTo(200 * metaMes, 8);
+    // Com a regra: se aporteMensal < salarioAtual, continua aportando até o fim do horizonte
+    expect(resumo.totalAportado).toBeCloseTo(200 * 480, 8);
     expect(resumo.patrimonioNecessario).toBe(meses[metaMes].patrimonio);
-    expect(resumo.totalRendimento).toBeCloseTo(resumo.patrimonioNecessario - resumo.totalAportado, 8);
-    expect(resumo.totalRendimento).toBeGreaterThan(0);
-    expect(resumo.rendaMensalSacada).toBeCloseTo(resumo.patrimonioNecessario * taxaMensal, 8);
+    expect(resumo.patrimonioFinalPlano).toBe(meses[meses.length - 1].plano);
+    expect(resumo.rendaMensalSacada).toBeCloseTo(resumo.patrimonioFinalPlano * taxaMensal, 8);
     expect(resumo.rendaMensalSacada).toBeGreaterThanOrEqual(resumo.rendaNaMeta);
-    expect(resumo.patrimonioFinalPlano).toBe(resumo.patrimonioNecessario);
   });
 
   it('corrige a renda pretendida pela inflação (3% a.a. em 12 meses = 3%)', () => {
@@ -126,23 +109,18 @@ describe('meta de aposentadoria', () => {
 });
 
 describe('plano de aposentadoria após a meta', () => {
-  it('o patrimônio do plano fica CONSTANTE a partir do mês da meta (rendimento sacado)', () => {
+  it('se aporteMensal < salarioAtual, continua aportando após a meta (linha do plano cresce)', () => {
     const { metaMes, resumo, meses } = simularAposentadoria({ ...base });
     expect(meses[metaMes].plano).toBe(meses[metaMes].patrimonio);
 
-    const depoisDaMeta = meses.slice(metaMes + 1);
-    expect(depoisDaMeta.length).toBeGreaterThan(0);
-    depoisDaMeta.forEach(({ plano }) => {
-      expect(plano).toBe(resumo.patrimonioNecessario); // linha horizontal exata
-    });
+    expect(meses[metaMes + 1].plano).toBeGreaterThan(meses[metaMes].plano);
+    expect(resumo.patrimonioFinalPlano).toBe(meses[meses.length - 1].plano);
   });
 
   it('a linha "com rendimentos" continua acumulando com aportes até o fim do horizonte', () => {
-    const { metaMes, resumo, meses } = simularAposentadoria({ ...base });
+    const { metaMes, meses } = simularAposentadoria({ ...base });
     const ultimo = meses[meses.length - 1];
-    expect(ultimo.patrimonio).toBeGreaterThan(resumo.patrimonioNecessario);
-    expect(ultimo.plano).toBe(resumo.patrimonioNecessario);
-    // após a meta a linha B segue crescendo mês a mês
+    expect(ultimo.patrimonio).toBeGreaterThan(meses[metaMes].patrimonio);
     expect(meses[metaMes + 1].patrimonio).toBeGreaterThan(meses[metaMes].patrimonio);
   });
 });

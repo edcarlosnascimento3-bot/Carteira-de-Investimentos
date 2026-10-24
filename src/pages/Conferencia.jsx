@@ -12,7 +12,7 @@ import {
   ReferenceDot,
 } from 'recharts';
 import { formatCurrency } from '../services/format';
-import { simularAposentadoria } from '../utils/simuladoAposentadoria';
+import { calcularAporteNecessario, simularAposentadoria } from '../utils/simuladoAposentadoria';
 
 const inputStyle = {
   background: 'var(--surface-dark)',
@@ -86,15 +86,34 @@ function CardResultado({ label, valor, detalhe, cor }) {
 }
 
 function Conferencia() {
+  const [modoCalculo, setModoCalculo] = useState('tempo'); // 'tempo' | 'aporte'
   const [salarioAtual, setSalarioAtual] = useState('5000');
   const [salarioPretendido, setSalarioPretendido] = useState('4000');
   const [inflacaoAnual, setInflacaoAnual] = useState('3');
   const [aporteMensal, setAporteMensal] = useState('1000');
   const [aporteInicial, setAporteInicial] = useState('0');
-  const [modalidade, setModalidade] = useState('rf');
   const [taxaJurosAnual, setTaxaJurosAnual] = useState('10');
-  const [rendimentoMensalPct, setRendimentoMensalPct] = useState('0.8');
   const [horizonteAnos, setHorizonteAnos] = useState('40');
+  const [tempoDesejadoAnos, setTempoDesejadoAnos] = useState('25');
+
+  const aporteNecessarioCalc = useMemo(() => {
+    if (modoCalculo !== 'aporte') return null;
+    return calcularAporteNecessario({
+      salarioAtual: numero(salarioAtual),
+      salarioPretendido: numero(salarioPretendido),
+      inflacaoAnual: numero(inflacaoAnual),
+      aporteInicial: numero(aporteInicial),
+      taxaJurosAnual: numero(taxaJurosAnual),
+      tempoDesejadoAnos: numero(tempoDesejadoAnos, 0),
+    });
+  }, [modoCalculo, salarioAtual, salarioPretendido, inflacaoAnual, aporteInicial, taxaJurosAnual, tempoDesejadoAnos]);
+
+  const aporteParaSimulacao = useMemo(() => {
+    if (modoCalculo === 'aporte') {
+      return aporteNecessarioCalc?.aporteMensalNecessario != null ? aporteNecessarioCalc.aporteMensalNecessario : 0;
+    }
+    return numero(aporteMensal);
+  }, [modoCalculo, aporteNecessarioCalc, aporteMensal]);
 
   const sim = useMemo(
     () =>
@@ -102,14 +121,12 @@ function Conferencia() {
         salarioAtual: numero(salarioAtual),
         salarioPretendido: numero(salarioPretendido),
         inflacaoAnual: numero(inflacaoAnual),
-        aporteMensal: numero(aporteMensal),
+        aporteMensal: aporteParaSimulacao,
         aporteInicial: numero(aporteInicial),
-        modalidade,
         taxaJurosAnual: numero(taxaJurosAnual),
-        rendimentoMensalPct: numero(rendimentoMensalPct),
-        horizonteAnos: numero(horizonteAnos, 40) || 40,
+        horizonteAnos: modoCalculo === 'aporte' ? numero(tempoDesejadoAnos, 0) || 40 : numero(horizonteAnos, 40) || 40,
       }),
-    [salarioAtual, salarioPretendido, inflacaoAnual, aporteMensal, aporteInicial, modalidade, taxaJurosAnual, rendimentoMensalPct, horizonteAnos]
+    [salarioAtual, salarioPretendido, inflacaoAnual, aporteParaSimulacao, aporteInicial, taxaJurosAnual, horizonteAnos, modoCalculo, tempoDesejadoAnos]
   );
 
   const { meses, metaMes, resumo } = sim;
@@ -126,18 +143,18 @@ function Conferencia() {
 
   const pontoMeta = metaMes != null && metaMes <= limite ? meses[metaMes] : null;
 
-  const aporteNum = numero(aporteMensal);
+  const aporteNum = modoCalculo === 'aporte' ? (aporteNecessarioCalc?.aporteMensalNecessario || 0) : numero(aporteMensal);
   const salarioAtualNum = numero(salarioAtual);
   const pctDoSalario =
     salarioAtualNum > 0 && aporteNum > 0 ? `${Math.round((aporteNum / salarioAtualNum) * 100)}% do salário atual` : null;
 
-  const botaoModalidade = (chave, texto) => {
-    const ativo = modalidade === chave;
+  const botaoModo = (chave, texto) => {
+    const ativo = modoCalculo === chave;
     return (
       <button
         key={chave}
         type="button"
-        onClick={() => setModalidade(chave)}
+        onClick={() => setModoCalculo(chave)}
         style={{
           flex: 1,
           cursor: 'pointer',
@@ -160,7 +177,20 @@ function Conferencia() {
   return (
     <div>
       <h1>Simulado</h1>
-      <p className="subtitle">Descubra quanto tempo falta para sua aposentadoria</p>
+      <p className="subtitle">Descubra quanto tempo falta para sua aposentadoria ou quanto precisa aportar</p>
+
+      {/* Modo de cálculo */}
+      <div
+        style={{
+          display: 'flex',
+          gap: 8,
+          marginBottom: 16,
+          maxWidth: 520,
+        }}
+      >
+        {botaoModo('tempo', 'Descobrir tempo')}
+        {botaoModo('aporte', 'Descobrir aporte necessário')}
+      </div>
 
       {/* Parâmetros do simulado — cálculo ao vivo, sem botão */}
       <div
@@ -211,20 +241,44 @@ function Conferencia() {
           />
         </label>
 
-        <label style={labelStyle}>
-          Aporte mensal
-          <input
-            type="number"
-            step="any"
-            min="0"
-            value={aporteMensal}
-            onChange={(e) => setAporteMensal(e.target.value)}
-            style={inputStyle}
-          />
-          {pctDoSalario ? (
-            <span style={{ fontSize: '0.72em', color: 'var(--text-faint)', fontWeight: 400 }}>{pctDoSalario}</span>
-          ) : null}
-        </label>
+        {modoCalculo === 'tempo' ? (
+          <label style={labelStyle}>
+            Aporte mensal
+            <input
+              type="number"
+              step="any"
+              min="0"
+              value={aporteMensal}
+              onChange={(e) => setAporteMensal(e.target.value)}
+              style={inputStyle}
+            />
+            {pctDoSalario ? (
+              <span style={{ fontSize: '0.72em', color: 'var(--text-faint)', fontWeight: 400 }}>{pctDoSalario}</span>
+            ) : null}
+          </label>
+        ) : (
+          <div style={{ ...labelStyle }}>
+            <span>Aporte mensal necessário</span>
+            <div
+              style={{
+                ...inputStyle,
+                background: 'var(--surface)',
+                color: '#C8B800',
+                fontWeight: 700,
+                display: 'flex',
+                alignItems: 'center',
+                minHeight: 38,
+              }}
+            >
+              {aporteNecessarioCalc?.aporteMensalNecessario != null ? formatCurrency(aporteNecessarioCalc.aporteMensalNecessario) : '—'}
+            </div>
+            {aporteNecessarioCalc?.aporteMensalNecessario != null && pctDoSalario ? (
+              <span style={{ fontSize: '0.72em', color: 'var(--text-faint)', fontWeight: 400 }}>{pctDoSalario}</span>
+            ) : aporteNecessarioCalc?.mensagem ? (
+              <span style={{ fontSize: '0.72em', color: '#FF5555', fontWeight: 400 }}>{aporteNecessarioCalc.mensagem}</span>
+            ) : null}
+          </div>
+        )}
 
         <label style={labelStyle}>
           Aporte inicial
@@ -238,51 +292,43 @@ function Conferencia() {
           />
         </label>
 
-        <div style={{ ...labelStyle, justifyContent: 'flex-start' }}>
-          <span>Modalidade</span>
-          <div style={{ display: 'flex', gap: 6 }}>
-            {botaoModalidade('rf', 'Renda Fixa')}
-            {botaoModalidade('fii', 'FII')}
-          </div>
-        </div>
+        <label style={labelStyle}>
+          Taxa de juros contratada (% a.a.) - Renda Fixa
+          <input
+            type="number"
+            step="any"
+            min="0"
+            value={taxaJurosAnual}
+            onChange={(e) => setTaxaJurosAnual(e.target.value)}
+            style={inputStyle}
+          />
+        </label>
 
-        {modalidade === 'rf' ? (
+        {modoCalculo === 'tempo' ? (
           <label style={labelStyle}>
-            Taxa de juros contratada (% a.a.)
+            Horizonte máximo (anos)
             <input
               type="number"
-              step="any"
-              min="0"
-              value={taxaJurosAnual}
-              onChange={(e) => setTaxaJurosAnual(e.target.value)}
+              step="1"
+              min="1"
+              value={horizonteAnos}
+              onChange={(e) => setHorizonteAnos(e.target.value)}
               style={inputStyle}
             />
           </label>
         ) : (
           <label style={labelStyle}>
-            Rendimento mensal (% a.m.)
+            Tempo desejado para se aposentar (anos inteiros)
             <input
               type="number"
-              step="any"
-              min="0"
-              value={rendimentoMensalPct}
-              onChange={(e) => setRendimentoMensalPct(e.target.value)}
+              step="1"
+              min="1"
+              value={tempoDesejadoAnos}
+              onChange={(e) => setTempoDesejadoAnos(e.target.value)}
               style={inputStyle}
             />
           </label>
         )}
-
-        <label style={labelStyle}>
-          Horizonte máximo (anos)
-          <input
-            type="number"
-            step="1"
-            min="1"
-            value={horizonteAnos}
-            onChange={(e) => setHorizonteAnos(e.target.value)}
-            style={inputStyle}
-          />
-        </label>
       </div>
 
       {/* Resultados */}
@@ -295,13 +341,15 @@ function Conferencia() {
         }}
       >
         <CardResultado
-          label="Tempo necessário"
-          valor={resumo.tempoFormatado || 'Meta não atingida'}
-          cor={resumo.tempoFormatado ? 'var(--text)' : '#FF5555'}
+          label={modoCalculo === 'tempo' ? 'Tempo necessário' : 'Tempo informado'}
+          valor={modoCalculo === 'tempo' ? (resumo.tempoFormatado || 'Meta não atingida') : `${numero(tempoDesejadoAnos, 0)} anos`}
+          cor={modoCalculo === 'tempo' ? (resumo.tempoFormatado ? 'var(--text)' : '#FF5555') : 'var(--text)'}
           detalhe={
             resumo.tempoMeses != null
               ? `Mês ${resumo.tempoMeses} — Ano ${Math.floor(resumo.tempoMeses / 12)}`
-              : `Não atingida em até ${numero(horizonteAnos, 40) || 40} anos`
+              : modoCalculo === 'tempo'
+                ? `Não atingida em até ${numero(horizonteAnos, 40) || 40} anos`
+                : `Baseado em ${numero(tempoDesejadoAnos, 0)} anos inteiros`
           }
         />
         <CardResultado
@@ -324,17 +372,33 @@ function Conferencia() {
           }
         />
         <CardResultado
-          label="Total aportado"
+          label={numero(salarioAtual) > 0 && aporteNum > 0 && aporteNum < numero(salarioAtual) ? 'Total aportado até fim do horizonte' : 'Total aportado até meta'}
           valor={resumo.totalAportado != null ? formatCurrency(resumo.totalAportado) : '—'}
           detalhe={
             resumo.patrimonioFinalPlano != null
-              ? `Patrimônio parado no plano: ${formatCurrency(resumo.patrimonioFinalPlano)}`
+              ? numero(salarioAtual) > 0 && aporteNum > 0 && aporteNum < numero(salarioAtual)
+                ? `Patrimônio final (continuando aportes): ${formatCurrency(resumo.patrimonioFinalPlano)}`
+                : `Patrimônio parado no plano: ${formatCurrency(resumo.patrimonioFinalPlano)}`
               : null
           }
         />
       </div>
 
-      {metaMes == null ? (
+      <div
+        style={{
+          background: 'rgba(200, 184, 0, 0.08)',
+          border: '1px solid #C8B80066',
+          borderRadius: 8,
+          padding: '8px 12px',
+          color: 'var(--text-soft)',
+          fontSize: '0.8em',
+          marginBottom: 12,
+        }}
+      >
+        Regra aplicada: se o aporte mensal for menor que o salário atual, os aportes continuam mesmo após atingir a meta.
+      </div>
+
+      {modoCalculo === 'tempo' && metaMes == null ? (
         <div
           style={{
             background: 'rgba(255, 85, 85, 0.08)',
@@ -349,7 +413,7 @@ function Conferencia() {
           ⚠️ Meta não atingida no horizonte. Aumente o aporte mensal, reduza a renda pretendida ou estenda o
           horizonte máximo.
         </div>
-      ) : (
+      ) : modoCalculo === 'tempo' && metaMes != null ? (
         <div
           style={{
             background: 'rgba(0, 204, 102, 0.08)',
@@ -364,7 +428,35 @@ function Conferencia() {
           🎯 Aposentadoria atingida em {resumo.tempoFormatado} (mês {resumo.tempoMeses} — Ano{' '}
           {Math.floor(resumo.tempoMeses / 12)}) com patrimônio de {formatCurrency(resumo.patrimonioNecessario)}.
         </div>
-      )}
+      ) : modoCalculo === 'aporte' && aporteNecessarioCalc?.atingivel === false ? (
+        <div
+          style={{
+            background: 'rgba(255, 85, 85, 0.08)',
+            border: '1px solid #FF5555',
+            borderRadius: 8,
+            padding: '10px 14px',
+            color: '#FF5555',
+            fontSize: '0.9em',
+            marginBottom: 16,
+          }}
+        >
+          ⚠️ {aporteNecessarioCalc.mensagem}
+        </div>
+      ) : modoCalculo === 'aporte' && aporteNecessarioCalc?.atingivel === true ? (
+        <div
+          style={{
+            background: 'rgba(0, 204, 102, 0.08)',
+            border: '1px solid #00CC66',
+            borderRadius: 8,
+            padding: '10px 14px',
+            color: '#00CC66',
+            fontSize: '0.9em',
+            marginBottom: 16,
+          }}
+        >
+          ✅ Para se aposentar em {numero(tempoDesejadoAnos, 0)} anos inteiros, você precisa aportar aproximadamente {formatCurrency(aporteNecessarioCalc.aporteMensalNecessario)} por mês.
+        </div>
+      ) : null}
 
       {/* Gráfico */}
       <div
