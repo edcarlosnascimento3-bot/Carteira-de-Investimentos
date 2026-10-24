@@ -154,10 +154,13 @@ function Principal() {
     const minPreco = precos.length > 0 ? Math.min(...precos) : null;
 
     const provList = proventos.filter(p => p.ticker === selectedTicker);
-    const divsPorCota = provList.map(p => {
-      const total = (p.dividendos || 0) + (p.jcp || 0) + (p.rendimento || 0) + (p.reembolso || 0);
-      return qtdTotal > 0 ? total / qtdTotal : 0;
-    }).filter(v => v > 0);
+    const divsPorCota = provList
+      .map(p => {
+        const total = (p.dividendos || 0) + (p.jcp || 0) + (p.rendimento || 0) + (p.reembolso || 0);
+        if (qtdTotal <= 0 || total <= 0) return null;
+        return total / qtdTotal;
+      })
+      .filter(v => typeof v === 'number' && v > 0);
     const maxDiv = divsPorCota.length > 0 ? Math.max(...divsPorCota) : null;
     const minDiv = divsPorCota.length > 0 ? Math.min(...divsPorCota) : null;
 
