@@ -302,6 +302,7 @@ function Relatorios() {
     setLoading1(true);
     setErro('');
     setAviso('');
+    setComparativo(null); // Limpa o resumo do comparativo existente
     try {
       const text = await readPdf(file);
       const ticker = extractTicker(text);
@@ -320,6 +321,7 @@ function Relatorios() {
     if (!file) return;
     setErro('');
     setAviso('');
+    setComparativo(null); // Limpa o resumo do comparativo existente
     if (!doc1) {
       setErro('Faça o upload do relatório do primeiro quadrante primeiro.');
       return;
@@ -565,7 +567,17 @@ function Relatorios() {
           </div>
           <label style={{ display: 'inline-block', padding: '6px 12px', background: '#0284C7', color: '#FFFFFF', borderRadius: 6, cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>
             {loading1 ? 'Lendo...' : 'Upload Relatório 1 (PDF)'}
-            <input type="file" accept="application/pdf" onChange={handleUpload1} style={{ display: 'none' }} />
+            <input
+              type="file"
+              accept="application/pdf"
+              onClick={(e) => {
+                e.target.value = null;
+                setComparativo(null);
+                setErro('');
+              }}
+              onChange={handleUpload1}
+              style={{ display: 'none' }}
+            />
           </label>
           {doc1 && (
             <div style={{ marginTop: 8, fontSize: 11, color: '#334155', display: 'flex', flexDirection: 'column', gap: 3 }}>
@@ -674,7 +686,18 @@ function Relatorios() {
           </div>
           <label style={{ display: 'inline-block', padding: '6px 12px', background: doc1 ? '#0284C7' : '#94A3B8', color: '#FFFFFF', borderRadius: 6, cursor: doc1 ? 'pointer' : 'not-allowed', fontSize: 12, fontWeight: 600 }}>
             {loading2 ? 'Lendo...' : 'Upload Relatório 2 (PDF)'}
-            <input type="file" accept="application/pdf" onChange={handleUpload2} style={{ display: 'none' }} disabled={!doc1} />
+            <input
+              type="file"
+              accept="application/pdf"
+              onClick={(e) => {
+                e.target.value = null;
+                setComparativo(null);
+                setErro('');
+              }}
+              onChange={handleUpload2}
+              style={{ display: 'none' }}
+              disabled={!doc1}
+            />
           </label>
           {doc2 && (
             <div style={{ marginTop: 8, fontSize: 11, color: '#334155', display: 'flex', flexDirection: 'column', gap: 3 }}>
