@@ -319,6 +319,10 @@ function Principal() {
                       <span className="info-value" style={{ color: accent, opacity: 0.9 }}>{asset.tipo.replace(/Fii/g, 'FII')}</span>
                     </div>
                     <div className="info-row">
+                      <span className="info-label">Investido</span>
+                      <span className="info-value">{formatCurrency(asset.investido)}</span>
+                    </div>
+                    <div className="info-row">
                       <span className="info-label">Atual</span>
                       <span className="info-value">{formatCurrency(asset.atual)}</span>
                     </div>
