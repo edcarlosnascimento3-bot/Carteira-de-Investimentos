@@ -84,27 +84,83 @@ async function readPdf(file) {
   return fullText;
 }
 
+function parseCurrencyBr(str) {
+  if (!str) return null;
+  // Remove "R$", espaços e pontos de milhar, troca vírgula por ponto
+  const clean = str.replace(/[R$\s]/g, '').replace(/\./g, '').replace(',', '.');
+  const num = parseFloat(clean);
+  return isNaN(num) ? null : num;
+}
+
+function parsePercentBr(str) {
+  if (!str) return null;
+  const clean = str.replace(/[%\s]/g, '').replace(',', '.');
+  const num = parseFloat(clean);
+  return isNaN(num) ? null : num;
+}
+
+function formatMoMVariation(val1, val2, isPercent = false) {
+  if (val1 === null || val2 === null || val1 === undefined || val2 === undefined) return null;
+  const diff = val2 - val1;
+  const pct = val1 !== 0 ? ((diff / Math.abs(val1)) * 100) : 0;
+  return {
+    diff,
+    pct,
+    formattedDiff: isPercent ? `${diff >= 0 ? '+' : ''}${diff.toFixed(2)} p.p.` : `${diff >= 0 ? '+R$ ' : '-R$ '}${Math.abs(diff).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+    formattedPct: `${pct >= 0 ? '+' : ''}${pct.toFixed(2)}%`,
+    direction: diff > 0 ? 'up' : diff < 0 ? 'down' : 'neutral'
+  };
+}
+
 function extractComparativeInfo(text) {
   const t = text || '';
+
+  // Extrações financeiras chave de relatórios gerenciais (FIIs e Ações)
+  const rendimentoMatch = t.match(/(?:dividendo(?:s)?|rendimento(?:s)?|provento(?:s)?|distribui[çc][ãa]o por cota)[^\d\n\r]*R?\$?\s*([0-9]+[.,][0-9]{2,4})/i);
+  const dyMatch = t.match(/(?:dividend yield|dy(?: anualizado)?)[^\d\n\r]*([0-9]+[.,][0-9]{1,2})\s*%/i);
+  const vpMatch = t.match(/(?:valor patrimonial(?: da cota|\/cota)?|vpc)[^\d\n\r]*R?\$?\s*([0-9]+[.,][0-9]{2})/i);
+  const pvpMatch = t.match(/(?:p\/vp|pre[çc]o \/ valor patrimonial)[^\d\n\r]*([0-9]+[.,][0-9]{2})/i);
+  const cotasMatch = t.match(/(?:número de cotas|total de cotas|cotas emitidas)[^\d\n\r]*([0-9]{1,3}(?:\.[0-9]{3})*)/i);
+  const plMatch = t.match(/(?:patrimônio líquido|pl total)[^\d\n\r]*R?\$?\s*([0-9.,]+(?:\s*(?:milh[õo]es|bilh[õo]es|m|bi))?)/i);
+  const cotistasMatch = t.match(/(?:número de cotistas|cotistas)[^\d\n\r]*([0-9]{1,3}(?:\.[0-9]{3})*)/i);
+  const vacanciaFisicaMatch = t.match(/(?:vacância física|vac\. física)[^\d\n\r]*([0-9]+[.,][0-9]{1,2})\s*%/i);
+  const vacanciaFinanMatch = t.match(/(?:vacância financeira|vac\. financeira)[^\d\n\r]*([0-9]+[.,][0-9]{1,2})\s*%/i);
+  const receitaMatch = t.match(/(?:receita total|receitas do mês|receita imobiliária)[^\d\n\r]*R?\$?\s*([0-9.,]+(?:\s*(?:milh[õo]es|m))?)/i);
+  const despesaMatch = t.match(/(?:despesas totais|despesas do mês|despesa operacional)[^\d\n\r]*R?\$?\s*([0-9.,]+(?:\s*(?:milh[õo]es|m))?)/i);
+  const resultadoMatch = t.match(/(?:resultado do mês|resultado líquido|lucro líquido)[^\d\n\r]*R?\$?\s*([0-9.,]+(?:\s*(?:milh[õo]es|m))?)/i);
+
   const info = {
-    cotas: [],
+    rendimentoCota: rendimentoMatch ? rendimentoMatch[1] : null,
+    dividendYield: dyMatch ? dyMatch[1] : null,
+    valorPatrimonial: vpMatch ? vpMatch[1] : null,
+    pvp: pvpMatch ? pvpMatch[1] : null,
+    totalCotas: cotasMatch ? cotasMatch[1] : null,
+    patrimonioLiquido: plMatch ? plMatch[1] : null,
+    numeroCotistas: cotistasMatch ? cotistasMatch[1] : null,
+    vacanciaFisica: vacanciaFisicaMatch ? vacanciaFisicaMatch[1] : null,
+    vacanciaFinanceira: vacanciaFinanMatch ? vacanciaFinanMatch[1] : null,
+    receitaTotal: receitaMatch ? receitaMatch[1] : null,
+    despesaTotal: despesaMatch ? despesaMatch[1] : null,
+    resultadoLiquido: resultadoMatch ? resultadoMatch[1] : null,
     compras: [],
     vendas: [],
     proventos: [],
-    movimentacoes: [],
-    dividas: [],
-    saldo: [],
-    bruto: t.match(/valor bruto[^0-9R$]*([R$\s\d.,]+)/i)?.[1] || null,
-    liquido: t.match(/valor líquido[^0-9R$]*([R$\s\d.,]+)/i)?.[1] || null,
+    destaques: []
   };
-  const cotasMatch = t.match(/(?:saldo|posição|cotas)[^\d]*([0-9.,]+)/i);
-  if (cotasMatch) info.cotas.push({ label: 'Cotas/Saldo', value: cotasMatch[1] });
-  const compraMatch = t.match(/compra[s]?[^\dR$]*([R$\s\d.,]+)/ig);
-  if (compraMatch) compraMatch.slice(0,5).forEach(m => info.compras.push(m.trim()));
-  const vendaMatch = t.match(/venda[s]?[^\dR$]*([R$\s\d.,]+)/ig);
-  if (vendaMatch) vendaMatch.slice(0,5).forEach(m => info.vendas.push(m.trim()));
-  const rendMatch = t.match(/(?:rendimento|dividend[oa]|jcp|provento)[^\dR$]*([R$\s\d.,]+)/ig);
-  if (rendMatch) rendMatch.slice(0,8).forEach(m => info.proventos.push(m.trim()));
+
+  // Movimentações e operações
+  const compraMatches = t.match(/(?:aquisição|compra|investimento)[^\.\n\r]{10,90}/gi);
+  if (compraMatches) info.compras = compraMatches.slice(0, 4).map(m => m.trim());
+
+  const vendaMatches = t.match(/(?:alienação|venda|desinvestimento)[^\.\n\r]{10,90}/gi);
+  if (vendaMatches) info.vendas = vendaMatches.slice(0, 4).map(m => m.trim());
+
+  const provMatches = t.match(/(?:rendimento|dividend[oa]|jcp|distribuição)[^\.\n\r]{10,80}/gi);
+  if (provMatches) info.proventos = provMatches.slice(0, 6).map(m => m.trim());
+
+  const destaquesMatches = t.match(/(?:destaque(?:s)?|comentário do gestor|cenário macro|locação)[^\.\n\r]{20,130}/gi);
+  if (destaquesMatches) info.destaques = destaquesMatches.slice(0, 4).map(m => m.trim());
+
   return info;
 }
 
@@ -159,7 +215,7 @@ function PdfCanvasPreview({ file, previewUrl }) {
 
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-      {loading && <span style={{ fontSize: 11, color: '#888' }}>Carregando visualização...</span>}
+      {loading && <span style={{ fontSize: 11, color: '#4A5568', fontWeight: 500 }}>Carregando visualização...</span>}
       <canvas
         ref={canvasRef}
         style={{
@@ -173,7 +229,7 @@ function PdfCanvasPreview({ file, previewUrl }) {
       {renderError && (
         <div style={{ textAlign: 'center', padding: 8 }}>
           <div style={{ fontSize: 24, marginBottom: 4 }}>📄</div>
-          <div style={{ fontSize: 11, color: '#666' }}>PDF Carregado</div>
+          <div style={{ fontSize: 11, color: '#2D3748', fontWeight: 600 }}>PDF Carregado</div>
         </div>
       )}
       {previewUrl && (
@@ -185,10 +241,11 @@ function PdfCanvasPreview({ file, previewUrl }) {
             position: 'absolute',
             bottom: 4,
             right: 4,
-            background: 'rgba(0,0,0,0.65)',
-            color: '#fff',
+            background: 'rgba(15,23,42,0.85)',
+            color: '#FFFFFF',
             fontSize: 10,
-            padding: '2px 6px',
+            fontWeight: 600,
+            padding: '2px 7px',
             borderRadius: 4,
             textDecoration: 'none'
           }}
@@ -271,53 +328,130 @@ function Relatorios() {
     }
     setComparando(true);
     setErro('');
-    const result = {
+
+    const d1 = doc1.info;
+    const d2 = doc2.info;
+
+    // Métricas técnicas MoM
+    const metricas = [
+      {
+        label: 'Rendimento por Cota',
+        val1: d1.rendimentoCota ? `R$ ${d1.rendimentoCota}` : '-',
+        val2: d2.rendimentoCota ? `R$ ${d2.rendimentoCota}` : '-',
+        mom: formatMoMVariation(parseCurrencyBr(d1.rendimentoCota), parseCurrencyBr(d2.rendimentoCota))
+      },
+      {
+        label: 'Dividend Yield (DY)',
+        val1: d1.dividendYield ? `${d1.dividendYield}%` : '-',
+        val2: d2.dividendYield ? `${d2.dividendYield}%` : '-',
+        mom: formatMoMVariation(parsePercentBr(d1.dividendYield), parsePercentBr(d2.dividendYield), true)
+      },
+      {
+        label: 'Valor Patrimonial (VP/Cota)',
+        val1: d1.valorPatrimonial ? `R$ ${d1.valorPatrimonial}` : '-',
+        val2: d2.valorPatrimonial ? `R$ ${d2.valorPatrimonial}` : '-',
+        mom: formatMoMVariation(parseCurrencyBr(d1.valorPatrimonial), parseCurrencyBr(d2.valorPatrimonial))
+      },
+      {
+        label: 'P/VP (Preço / VP)',
+        val1: d1.pvp || '-',
+        val2: d2.pvp || '-',
+        mom: formatMoMVariation(parsePercentBr(d1.pvp), parsePercentBr(d2.pvp))
+      },
+      {
+        label: 'Vacância Física',
+        val1: d1.vacanciaFisica ? `${d1.vacanciaFisica}%` : '-',
+        val2: d2.vacanciaFisica ? `${d2.vacanciaFisica}%` : '-',
+        mom: formatMoMVariation(parsePercentBr(d1.vacanciaFisica), parsePercentBr(d2.vacanciaFisica), true),
+        invertSentiment: true // Queda na vacância é positiva
+      },
+      {
+        label: 'Vacância Financeira',
+        val1: d1.vacanciaFinanceira ? `${d1.vacanciaFinanceira}%` : '-',
+        val2: d2.vacanciaFinanceira ? `${d2.vacanciaFinanceira}%` : '-',
+        mom: formatMoMVariation(parsePercentBr(d1.vacanciaFinanceira), parsePercentBr(d2.vacanciaFinanceira), true),
+        invertSentiment: true
+      },
+      {
+        label: 'Patrimônio Líquido',
+        val1: d1.patrimonioLiquido || '-',
+        val2: d2.patrimonioLiquido || '-',
+        mom: null
+      },
+      {
+        label: 'Base de Cotistas',
+        val1: d1.numeroCotistas || '-',
+        val2: d2.numeroCotistas || '-',
+        mom: formatMoMVariation(parsePercentBr(d1.numeroCotistas), parsePercentBr(d2.numeroCotistas))
+      }
+    ];
+
+    // Diagnóstico técnico automático
+    const avaliacoes = [];
+    const rDiff = formatMoMVariation(parseCurrencyBr(d1.rendimentoCota), parseCurrencyBr(d2.rendimentoCota));
+    if (rDiff) {
+      if (rDiff.diff > 0) {
+        avaliacoes.push(`Distribuição de Proventos: Alta de ${rDiff.formattedDiff} (${rDiff.formattedPct}) indicando expansão de caixa ou receitas extraordinárias.`);
+      } else if (rDiff.diff < 0) {
+        avaliacoes.push(`Distribuição de Proventos: Recuo de ${rDiff.formattedDiff} (${rDiff.formattedPct}). Avaliar se houve retenção de reservas ou impacto sazonal.`);
+      } else {
+        avaliacoes.push(`Distribuição de Proventos: Estabilidade mantida em relação ao mês anterior.`);
+      }
+    }
+
+    const vpDiff = formatMoMVariation(parseCurrencyBr(d1.valorPatrimonial), parseCurrencyBr(d2.valorPatrimonial));
+    if (vpDiff) {
+      if (vpDiff.diff > 0) {
+        avaliacoes.push(`Patrimônio por Cota: Valorização de ${vpDiff.formattedDiff} no valor patrimonial de um mês para o outro.`);
+      } else if (vpDiff.diff < 0) {
+        avaliacoes.push(`Patrimônio por Cota: Variação patrimonial negativa de ${vpDiff.formattedDiff} entre os períodos.`);
+      }
+    }
+
+    const vacDiff = formatMoMVariation(parsePercentBr(d1.vacanciaFisica), parsePercentBr(d2.vacanciaFisica), true);
+    if (vacDiff) {
+      if (vacDiff.diff < 0) {
+        avaliacoes.push(`Ocupação Imobiliária: Melhora operacional com queda na vacância física em ${Math.abs(vacDiff.diff).toFixed(2)} p.p.`);
+      } else if (vacDiff.diff > 0) {
+        avaliacoes.push(`Ocupação Imobiliária: Atenção para o aumento da vacância física de +${vacDiff.diff.toFixed(2)} p.p.`);
+      }
+    }
+
+    setComparativo({
       ativo: doc1.ticker || doc2.ticker,
       mes1: doc1.month,
       mes2: doc2.month,
       arquivo1: doc1.name,
       arquivo2: doc2.name,
-      doc1: doc1.info,
-      doc2: doc2.info,
-      observacoes: []
-    };
-    if (doc1.info.cotas?.[0]?.value && doc2.info.cotas?.[0]?.value) {
-      result.observacoes.push(`Variação de cotas/saldo: ${doc1.info.cotas[0].value} → ${doc2.info.cotas[0].value}`);
-    }
-    if (doc1.info.compras?.length || doc2.info.compras?.length) {
-      result.observacoes.push(`Compras: Mês 1: ${doc1.info.compras.length || 0} ocorrência(s) | Mês 2: ${doc2.info.compras.length || 0} ocorrência(s)`);
-    }
-    if (doc1.info.vendas?.length || doc2.info.vendas?.length) {
-      result.observacoes.push(`Vendas: Mês 1: ${doc1.info.vendas.length || 0} ocorrência(s) | Mês 2: ${doc2.info.vendas.length || 0} ocorrência(s)`);
-    }
-    if (doc1.info.proventos?.length || doc2.info.proventos?.length) {
-      result.observacoes.push(`Proventos/Rendimentos: Mês 1: ${doc1.info.proventos.length || 0} | Mês 2: ${doc2.info.proventos.length || 0}`);
-    }
-    setComparativo(result);
+      doc1: d1,
+      doc2: d2,
+      metricas,
+      avaliacoes
+    });
     setComparando(false);
   };
 
   return (
     <div style={{ padding: 20 }}>
-      <h2 style={{ marginBottom: 16 }}>Comparativo de Relatórios Gerenciais</h2>
+      <h2 style={{ marginBottom: 16, color: '#0F172A', fontWeight: 700 }}>Comparativo de Relatórios Gerenciais</h2>
 
-      {/* Quadrantes compactos: largura reduzida e altura proporcional */}
+      {/* Quadrantes compactos */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 320px))', gap: 16, marginBottom: 20, justifyContent: 'start' }}>
-        <div style={{ border: '1px solid var(--border, #ddd)', borderRadius: 8, padding: 12, background: 'var(--card-bg, #fff)' }}>
-          <h4 style={{ margin: '0 0 8px', fontSize: 13 }}>Relatório Mês 1</h4>
-          <div style={{ width: '100%', height: 130, border: '1px dashed var(--border, #ccc)', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', marginBottom: 8, background: '#f9f9f9' }}>
+        <div style={{ border: '1px solid #CBD5E1', borderRadius: 8, padding: 12, background: '#FFFFFF', boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}>
+          <h4 style={{ margin: '0 0 8px', fontSize: 13, color: '#1E293B', fontWeight: 600 }}>Relatório Mês 1</h4>
+          <div style={{ width: '100%', height: 130, border: '1px dashed #94A3B8', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', marginBottom: 8, background: '#F8FAFC' }}>
             {doc1?.file ? (
               <PdfCanvasPreview file={doc1.file} previewUrl={preview1} />
             ) : (
-              <span style={{ color: '#888', fontSize: 11 }}>Preview do PDF</span>
+              <span style={{ color: '#64748B', fontSize: 11, fontWeight: 500 }}>Preview do PDF</span>
             )}
           </div>
-          <label style={{ display: 'inline-block', padding: '6px 12px', background: 'var(--accent, #007bff)', color: '#fff', borderRadius: 6, cursor: 'pointer', fontSize: 12 }}>
+          <label style={{ display: 'inline-block', padding: '6px 12px', background: '#0284C7', color: '#FFFFFF', borderRadius: 6, cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>
             {loading1 ? 'Lendo...' : 'Upload Mês 1 (PDF)'}
             <input type="file" accept="application/pdf" onChange={handleUpload1} style={{ display: 'none' }} />
           </label>
           {doc1 && (
-            <div style={{ marginTop: 8, fontSize: 11, color: '#666', display: 'flex', flexDirection: 'column', gap: 3 }}>
+            <div style={{ marginTop: 8, fontSize: 11, color: '#334155', display: 'flex', flexDirection: 'column', gap: 3 }}>
               <div><b>Arquivo:</b> {doc1.name}</div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <b>Ativo:</b>
@@ -326,7 +460,7 @@ function Relatorios() {
                   value={doc1.ticker || ''}
                   onChange={(e) => setDoc1(prev => ({ ...prev, ticker: e.target.value.toUpperCase() }))}
                   placeholder="Ex: HGLG11"
-                  style={{ width: 80, padding: '2px 4px', fontSize: 11, border: '1px solid #ccc', borderRadius: 4 }}
+                  style={{ width: 85, padding: '2px 6px', fontSize: 11, border: '1px solid #94A3B8', borderRadius: 4, color: '#0F172A', background: '#FFFFFF', fontWeight: 600 }}
                 />
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -336,28 +470,28 @@ function Relatorios() {
                   value={doc1.month || ''}
                   onChange={(e) => setDoc1(prev => ({ ...prev, month: e.target.value }))}
                   placeholder="AAAA-MM"
-                  style={{ width: 80, padding: '2px 4px', fontSize: 11, border: '1px solid #ccc', borderRadius: 4 }}
+                  style={{ width: 85, padding: '2px 6px', fontSize: 11, border: '1px solid #94A3B8', borderRadius: 4, color: '#0F172A', background: '#FFFFFF', fontWeight: 600 }}
                 />
               </div>
             </div>
           )}
         </div>
 
-        <div style={{ border: '1px solid var(--border, #ddd)', borderRadius: 8, padding: 12, background: 'var(--card-bg, #fff)' }}>
-          <h4 style={{ margin: '0 0 8px', fontSize: 13 }}>Relatório Mês 2 (Posterior)</h4>
-          <div style={{ width: '100%', height: 130, border: '1px dashed var(--border, #ccc)', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', marginBottom: 8, background: '#f9f9f9' }}>
+        <div style={{ border: '1px solid #CBD5E1', borderRadius: 8, padding: 12, background: '#FFFFFF', boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}>
+          <h4 style={{ margin: '0 0 8px', fontSize: 13, color: '#1E293B', fontWeight: 600 }}>Relatório Mês 2 (Posterior)</h4>
+          <div style={{ width: '100%', height: 130, border: '1px dashed #94A3B8', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', marginBottom: 8, background: '#F8FAFC' }}>
             {doc2?.file ? (
               <PdfCanvasPreview file={doc2.file} previewUrl={preview2} />
             ) : (
-              <span style={{ color: '#888', fontSize: 11 }}>Preview do PDF</span>
+              <span style={{ color: '#64748B', fontSize: 11, fontWeight: 500 }}>Preview do PDF</span>
             )}
           </div>
-          <label style={{ display: 'inline-block', padding: '6px 12px', background: doc1 ? 'var(--accent, #007bff)' : '#999', color: '#fff', borderRadius: 6, cursor: doc1 ? 'pointer' : 'not-allowed', fontSize: 12 }}>
+          <label style={{ display: 'inline-block', padding: '6px 12px', background: doc1 ? '#0284C7' : '#94A3B8', color: '#FFFFFF', borderRadius: 6, cursor: doc1 ? 'pointer' : 'not-allowed', fontSize: 12, fontWeight: 600 }}>
             {loading2 ? 'Lendo...' : 'Upload Mês 2 (PDF)'}
             <input type="file" accept="application/pdf" onChange={handleUpload2} style={{ display: 'none' }} disabled={!doc1} />
           </label>
           {doc2 && (
-            <div style={{ marginTop: 8, fontSize: 11, color: '#666', display: 'flex', flexDirection: 'column', gap: 3 }}>
+            <div style={{ marginTop: 8, fontSize: 11, color: '#334155', display: 'flex', flexDirection: 'column', gap: 3 }}>
               <div><b>Arquivo:</b> {doc2.name}</div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <b>Ativo:</b>
@@ -366,7 +500,7 @@ function Relatorios() {
                   value={doc2.ticker || ''}
                   onChange={(e) => setDoc2(prev => ({ ...prev, ticker: e.target.value.toUpperCase() }))}
                   placeholder="Ex: HGLG11"
-                  style={{ width: 80, padding: '2px 4px', fontSize: 11, border: '1px solid #ccc', borderRadius: 4 }}
+                  style={{ width: 85, padding: '2px 6px', fontSize: 11, border: '1px solid #94A3B8', borderRadius: 4, color: '#0F172A', background: '#FFFFFF', fontWeight: 600 }}
                 />
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -376,7 +510,7 @@ function Relatorios() {
                   value={doc2.month || ''}
                   onChange={(e) => setDoc2(prev => ({ ...prev, month: e.target.value }))}
                   placeholder="AAAA-MM"
-                  style={{ width: 80, padding: '2px 4px', fontSize: 11, border: '1px solid #ccc', borderRadius: 4 }}
+                  style={{ width: 85, padding: '2px 6px', fontSize: 11, border: '1px solid #94A3B8', borderRadius: 4, color: '#0F172A', background: '#FFFFFF', fontWeight: 600 }}
                 />
               </div>
             </div>
@@ -384,58 +518,127 @@ function Relatorios() {
         </div>
       </div>
 
-      {erro && <div style={{ color: '#d33', marginBottom: 12, fontSize: 13, background: '#ffebee', padding: '8px 12px', borderRadius: 6 }}>{erro}</div>}
-      {aviso && <div style={{ color: '#856404', marginBottom: 12, fontSize: 13, background: '#fff3cd', padding: '8px 12px', borderRadius: 6, border: '1px solid #ffeeba' }}>{aviso}</div>}
+      {erro && <div style={{ color: '#991B1B', marginBottom: 12, fontSize: 13, background: '#FEE2E2', padding: '10px 14px', borderRadius: 6, fontWeight: 500, border: '1px solid #FCA5A5' }}>{erro}</div>}
+      {aviso && <div style={{ color: '#92400E', marginBottom: 12, fontSize: 13, background: '#FEF3C7', padding: '10px 14px', borderRadius: 6, border: '1px solid #FCD34D', fontWeight: 500 }}>{aviso}</div>}
 
-      <button onClick={ativarComparacao} disabled={!doc1 || !doc2 || comparando} style={{ padding: '8px 16px', background: doc1 && doc2 ? '#28a745' : '#999', color: '#fff', border: 'none', borderRadius: 6, cursor: doc1 && doc2 ? 'pointer' : 'not-allowed', marginBottom: 18, fontWeight: 600, fontSize: 13 }}>
-        {comparando ? 'Comparando...' : 'Ativar Comparação'}
+      <button onClick={ativarComparacao} disabled={!doc1 || !doc2 || comparando} style={{ padding: '9px 18px', background: doc1 && doc2 ? '#16A34A' : '#94A3B8', color: '#FFFFFF', border: 'none', borderRadius: 6, cursor: doc1 && doc2 ? 'pointer' : 'not-allowed', marginBottom: 20, fontWeight: 700, fontSize: 13, boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
+        {comparando ? 'Analisando e Comparando...' : 'Ativar Comparação Técnica'}
       </button>
 
       {comparativo && (
-        <div style={{ border: '1px solid var(--border, #ddd)', borderRadius: 8, padding: 18, background: 'var(--card-bg, #fff)' }}>
-          <h3 style={{ margin: '0 0 12px' }}>Comparativo entre relatórios</h3>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
-            <div style={{ background: '#f7f7f7', padding: 12, borderRadius: 6 }}>
-              <div style={{ fontWeight: 600, marginBottom: 6 }}>Mês 1 ({comparativo.mes1 || '-'}) - {comparativo.arquivo1}</div>
-              <div style={{ fontSize: 12 }}>Ativo: {comparativo.ativo || '-'}</div>
-              <div style={{ fontSize: 12, marginTop: 6 }}><b>Compras encontradas:</b> {comparativo.doc1.compras.length}</div>
-              <div style={{ fontSize: 12 }}><b>Vendas encontradas:</b> {comparativo.doc1.vendas.length}</div>
-              <div style={{ fontSize: 12 }}><b>Proventos:</b> {comparativo.doc1.proventos.length}</div>
-            </div>
-            <div style={{ background: '#f7f7f7', padding: 12, borderRadius: 6 }}>
-              <div style={{ fontWeight: 600, marginBottom: 6 }}>Mês 2 ({comparativo.mes2 || '-'}) - {comparativo.arquivo2}</div>
-              <div style={{ fontSize: 12 }}>Ativo: {comparativo.ativo || '-'}</div>
-              <div style={{ fontSize: 12, marginTop: 6 }}><b>Compras encontradas:</b> {comparativo.doc2.compras.length}</div>
-              <div style={{ fontSize: 12 }}><b>Vendas encontradas:</b> {comparativo.doc2.vendas.length}</div>
-              <div style={{ fontSize: 12 }}><b>Proventos:</b> {comparativo.doc2.proventos.length}</div>
-            </div>
-          </div>
-
-          <div style={{ marginBottom: 14 }}>
-            <h4 style={{ margin: '0 0 8px' }}>Comparativo detalhado</h4>
-            {comparativo.observacoes.map((o, idx) => (
-              <div key={idx} style={{ padding: '6px 10px', background: '#eef6ff', borderRadius: 4, marginBottom: 6, fontSize: 13 }}>• {o}</div>
-            ))}
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+        <div style={{ border: '1px solid #CBD5E1', borderRadius: 8, padding: 20, background: '#FFFFFF', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
+          {/* Cabeçalho do Comparativo */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #E2E8F0', paddingBottom: 12, marginBottom: 16 }}>
             <div>
-              <h5 style={{ margin: '0 0 6px' }}>Compras/Vendas - Mês 1</h5>
-              {[...comparativo.doc1.compras, ...comparativo.doc1.vendas].map((c, i) => <div key={i} style={{ fontSize: 12, padding: '4px 6px', borderBottom: '1px solid #eee' }}>{c}</div>)}
-              {comparativo.doc1.compras.length === 0 && comparativo.doc1.vendas.length === 0 && <div style={{ fontSize: 12, color: '#888' }}>Nenhuma movimentação identificada</div>}
+              <h3 style={{ margin: 0, color: '#0F172A', fontSize: 18, fontWeight: 700 }}>
+                Comparativo MoM — {comparativo.ativo || 'Ativo'}
+              </h3>
+              <span style={{ fontSize: 12, color: '#475569', fontWeight: 500 }}>
+                {comparativo.mes1 || 'Mês 1'} ({comparativo.arquivo1}) vs {comparativo.mes2 || 'Mês 2'} ({comparativo.arquivo2})
+              </span>
             </div>
-            <div>
-              <h5 style={{ margin: '0 0 6px' }}>Compras/Vendas - Mês 2</h5>
-              {[...comparativo.doc2.compras, ...comparativo.doc2.vendas].map((c, i) => <div key={i} style={{ fontSize: 12, padding: '4px 6px', borderBottom: '1px solid #eee' }}>{c}</div>)}
-              {comparativo.doc2.compras.length === 0 && comparativo.doc2.vendas.length === 0 && <div style={{ fontSize: 12, color: '#888' }}>Nenhuma movimentação identificada</div>}
+            <div style={{ background: '#F1F5F9', padding: '6px 12px', borderRadius: 6, fontSize: 12, color: '#0F172A', fontWeight: 600, border: '1px solid #CBD5E1' }}>
+              Competência: {comparativo.mes1 || '-'} → {comparativo.mes2 || '-'}
             </div>
           </div>
 
-          <div style={{ marginTop: 14 }}>
-            <h5 style={{ margin: '0 0 6px' }}>Proventos/Rendimentos</h5>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-              <div>{comparativo.doc1.proventos.map((p, i) => <div key={i} style={{ fontSize: 12, padding: '4px 6px', borderBottom: '1px solid #eee' }}>{p}</div>) || <div style={{ fontSize: 12, color: '#888' }}>-</div>}</div>
-              <div>{comparativo.doc2.proventos.map((p, i) => <div key={i} style={{ fontSize: 12, padding: '4px 6px', borderBottom: '1px solid #eee' }}>{p}</div>) || <div style={{ fontSize: 12, color: '#888' }}>-</div>}</div>
+          {/* Tabela Técnica de Métricas MoM */}
+          <div style={{ marginBottom: 20, overflowX: 'auto' }}>
+            <h4 style={{ margin: '0 0 10px', fontSize: 14, color: '#0F172A', fontWeight: 700 }}>
+              📊 Indicadores Financeiros e Operacionais (Mês a Mês)
+            </h4>
+            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: 13 }}>
+              <thead>
+                <tr style={{ background: '#F1F5F9', borderBottom: '2px solid #CBD5E1', color: '#0F172A' }}>
+                  <th style={{ padding: '10px 12px', fontWeight: 700 }}>Indicador Chave</th>
+                  <th style={{ padding: '10px 12px', fontWeight: 700 }}>Mês 1 ({comparativo.mes1 || '-'})</th>
+                  <th style={{ padding: '10px 12px', fontWeight: 700 }}>Mês 2 ({comparativo.mes2 || '-'})</th>
+                  <th style={{ padding: '10px 12px', fontWeight: 700 }}>Variação Nominal</th>
+                  <th style={{ padding: '10px 12px', fontWeight: 700 }}>Variação % (MoM)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {comparativo.metricas.map((m, idx) => {
+                  const hasMom = !!m.mom;
+                  const isUp = m.mom?.direction === 'up';
+                  const isDown = m.mom?.direction === 'down';
+                  const isGood = m.invertSentiment ? isDown : isUp;
+                  const isBad = m.invertSentiment ? isUp : isDown;
+                  const badgeColor = isGood ? '#15803D' : isBad ? '#B91C1C' : '#475569';
+                  const badgeBg = isGood ? '#DCFCE7' : isBad ? '#FEE2E2' : '#F1F5F9';
+
+                  return (
+                    <tr key={idx} style={{ borderBottom: '1px solid #E2E8F0', background: idx % 2 === 0 ? '#FFFFFF' : '#F8FAFC' }}>
+                      <td style={{ padding: '10px 12px', fontWeight: 600, color: '#1E293B' }}>{m.label}</td>
+                      <td style={{ padding: '10px 12px', color: '#334155', fontWeight: 500 }}>{m.val1}</td>
+                      <td style={{ padding: '10px 12px', color: '#0F172A', fontWeight: 700 }}>{m.val2}</td>
+                      <td style={{ padding: '10px 12px', color: hasMom ? badgeColor : '#64748B', fontWeight: 600 }}>
+                        {hasMom ? m.mom.formattedDiff : '-'}
+                      </td>
+                      <td style={{ padding: '10px 12px' }}>
+                        {hasMom ? (
+                          <span style={{ background: badgeBg, color: badgeColor, padding: '3px 8px', borderRadius: 4, fontWeight: 700, fontSize: 12 }}>
+                            {m.mom.formattedPct}
+                          </span>
+                        ) : (
+                          <span style={{ color: '#94A3B8' }}>-</span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Avaliação Técnica Sintética */}
+          <div style={{ marginBottom: 20, background: '#F8FAFC', border: '1px solid #CBD5E1', borderRadius: 8, padding: 14 }}>
+            <h4 style={{ margin: '0 0 10px', fontSize: 14, color: '#0F172A', fontWeight: 700 }}>
+              🧠 Avaliação Técnica e Diagnóstico de Performance
+            </h4>
+            {comparativo.avaliacoes.length > 0 ? (
+              comparativo.avaliacoes.map((av, idx) => (
+                <div key={idx} style={{ padding: '8px 12px', background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: 6, marginBottom: 8, fontSize: 13, color: '#0F172A', fontWeight: 500, lineHeight: 1.5 }}>
+                  📌 {av}
+                </div>
+              ))
+            ) : (
+              <div style={{ fontSize: 13, color: '#334155' }}>
+                Os relatórios apresentam métricas dentro do padrão. Verifique a tabela quantitativa acima para detalhamento numérico.
+              </div>
+            )}
+          </div>
+
+          {/* Eventos Operacionais: Compras, Vendas e Atos Relevantes */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+            <div style={{ border: '1px solid #E2E8F0', borderRadius: 8, padding: 12, background: '#F8FAFC' }}>
+              <h5 style={{ margin: '0 0 8px', fontSize: 13, color: '#0F172A', fontWeight: 700 }}>
+                🏢 Movimentações e Destaques — Mês 1 ({comparativo.mes1 || '-'})
+              </h5>
+              {comparativo.doc1.destaques?.length > 0 ? (
+                comparativo.doc1.destaques.map((d, i) => (
+                  <div key={i} style={{ fontSize: 12, color: '#1E293B', padding: '6px 8px', background: '#FFFFFF', borderRadius: 4, marginBottom: 6, border: '1px solid #E2E8F0', lineHeight: 1.4 }}>
+                    • {d}
+                  </div>
+                ))
+              ) : (
+                <div style={{ fontSize: 12, color: '#64748B' }}>Nenhum destaque textual identificado no período.</div>
+              )}
+            </div>
+
+            <div style={{ border: '1px solid #E2E8F0', borderRadius: 8, padding: 12, background: '#F8FAFC' }}>
+              <h5 style={{ margin: '0 0 8px', fontSize: 13, color: '#0F172A', fontWeight: 700 }}>
+                🏢 Movimentações e Destaques — Mês 2 ({comparativo.mes2 || '-'})
+              </h5>
+              {comparativo.doc2.destaques?.length > 0 ? (
+                comparativo.doc2.destaques.map((d, i) => (
+                  <div key={i} style={{ fontSize: 12, color: '#1E293B', padding: '6px 8px', background: '#FFFFFF', borderRadius: 4, marginBottom: 6, border: '1px solid #E2E8F0', lineHeight: 1.4 }}>
+                    • {d}
+                  </div>
+                ))
+              ) : (
+                <div style={{ fontSize: 12, color: '#64748B' }}>Nenhum destaque textual identificado no período.</div>
+              )}
             </div>
           </div>
         </div>
