@@ -156,35 +156,50 @@ function Principal() {
     const tipoAtivo = (asset?.tipo || transactions.find(t => t.ticker === selectedTicker)?.tipo || '').replace(/Fii/g, 'FII');
     const isFiiOrRf = tipoAtivo === 'FII' || tipoAtivo === 'Renda Fixa';
 
-    const getQtyOnDate = (dateStr) => {
-      if (!dateStr || !dateStr.includes('/')) return qtdTotal;
-      const dataRef = dateStr.split('/').reverse().join('');
-      let compras = 0;
-      let vendas = 0;
+    const getQtdAcumuladaMesAMes = (dateStr) => {
+      if (!dateStr || !dateStr.includes('/')) return null;
+      const partes = dateStr.split('/');
+      const pYear = Number(partes[2]);
+      const pMonth = Number(partes[1]);
+      const pKey = pYear * 100 + pMonth;
+
+      const monthMap = {};
       transactions.forEach((t) => {
-        if (t.ticker !== selectedTicker || !t.data) return;
-        const td = t.data.split('/').reverse().join('');
-        if (td > dataRef) return;
-        if (t.operacao === 'Compra') compras += t.quantidade || 0;
-        if (t.operacao === 'Venda') vendas += t.quantidade || 0;
+        if (t.ticker !== selectedTicker || !t.data || !t.data.includes('/')) return;
+        const tp = t.data.split('/');
+        const tYear = Number(tp[2]);
+        const tMonth = Number(tp[1]);
+        const tKey = tYear * 100 + tMonth;
+        if (tKey > pKey) return;
+        const mk = tYear + '-' + String(tMonth).padStart(2, '0');
+        if (!monthMap[mk]) monthMap[mk] = { key: tKey, net: 0 };
+        if (t.operacao === 'Compra') monthMap[mk].net += Number(t.quantidade) || 0;
+        if (t.operacao === 'Venda') monthMap[mk].net -= Number(t.quantidade) || 0;
       });
-      const qtd = compras - vendas;
-      return qtd > 0 ? qtd : qtdTotal;
+
+      let acum = 0;
+      Object.values(monthMap)
+        .sort((a, b) => a.key - b.key)
+        .forEach((m) => {
+          if (m.key <= pKey) acum += m.net || 0;
+        });
+
+      return acum > 0 ? acum : null;
     };
 
     const provList = proventos.filter(p => p.ticker === selectedTicker);
     const divsPorCota = provList
       .map(p => {
-        const qtyOnDate = getQtyOnDate(p.data);
-        if (qtyOnDate <= 0) return null;
+        const qtyAcum = getQtdAcumuladaMesAMes(p.data);
+        if (qtyAcum <= 0) return null;
         if (isFiiOrRf) {
-          const val = p.rendimento || 0;
+          const val = Number(p.rendimento) || 0;
           if (val <= 0) return null;
-          return val / qtyOnDate;
+          return val / qtyAcum;
         }
-        const total = (p.dividendos || 0) + (p.jcp || 0) + (p.rendimento || 0) + (p.reembolso || 0);
+        const total = (Number(p.dividendos) || 0) + (Number(p.jcp) || 0) + (Number(p.rendimento) || 0) + (Number(p.reembolso) || 0);
         if (total <= 0) return null;
-        return total / qtyOnDate;
+        return total / qtyAcum;
       })
       .filter(v => typeof v === 'number' && v > 0);
     const maxDiv = divsPorCota.length > 0 ? Math.max(...divsPorCota) : null;
