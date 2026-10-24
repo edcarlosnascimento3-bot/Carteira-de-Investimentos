@@ -1,312 +1,465 @@
-import { useState, useEffect, useMemo } from 'react';
-import { useTransactions } from '../context/TransactionsContext';
-import { useProventos } from '../context/ProventosContext';
-import { fetchBrapiDividends } from '../services/api';
+import { useMemo, useState } from 'react';
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ReferenceLine,
+  ReferenceDot,
+} from 'recharts';
 import { formatCurrency } from '../services/format';
+import { simularAposentadoria } from '../utils/simuladoAposentadoria';
 
-function groupByYear(arr) {
-  const map = {};
-  for (const item of arr) {
-    const y = item.year;
-    if (!map[y]) map[y] = [];
-    map[y].push(item);
-  }
-  return map;
-}
-
-const statusCores = {
-  ok: { bg: '#00CC6622', color: '#00CC66', label: 'OK' },
-  parcial: { bg: '#C8B80022', color: '#C8B800', label: 'Parcial' },
-  faltando: { bg: '#FF555522', color: '#FF5555', label: 'Faltando' },
-  pendente: { bg: '#88888822', color: 'var(--text-faint)', label: 'Pendente' },
+const inputStyle = {
+  background: 'var(--surface-dark)',
+  border: '1px solid #C8B800AA',
+  borderRadius: 8,
+  padding: '8px 14px',
+  color: 'var(--text)',
+  fontFamily: 'inherit',
+  fontSize: '0.95em',
+  outline: 'none',
+  width: '100%',
+  boxSizing: 'border-box',
 };
 
+const labelStyle = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 6,
+  fontSize: '0.8em',
+  fontWeight: 600,
+  color: 'var(--text-soft)',
+};
+
+const cardStyle = {
+  background: 'var(--surface)',
+  border: '1px solid var(--border)',
+  borderRadius: 12,
+  padding: 16,
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 6,
+  minWidth: 170,
+};
+
+const tooltipStyle = {
+  background: 'var(--surface)',
+  border: '1px solid var(--border)',
+  borderRadius: 8,
+  fontSize: '0.85em',
+  color: 'var(--text)',
+};
+
+const compactoBR = new Intl.NumberFormat('pt-BR', { notation: 'compact', maximumFractionDigits: 1 });
+const formatarEixo = (v) => `R$ ${compactoBR.format(v)}`;
+
+const numero = (valor, padrao = 0) => {
+  const n = parseFloat(valor);
+  return Number.isFinite(n) ? n : padrao;
+};
+
+function CardResultado({ label, valor, detalhe, cor }) {
+  return (
+    <div className="card-stats" style={cardStyle}>
+      <div
+        className="stat-label"
+        style={{ fontSize: '0.72em', letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--text-faint)', fontWeight: 700 }}
+      >
+        {label}
+      </div>
+      <div
+        className="stat-value"
+        style={{ fontSize: '1.12em', fontWeight: 700, color: cor || 'var(--text)', lineHeight: 1.35, wordBreak: 'break-word' }}
+      >
+        {valor}
+      </div>
+      {detalhe ? (
+        <div style={{ fontSize: '0.74em', color: 'var(--text-faint)' }}>{detalhe}</div>
+      ) : null}
+    </div>
+  );
+}
+
 function Conferencia() {
-  const { transactions } = useTransactions();
-  const { proventos } = useProventos();
-  const [selectedTicker, setSelectedTicker] = useState('');
-  const [apiDividends, setApiDividends] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [sortBy, setSortBy] = useState('year');
+  const [salarioAtual, setSalarioAtual] = useState('5000');
+  const [salarioPretendido, setSalarioPretendido] = useState('4000');
+  const [inflacaoAnual, setInflacaoAnual] = useState('3');
+  const [aporteMensal, setAporteMensal] = useState('1000');
+  const [aporteInicial, setAporteInicial] = useState('0');
+  const [modalidade, setModalidade] = useState('rf');
+  const [taxaJurosAnual, setTaxaJurosAnual] = useState('10');
+  const [rendimentoMensalPct, setRendimentoMensalPct] = useState('0.8');
+  const [horizonteAnos, setHorizonteAnos] = useState('40');
 
-  const tickersCarteira = useMemo(() => {
-    return [...new Set(transactions.map(t => t.ticker))].sort();
-  }, [transactions]);
+  const sim = useMemo(
+    () =>
+      simularAposentadoria({
+        salarioAtual: numero(salarioAtual),
+        salarioPretendido: numero(salarioPretendido),
+        inflacaoAnual: numero(inflacaoAnual),
+        aporteMensal: numero(aporteMensal),
+        aporteInicial: numero(aporteInicial),
+        modalidade,
+        taxaJurosAnual: numero(taxaJurosAnual),
+        rendimentoMensalPct: numero(rendimentoMensalPct),
+        horizonteAnos: numero(horizonteAnos, 40) || 40,
+      }),
+    [salarioAtual, salarioPretendido, inflacaoAnual, aporteMensal, aporteInicial, modalidade, taxaJurosAnual, rendimentoMensalPct, horizonteAnos]
+  );
 
-  const userDividendsByTicker = useMemo(() => {
-    const map = {};
-    for (const p of proventos) {
-      const montante = (p.dividendos || 0) + (p.jcp || 0) + (p.rendimento || 0) + (p.reembolso || 0);
-      if (!map[p.ticker]) map[p.ticker] = [];
-      const parts = (p.data || '').split('/');
-      const year = parts.length === 3 ? parseInt(parts[2], 10) : new Date().getFullYear();
-      map[p.ticker].push({ ...p, year, montante });
-    }
-    return map;
-  }, [proventos]);
+  const { meses, metaMes, resumo } = sim;
 
-  const tiposValidos = ['Dividendo', 'JCP'];
+  // Trunca o gráfico: até a meta + 6 anos (ou o horizonte total, se a meta não existir).
+  const ultimoMes = meses.length > 0 ? meses[meses.length - 1].mes : 0;
+  const limite = metaMes != null ? Math.min(metaMes + 72, ultimoMes) : ultimoMes;
+  const dados = meses.slice(0, limite + 1);
 
-  useEffect(() => {
-    if (!selectedTicker) {
-      setApiDividends([]);
-      return;
-    }
-    let cancelled = false;
-    setLoading(true);
-    setError(null);
-    fetchBrapiDividends(selectedTicker).then(data => {
-      if (!cancelled) {
-        setApiDividends(data.filter(d => tiposValidos.includes(d.type)));
-        setLoading(false);
-      }
-    }).catch(err => {
-      if (!cancelled) {
-        setError(err.message);
-        setLoading(false);
-      }
-    });
-    return () => { cancelled = true; };
-  }, [selectedTicker]);
+  // Rótulos do eixo X em anos, com no máximo ~10 marcações.
+  const passoAnos = Math.max(1, Math.ceil((limite / 12) / 10));
+  const ticks = [];
+  for (let ano = 0; ano * 12 <= limite; ano += passoAnos) ticks.push(ano * 12);
 
-  const analysis = useMemo(() => {
-    if (!selectedTicker) return null;
-    const api = apiDividends;
-    const user = userDividendsByTicker[selectedTicker] || [];
+  const pontoMeta = metaMes != null && metaMes <= limite ? meses[metaMes] : null;
 
-    const apiByYear = groupByYear(api);
-    const userByYear = groupByYear(user);
+  const aporteNum = numero(aporteMensal);
+  const salarioAtualNum = numero(salarioAtual);
+  const pctDoSalario =
+    salarioAtualNum > 0 && aporteNum > 0 ? `${Math.round((aporteNum / salarioAtualNum) * 100)}% do salário atual` : null;
 
-    const allYears = [...new Set([
-      ...Object.keys(apiByYear).map(Number),
-      ...Object.keys(userByYear).map(Number),
-    ])].sort((a, b) => b - a);
-
-    const years = allYears.map(year => {
-      const apiTotal = (apiByYear[year] || []).reduce((s, d) => s + d.value, 0);
-      const userTotal = (userByYear[year] || []).reduce((s, d) => s + d.montante, 0);
-      const apiCount = (apiByYear[year] || []).length;
-      const userCount = (userByYear[year] || []).length;
-
-      let status;
-      if (apiTotal === 0 && userTotal === 0) status = 'ok';
-      else if (userTotal === 0 && apiTotal > 0) status = 'faltando';
-      else if (apiTotal === 0 && userTotal > 0) status = 'pendente';
-      else {
-        const diff = Math.abs(userTotal - apiTotal);
-        const ratio = diff / Math.max(apiTotal, 1);
-        if (ratio < 0.05) status = 'ok';
-        else status = 'parcial';
-      }
-
-      return { year, apiTotal, userTotal, apiCount, userCount, status };
-    });
-
-    const totalApi = api.reduce((s, d) => s + d.value, 0);
-    const totalUser = user.reduce((s, d) => s + d.montante, 0);
-
-    const totalStatus = totalApi === 0 && totalUser === 0 ? 'ok'
-      : totalUser === 0 && totalApi > 0 ? 'faltando'
-      : totalApi === 0 && totalUser > 0 ? 'pendente'
-      : Math.abs(totalUser - totalApi) / Math.max(totalApi, 1) < 0.05 ? 'ok'
-      : 'parcial';
-
-    return { years, totalApi, totalUser, totalStatus };
-  }, [selectedTicker, apiDividends, userDividendsByTicker]);
-
-  const sortedYears = useMemo(() => {
-    if (!analysis) return [];
-    const sorted = [...analysis.years];
-    if (sortBy === 'year') sorted.sort((a, b) => b.year - a.year);
-    else if (sortBy === 'diff') sorted.sort((a, b) => Math.abs(b.apiTotal - b.userTotal) - Math.abs(a.apiTotal - a.userTotal));
-    else if (sortBy === 'status') {
-      const ordem = { faltando: 0, parcial: 1, pendente: 2, ok: 3 };
-      sorted.sort((a, b) => (ordem[a.status] || 9) - (ordem[b.status] || 9));
-    }
-    return sorted;
-  }, [analysis, sortBy]);
+  const botaoModalidade = (chave, texto) => {
+    const ativo = modalidade === chave;
+    return (
+      <button
+        key={chave}
+        type="button"
+        onClick={() => setModalidade(chave)}
+        style={{
+          flex: 1,
+          cursor: 'pointer',
+          background: ativo ? '#C8B800' : 'var(--surface-dark)',
+          color: ativo ? '#121212' : 'var(--text)',
+          border: ativo ? '1px solid #C8B800' : '1px solid #C8B800AA',
+          borderRadius: 8,
+          padding: '8px 12px',
+          fontFamily: 'inherit',
+          fontSize: '0.85em',
+          fontWeight: ativo ? 700 : 500,
+          outline: 'none',
+        }}
+      >
+        {texto}
+      </button>
+    );
+  };
 
   return (
     <div>
-      <h1>Conferência de Dividendos</h1>
-      <p className="subtitle">
-        Compare os proventos registrados com o histórico oficial da B3 via brapi.dev
-      </p>
+      <h1>Simulado</h1>
+      <p className="subtitle">Descubra quanto tempo falta para sua aposentadoria</p>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24, flexWrap: 'wrap' }}>
-        <span style={{ color: 'var(--text-soft)', fontSize: '0.9em' }}>Selecione o ativo:</span>
-        <select
-          value={selectedTicker}
-          onChange={e => setSelectedTicker(e.target.value)}
-          style={{
-            background: 'var(--surface-dark)', color: 'var(--text)', border: '1px solid #C8B800AA',
-            borderRadius: 8, padding: '8px 14px', fontSize: '0.9em', fontFamily: 'inherit',
-            cursor: 'pointer', outline: 'none', minWidth: 160, textAlign: 'center',
-          }}
-        >
-          <option value="">Selecione...</option>
-          {tickersCarteira.map(t => (
-            <option key={t} value={t}>{t}</option>
-          ))}
-        </select>
+      {/* Parâmetros do simulado — cálculo ao vivo, sem botão */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))',
+          gap: 14,
+          background: 'var(--surface)',
+          border: '1px solid var(--border)',
+          borderRadius: 12,
+          padding: 18,
+          marginBottom: 18,
+        }}
+      >
+        <label style={labelStyle}>
+          Salário atual (mensal)
+          <input
+            type="number"
+            step="any"
+            min="0"
+            value={salarioAtual}
+            onChange={(e) => setSalarioAtual(e.target.value)}
+            style={inputStyle}
+          />
+        </label>
 
-        {loading && <span style={{ color: '#C8B800', fontSize: '0.85em' }}>Buscando dados...</span>}
-        {error && <span style={{ color: '#FF5555', fontSize: '0.85em' }}>Erro: {error}</span>}
+        <label style={labelStyle}>
+          Salário pretendido na aposentadoria (mensal)
+          <input
+            type="number"
+            step="any"
+            min="0"
+            value={salarioPretendido}
+            onChange={(e) => setSalarioPretendido(e.target.value)}
+            style={inputStyle}
+          />
+        </label>
+
+        <label style={labelStyle}>
+          Inflação anual conservadora (% a.a.)
+          <input
+            type="number"
+            step="any"
+            min="0"
+            value={inflacaoAnual}
+            onChange={(e) => setInflacaoAnual(e.target.value)}
+            style={inputStyle}
+          />
+        </label>
+
+        <label style={labelStyle}>
+          Aporte mensal
+          <input
+            type="number"
+            step="any"
+            min="0"
+            value={aporteMensal}
+            onChange={(e) => setAporteMensal(e.target.value)}
+            style={inputStyle}
+          />
+          {pctDoSalario ? (
+            <span style={{ fontSize: '0.72em', color: 'var(--text-faint)', fontWeight: 400 }}>{pctDoSalario}</span>
+          ) : null}
+        </label>
+
+        <label style={labelStyle}>
+          Aporte inicial
+          <input
+            type="number"
+            step="any"
+            min="0"
+            value={aporteInicial}
+            onChange={(e) => setAporteInicial(e.target.value)}
+            style={inputStyle}
+          />
+        </label>
+
+        <div style={{ ...labelStyle, justifyContent: 'flex-start' }}>
+          <span>Modalidade</span>
+          <div style={{ display: 'flex', gap: 6 }}>
+            {botaoModalidade('rf', 'Renda Fixa')}
+            {botaoModalidade('fii', 'FII')}
+          </div>
+        </div>
+
+        {modalidade === 'rf' ? (
+          <label style={labelStyle}>
+            Taxa de juros contratada (% a.a.)
+            <input
+              type="number"
+              step="any"
+              min="0"
+              value={taxaJurosAnual}
+              onChange={(e) => setTaxaJurosAnual(e.target.value)}
+              style={inputStyle}
+            />
+          </label>
+        ) : (
+          <label style={labelStyle}>
+            Rendimento mensal (% a.m.)
+            <input
+              type="number"
+              step="any"
+              min="0"
+              value={rendimentoMensalPct}
+              onChange={(e) => setRendimentoMensalPct(e.target.value)}
+              style={inputStyle}
+            />
+          </label>
+        )}
+
+        <label style={labelStyle}>
+          Horizonte máximo (anos)
+          <input
+            type="number"
+            step="1"
+            min="1"
+            value={horizonteAnos}
+            onChange={(e) => setHorizonteAnos(e.target.value)}
+            style={inputStyle}
+          />
+        </label>
       </div>
 
-      {selectedTicker && !loading && analysis && (
-        <>
-          <div style={{
-            display: 'flex', gap: 16, marginBottom: 24, flexWrap: 'wrap',
-          }}>
-            <div className="card-stats" style={{ flex: 1, minWidth: 180 }}>
-              <span className="stat-label">Registrado por Você</span>
-              <span className="stat-value" style={{ color: '#00CC66' }}>{formatCurrency(analysis.totalUser)}</span>
-            </div>
-            <div className="card-stats" style={{ flex: 1, minWidth: 180 }}>
-              <span className="stat-label">Oficial (brapi.dev)</span>
-              <span className="stat-value" style={{ color: '#C8B800' }}>{formatCurrency(analysis.totalApi)}</span>
-            </div>
-            <div className="card-stats" style={{ flex: 1, minWidth: 180 }}>
-              <span className="stat-label">Diferença</span>
-              <span className="stat-value" style={{
-                color: analysis.totalStatus === 'ok' ? '#00CC66' : analysis.totalStatus === 'faltando' ? '#FF5555' : '#C8B800',
-              }}>
-                {formatCurrency(Math.abs(analysis.totalUser - analysis.totalApi))}
-              </span>
-              <span style={{
-                fontSize: '0.75em', marginTop: 2,
-                color: (statusCores[analysis.totalStatus] || statusCores.pendente).color,
-              }}>
-                {(statusCores[analysis.totalStatus] || statusCores.pendente).label}
-              </span>
-            </div>
-          </div>
+      {/* Resultados */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+          gap: 14,
+          marginBottom: 16,
+        }}
+      >
+        <CardResultado
+          label="Tempo necessário"
+          valor={resumo.tempoFormatado || 'Meta não atingida'}
+          cor={resumo.tempoFormatado ? 'var(--text)' : '#FF5555'}
+          detalhe={
+            resumo.tempoMeses != null
+              ? `Mês ${resumo.tempoMeses} — Ano ${Math.floor(resumo.tempoMeses / 12)}`
+              : `Não atingida em até ${numero(horizonteAnos, 40) || 40} anos`
+          }
+        />
+        <CardResultado
+          label="Patrimônio necessário"
+          valor={resumo.patrimonioNecessario != null ? formatCurrency(resumo.patrimonioNecessario) : '—'}
+          detalhe={
+            resumo.totalRendimento != null
+              ? `Rendimento acumulado: ${formatCurrency(resumo.totalRendimento)}`
+              : null
+          }
+        />
+        <CardResultado
+          label="Renda mensal na meta (corrigida)"
+          valor={resumo.rendaNaMeta != null ? formatCurrency(resumo.rendaNaMeta) : '—'}
+          cor={resumo.rendaNaMeta != null ? '#C8B800' : 'var(--text)'}
+          detalhe={
+            resumo.rendaMensalSacada != null
+              ? `Saca-se por mês: ${formatCurrency(resumo.rendaMensalSacada)}`
+              : null
+          }
+        />
+        <CardResultado
+          label="Total aportado"
+          valor={resumo.totalAportado != null ? formatCurrency(resumo.totalAportado) : '—'}
+          detalhe={
+            resumo.patrimonioFinalPlano != null
+              ? `Patrimônio parado no plano: ${formatCurrency(resumo.patrimonioFinalPlano)}`
+              : null
+          }
+        />
+      </div>
 
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16,
-          }}>
-            <span style={{ color: 'var(--text-faint)', fontSize: '0.85em' }}>Ordenar por:</span>
-            {['year', 'diff', 'status'].map(s => (
-              <button
-                key={s}
-                onClick={() => setSortBy(s)}
-                style={{
-                  background: sortBy === s ? '#C8B80022' : 'transparent',
-                  color: sortBy === s ? '#C8B800' : 'var(--text-faint)',
-                  border: `1px solid ${sortBy === s ? '#C8B80066' : 'var(--border)'}`,
-                  borderRadius: 6, padding: '4px 12px', fontSize: '0.78em',
-                  fontWeight: 700, fontFamily: 'inherit', cursor: 'pointer',
-                  textTransform: 'uppercase', letterSpacing: '0.5px',
-                  transition: 'all 0.2s ease',
-                }}
-              >
-                {s === 'year' ? 'Ano' : s === 'diff' ? 'Diferença' : 'Status'}
-              </button>
-            ))}
-          </div>
-
-          <div className="table-wrapper">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th style={{ minWidth: 70 }}>ANO</th>
-                  <th style={{ minWidth: 120 }}>REGISTRADO</th>
-                  <th style={{ minWidth: 40, color: 'var(--text-faint)' }}>Qtd</th>
-                  <th style={{ minWidth: 120 }}>OFICIAL</th>
-                  <th style={{ minWidth: 40, color: 'var(--text-faint)' }}>Qtd</th>
-                  <th style={{ minWidth: 120 }}>DIFERENÇA</th>
-                  <th style={{ minWidth: 90 }}>STATUS</th>
-                </tr>
-              </thead>
-              <tbody>
-                {sortedYears.map(row => {
-                  const st = statusCores[row.status] || statusCores.pendente;
-                  const diff = Math.abs(row.apiTotal - row.userTotal);
-                  return (
-                    <tr key={row.year}>
-                      <td style={{ textAlign: 'center', fontWeight: 700, color: '#C8B800' }}>
-                        {row.year}
-                      </td>
-                      <td className="td-valor" style={{ color: '#00CC66' }}>
-                        {row.userTotal > 0 ? formatCurrency(row.userTotal) : '—'}
-                      </td>
-                      <td style={{ textAlign: 'center', color: 'var(--text-faint)', fontSize: '0.85em' }}>
-                        {row.userCount || '—'}
-                      </td>
-                      <td className="td-valor" style={{ color: '#C8B800' }}>
-                        {row.apiTotal > 0 ? formatCurrency(row.apiTotal) : '—'}
-                      </td>
-                      <td style={{ textAlign: 'center', color: 'var(--text-faint)', fontSize: '0.85em' }}>
-                        {row.apiCount || '—'}
-                      </td>
-                      <td className="td-valor" style={{ color: row.status === 'ok' ? '#00CC66' : '#FF5555' }}>
-                        {diff > 0 ? formatCurrency(diff) : '—'}
-                      </td>
-                      <td style={{ textAlign: 'center' }}>
-                        <span style={{
-                          display: 'inline-block', padding: '2px 12px', borderRadius: 6,
-                          fontSize: '0.78em', fontWeight: 700,
-                          background: st.bg, color: st.color,
-                          border: `1px solid ${st.color}44`,
-                        }}>
-                          {st.label}
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-
-          {apiDividends.length > 0 && (
-            <details style={{ marginTop: 24, background: 'var(--surface)', borderRadius: 10, border: '1px solid var(--border)', padding: 16 }}>
-              <summary style={{ color: '#C8B800', fontWeight: 700, cursor: 'pointer', fontSize: '0.9em', letterSpacing: '1px' }}>
-                📋 Histórico Oficial ({apiDividends.length} registro(s))
-              </summary>
-              <div className="table-wrapper" style={{ marginTop: 12 }}>
-                <table className="data-table">
-                  <thead>
-                    <tr>
-                      <th style={{ minWidth: 100 }}>DATA</th>
-                      <th style={{ minWidth: 80 }}>TIPO</th>
-                      <th style={{ minWidth: 120 }}>VALOR</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {apiDividends.slice(0, 50).map((d, i) => (
-                      <tr key={i}>
-                        <td className="td-data">{d.date}</td>
-                        <td style={{ textAlign: 'center', color: d.type === 'JCP' ? '#C8B800' : '#00CC66' }}>
-                          {d.type}
-                        </td>
-                        <td className="td-valor">{formatCurrency(d.value)}</td>
-                      </tr>
-                    ))}
-                    {apiDividends.length > 50 && (
-                      <tr>
-                        <td colSpan={3} style={{ textAlign: 'center', color: 'var(--text-faint)', padding: 12 }}>
-                          ...e mais {apiDividends.length - 50} registro(s)
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </details>
-          )}
-        </>
-      )}
-
-      {!selectedTicker && (
-        <div className="page-placeholder" style={{ height: '60%' }}>
-          <div className="icon">🔍</div>
-          <h2>Conferência de Dividendos</h2>
-          <p>Selecione um ativo para comparar os proventos registrados com o histórico oficial.</p>
+      {metaMes == null ? (
+        <div
+          style={{
+            background: 'rgba(255, 85, 85, 0.08)',
+            border: '1px solid #FF5555',
+            borderRadius: 8,
+            padding: '10px 14px',
+            color: '#FF5555',
+            fontSize: '0.9em',
+            marginBottom: 16,
+          }}
+        >
+          ⚠️ Meta não atingida no horizonte. Aumente o aporte mensal, reduza a renda pretendida ou estenda o
+          horizonte máximo.
+        </div>
+      ) : (
+        <div
+          style={{
+            background: 'rgba(0, 204, 102, 0.08)',
+            border: '1px solid #00CC66',
+            borderRadius: 8,
+            padding: '10px 14px',
+            color: '#00CC66',
+            fontSize: '0.9em',
+            marginBottom: 16,
+          }}
+        >
+          🎯 Aposentadoria atingida em {resumo.tempoFormatado} (mês {resumo.tempoMeses} — Ano{' '}
+          {Math.floor(resumo.tempoMeses / 12)}) com patrimônio de {formatCurrency(resumo.patrimonioNecessario)}.
         </div>
       )}
+
+      {/* Gráfico */}
+      <div
+        style={{
+          background: 'var(--surface)',
+          border: '1px solid var(--border)',
+          borderRadius: 12,
+          padding: 18,
+        }}
+      >
+        <h2 style={{ margin: '0 0 12px', fontSize: '1em', color: 'var(--text)' }}>Evolução do patrimônio</h2>
+        <div style={{ width: '100%', height: 380 }}>
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={dados} margin={{ top: 24, right: 28, left: 4, bottom: 8 }}>
+              <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" strokeOpacity={0.6} />
+              <XAxis
+                dataKey="mes"
+                type="number"
+                domain={[0, Math.max(limite, 1)]}
+                ticks={ticks}
+                tickFormatter={(v) => `Ano ${v / 12}`}
+                tick={{ fill: 'var(--text-faint)', fontSize: 11 }}
+                axisLine={{ stroke: 'var(--border)' }}
+                tickLine={false}
+              />
+              <YAxis
+                tickFormatter={formatarEixo}
+                tick={{ fill: 'var(--text-faint)', fontSize: 11 }}
+                axisLine={{ stroke: 'var(--border)' }}
+                tickLine={false}
+                width={72}
+              />
+              <Tooltip
+                contentStyle={tooltipStyle}
+                formatter={(valor) => formatCurrency(valor)}
+                labelFormatter={(l) => `Mês ${l} — Ano ${Math.floor(l / 12)}`}
+              />
+              <Legend verticalAlign="top" height={36} iconType="line" />
+              <Line
+                type="monotone"
+                dataKey="semRendimento"
+                name="Aportes (sem rendimentos)"
+                stroke="#888888"
+                strokeDasharray="6 4"
+                strokeWidth={2}
+                dot={false}
+                isAnimationActive={false}
+              />
+              <Line
+                type="monotone"
+                dataKey="patrimonio"
+                name="Com rendimentos"
+                stroke="#C8B800"
+                strokeWidth={2}
+                dot={false}
+                activeDot={{ r: 4 }}
+                isAnimationActive={false}
+              />
+              <Line
+                type="monotone"
+                dataKey="plano"
+                name="Plano de aposentadoria"
+                stroke="#00CC66"
+                strokeWidth={2.5}
+                dot={false}
+                activeDot={{ r: 4 }}
+                isAnimationActive={false}
+              />
+              {pontoMeta ? (
+                <>
+                  <ReferenceLine
+                    x={pontoMeta.mes}
+                    stroke="#00CC66"
+                    strokeDasharray="5 5"
+                    strokeOpacity={0.7}
+                  />
+                  <ReferenceDot
+                    x={pontoMeta.mes}
+                    y={pontoMeta.plano}
+                    r={7}
+                    fill="#00CC66"
+                    stroke="#121212"
+                    strokeWidth={2}
+                    label={{
+                      value: `🎯 Aposentadoria atingida (mês ${pontoMeta.mes} / Ano ${pontoMeta.ano})`,
+                      position: 'top',
+                      style: { fill: '#00CC66', fontSize: 13, fontWeight: 700 },
+                    }}
+                  />
+                </>
+              ) : null}
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
     </div>
   );
 }

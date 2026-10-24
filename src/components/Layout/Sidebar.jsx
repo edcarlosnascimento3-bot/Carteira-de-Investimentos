@@ -33,7 +33,7 @@ const menuItems = [
     ],
   },
   { path: '/relatorios', label: 'Relatórios', icon: '📄' },
-  { path: '/conferencia', label: 'Conferência', icon: '🔍' },
+  { path: '/conferencia', label: 'Simulado', icon: '🔍' },
   { path: '/midi', label: 'MIDI', icon: '🔗' },
   { path: '/meta', label: 'Meta', icon: '🎯' },
 ];
