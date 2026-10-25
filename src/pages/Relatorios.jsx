@@ -139,6 +139,10 @@ function extractComparativeInfo(text) {
   const vpMatch = flat.match(/(?:valor patrimonial(?:\s*da\s*cota|\s*\/cota|\s*por\s*cota)?|vp\s*da\s*cota|vp\/cota|vpc)[\s:=-]{1,25}(?:R\$\s*)?([0-9]+[.,][0-9]{2})/i)
     || flat.match(/(?:cota patrimonial)[\s:=-]{1,25}(?:R\$\s*)?([0-9]+[.,][0-9]{2})/i);
 
+  // 3.1 Cota de Mercado / Cota Atual (ex: "Cota de Mercado: R$ 105,20", "Valor de Mercado da Cota: 99,80", "Cotação de Fechamento: R$ 10,15", "Cota a Mercado")
+  const cotaMercadoMatch = flat.match(/(?:valor de mercado(?:\s*da\s*cota|\s*\/cota|\s*por\s*cota)?|cota(?:\s*de)?\s*mercado|cota a mercado|cota[çc][ãa]o(?: a mercado| de fechamento| no fechamento| b3)?|pre[çc]o de mercado|pre[çc]o de fechamento)[\s:=-]{1,25}(?:R\$\s*)?([0-9]+[.,][0-9]{2})/i)
+    || flat.match(/(?:fechamento(?: do m[êe]s)?|última cota[çc][ãa]o)[\s:=-]{1,25}(?:R\$\s*)?([0-9]+[.,][0-9]{2})/i);
+
   // 4. P/VP (Preço / Valor Patrimonial) (ex: "P/VP: 0,95", "P/VP 0.98", "P/VPA: 1,02")
   const pvpMatch = flat.match(/(?:p\/vp|p\/vpa|pre[çc]o\s*\/\s*valor\s*patrimonial)[\s:=-]{1,25}([0-9]+[.,][0-9]{2})/i);
 
@@ -180,6 +184,7 @@ function extractComparativeInfo(text) {
     rendimentoCota: rendMatch ? rendMatch[1] : null,
     dividendYield: dyMatch ? dyMatch[1] : null,
     valorPatrimonial: vpMatch ? vpMatch[1] : null,
+    cotaMercado: cotaMercadoMatch ? cotaMercadoMatch[1] : null,
     pvp: pvpMatch ? pvpMatch[1] : null,
     totalCotas: null,
     patrimonioLiquido: plMatch ? plMatch[1] : null,
@@ -427,6 +432,12 @@ function Relatorios() {
         mom: formatMoMVariation(parseCurrencyBr(dAnt.valorPatrimonial), parseCurrencyBr(dAtu.valorPatrimonial))
       },
       {
+        metrica: 'Cota de Mercado / Cotação Atual',
+        ant: dAnt.cotaMercado ? `R$ ${dAnt.cotaMercado}` : 'não informado',
+        atu: dAtu.cotaMercado ? `R$ ${dAtu.cotaMercado}` : 'não informado',
+        mom: formatMoMVariation(parseCurrencyBr(dAnt.cotaMercado), parseCurrencyBr(dAtu.cotaMercado))
+      },
+      {
         metrica: 'Preço sobre Valor Patrimonial (P/VP)',
         ant: dAnt.pvp || 'não informado',
         atu: dAtu.pvp || 'não informado',
@@ -640,6 +651,16 @@ function Relatorios() {
                     />
                   </div>
                   <div>
+                    <label style={{ fontSize: 10, color: '#64748B', display: 'block' }}>Cota Mercado (R$)</label>
+                    <input
+                      type="text"
+                      value={doc1.info?.cotaMercado || ''}
+                      onChange={(e) => setDoc1(prev => ({ ...prev, info: { ...prev.info, cotaMercado: e.target.value } }))}
+                      placeholder="Ex: 100,20"
+                      style={{ width: '100%', padding: '2px 4px', fontSize: 11, border: '1px solid #CBD5E1', borderRadius: 4 }}
+                    />
+                  </div>
+                  <div>
                     <label style={{ fontSize: 10, color: '#64748B', display: 'block' }}>P / VP</label>
                     <input
                       type="text"
@@ -756,6 +777,16 @@ function Relatorios() {
                       value={doc2.info?.valorPatrimonial || ''}
                       onChange={(e) => setDoc2(prev => ({ ...prev, info: { ...prev.info, valorPatrimonial: e.target.value } }))}
                       placeholder="Ex: 98,50"
+                      style={{ width: '100%', padding: '2px 4px', fontSize: 11, border: '1px solid #CBD5E1', borderRadius: 4 }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 10, color: '#64748B', display: 'block' }}>Cota Mercado (R$)</label>
+                    <input
+                      type="text"
+                      value={doc2.info?.cotaMercado || ''}
+                      onChange={(e) => setDoc2(prev => ({ ...prev, info: { ...prev.info, cotaMercado: e.target.value } }))}
+                      placeholder="Ex: 100,20"
                       style={{ width: '100%', padding: '2px 4px', fontSize: 11, border: '1px solid #CBD5E1', borderRadius: 4 }}
                     />
                   </div>
